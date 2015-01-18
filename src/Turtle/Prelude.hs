@@ -9,8 +9,15 @@ module Turtle.Prelude (
     , cd
     , pwd
     , home
+    , realpath
     , mv
     , mkdir
+    , mktree
+    , cp
+    , rm
+    , rmdir
+    , rmtree
+    , du
     , grep
     , sed
     , form
@@ -77,20 +84,45 @@ pwd = Filesystem.getWorkingDirectory
 home :: IO FilePath
 home = Filesystem.getWorkingDirectory
 
+-- | Canonicalize a path
+realpath :: FilePath -> IO FilePath
+realpath = Filesystem.canonicalizePath
+
 -- | Move a file or directory
 mv :: FilePath -> FilePath -> IO ()
 mv = Filesystem.rename
 
-{-| Make a directory
-
-    This is actually equivalent to @mkdir -p@, creating the entire directory
-    tree if necessary
--}
+-- | Create a directory
 mkdir :: FilePath -> IO ()
-mkdir = Filesystem.createTree
+mkdir = Filesystem.createDirectory False
+
+-- | Create a directory tree (equivalent to @mkdir -p@)
+mktree :: FilePath -> IO ()
+mktree = Filesystem.createTree
 
 --  List the immediate children of a directory, excluding @\".\"@ and @\"..\"@
 -- ls :: FilePath -> Shell String
+
+-- | Copy a file
+cp :: FilePath -> FilePath -> IO ()
+cp = Filesystem.copyFile
+
+-- | Remove a file
+rm :: FilePath -> IO ()
+rm = Filesystem.removeFile
+
+-- | Remove a directory
+rmdir :: FilePath -> IO ()
+rmdir = Filesystem.removeFile
+
+-- | Remove a directory tree
+rmtree :: FilePath -> IO ()
+rmtree = Filesystem.removeTree
+
+-- | Get a file or directory's size
+du :: FilePath -> IO Integer
+du = Filesystem.getSize
+
 
 -- | Keep all lines that match the given `Pattern` anywhere within the line
 grep :: Pattern a -> Shell Text -> Shell Text
