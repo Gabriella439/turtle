@@ -1,12 +1,58 @@
 {-# LANGUAGE RankNTypes #-}
 
-{-| All `Shell`s must satisfy this law:
+{-| You can think of `Shell` as @[]@ + `IO` + `Protected`.  In fact, you can
+    embed all three of them within `Shell`:
 
+> select :: [a]         -> Shell a
+> liftIO :: IO a        -> Shell a
+> with   :: Protected a -> Shell a
+
+    Those three embeddings obey these laws:
+
+> do { x <- select m; select (f x) } = select (do { x <- m; f x })
+> do { x <- liftIO m; liftIO (f x) } = liftIO (do { x <- m; f x })
+> do { x <- with   m; with   (f x) } = with   (do { x <- m; f x })
+>
+> select (return x) = return x
+> liftIO (return x) = return x
+> with   (return x) = return x
+
+    ... and `select` obeys these additional laws:
+
+> select xs <|> select ys = select (xs <|> ys)
+> select empty = empty
+
+    You typically won't build `Shell`s using the `Shell` constructor.  Instead,
+    use these functions to generate primitive `Shell`s:
+
+    * `empty`
+
+    * `return`
+
+    * `select`
+
+    * `liftIO`
+
+    * `with`
+    
+    ... and use these classes to combine those primitive `Shell`s into larger
+    `Shell`s:
+
+    * `Monad` (i.e. @do@ notation)
+
+    * `Alternative`
+
+    If you still insist on building your own `Shell` from scratch, then the
+    `Shell` you build must satisfy this law:
+
+> -- For every shell `s`:
 > feedIO s (FoldM step begin done) = do
 >     x  <- step
 >     x' <- feedIO s (FoldM step (return x) return)
 >     done x'
 
+    ... which is a fancy way of saying that your `Shell` must call @\'begin\'@
+    exactly once when it begins and call @\'done\'@ exactly once when it ends.
 -}
 
 module Turtle.Shell (
@@ -14,12 +60,18 @@ module Turtle.Shell (
     , feed
     , runShell
 
+    -- * Embeddings
+    , select
+    , liftIO
+    , with
+
     -- * Re-exports
     , Fold(..)
     , FoldM(..)
     ) where
 
 import Control.Applicative (Applicative(..), Alternative(..), liftA2)
+import Control.Exception (bracket)
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Foldl (Fold(..), FoldM(..))
@@ -27,7 +79,9 @@ import qualified Control.Foldl as Foldl
 import Data.Monoid (Monoid(..))
 import Data.String (IsString(..))
 
--- | A @(`Shell` a)@ is a stream of @a@'s
+import Turtle.Protected
+
+-- | A @(Shell a)@ is a protected stream of @a@'s
 newtype Shell a = Shell { feedIO :: forall r . FoldM IO a r -> IO r }
 
 -- | Feed the stream of @a@'s produced by a `Shell` to a `Fold`
@@ -126,3 +180,18 @@ instance Floating a => Floating (Shell a) where
 
 instance IsString a => IsString (Shell a) where
     fromString str = pure (fromString str)
+
+-- | Convert a list to `Shell` that emits each element of the list
+select :: [a] -> Shell a
+select  []    = empty
+select (a:as) = return a <|> select as
+
+{-| Acquire a `Protected` resource within a `Shell` in an exception-safe way
+
+> do { x <- with m; with (f x) } = with (do { x <- m; f x })
+-}
+with :: Protected a -> Shell a
+with resource = Shell (\(FoldM step begin done) -> do
+    x <- begin
+    x' <- bracket (acquire resource) snd (\(a, _) -> step x a)
+    done x' )

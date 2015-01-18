@@ -1,9 +1,9 @@
 {-| This module handles exception-safety.
 
-    You can build `Protected` resources using `protect`:
+    You can build `Protected` resources using `Protect`:
 
 > readHandle :: FilePath -> Protected Handle
-> readHandle file = protect (do
+> readHandle file = Protect (do
 >     handle <- Filesystem.openFile file ReadMode
 >     return (handle, hClose handle) )
 
@@ -25,31 +25,15 @@
 
 module Turtle.Protected (
     -- * Protected
-      Protected
-    , protect
-    , with
-
-    -- * Utilities
-    , readHandle
-    , writeHandle
-
-    -- * Re-exports
-    , FilePath
-    , Handle
+      Protected(..)
     ) where
 
 import Control.Applicative (Applicative(..), liftA2)
-import Control.Exception (bracket, onException)
+import Control.Exception (onException)
 import Control.Monad (ap)
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Monoid (Monoid(..))
 import Data.String (IsString(..))
-import Filesystem.Path (FilePath)
-import qualified Filesystem
-import System.IO (Handle, IOMode(ReadMode, WriteMode), hClose)
-import Prelude hiding (FilePath)
-
-import Turtle.Shell
 
 {-| A `Protected` resource of type @a@
 -}
@@ -124,41 +108,3 @@ instance Floating a => Floating (Protected a) where
 
 instance IsString a => IsString (Protected a) where
     fromString str = pure (fromString str)
-
-{-| Create `Protected` @\'a\'@
-
-    The outer `IO` action acquires the @\'a\'@ and the inner @IO@ action
-    releases the acquired resource:
-
-> example :: Protected A
-> example = protect (do
->     a <- acquireResource
->     return (a, releaseResource a)
->
-> acquireResource :: IO A
-> releaseResource :: A -> IO ()
--}
-protect :: IO (a, IO ()) -> Protected a
-protect = Protect
-
-{-| Acquire a `Protected` resource within a `Shell` in an exception-safe way
-
-> do { x <- with m; with (f x) } = with (do { x <- m; f x })
--}
-with :: Protected a -> Shell a
-with resource = Shell (\(FoldM step begin done) -> do
-    x <- begin
-    x' <- bracket (acquire resource) snd (\(a, _) -> step x a)
-    done x' )
-
--- | Acquire a `Protected` read-only `Handle` from a `FilePath`
-readHandle :: FilePath -> Protected Handle
-readHandle file = protect (do
-    handle <- Filesystem.openFile file ReadMode
-    return (handle, hClose handle) )
-
--- | Acquire a `Protected` write-only `Handle` from a `FilePath`
-writeHandle :: FilePath -> Protected Handle
-writeHandle file = protect (do
-    handle <- Filesystem.openFile file WriteMode
-    return (handle, hClose handle) )

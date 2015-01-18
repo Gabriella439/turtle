@@ -4,8 +4,13 @@
 
 module Turtle.Prelude (
     -- * Utilities
-      select
+      shell
     , cat
+    , cd
+    , pwd
+    , home
+    , mv
+    , mkdir
     , grep
     , sed
     , form
@@ -17,35 +22,80 @@ module Turtle.Prelude (
     , handleOut
     , stdOut
     , fileOut
+
+    -- * Resources
+    , readHandle
+    , writeHandle
+    , fork
     ) where
 
 import Control.Applicative (Alternative(..))
-
-import Control.Monad (guard)
-import Control.Monad.IO.Class (liftIO)
+import Control.Concurrent.Async (Async, async, cancel, wait)
+import Control.Monad (guard, msum)
 import Data.Text (Text)
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
+import qualified Filesystem
+import Filesystem.Path (FilePath)
+import System.IO (Handle)
 import qualified System.IO as IO
+import qualified System.Process as Process
 import Prelude hiding (FilePath)
 
 import Turtle.Pattern (Pattern, anyChar, match, selfless, plus, star)
 import Turtle.Protected
 import Turtle.Shell
 
--- | Convert a list to `Shell` that emits each element of the list
-select :: [a] -> Shell a
-select  []    = empty
-select (a:as) = return a <|> select as
+shell :: Text -> Shell Text -> Shell Text
+shell cmd s = do
+    (pRead, pWrite) <- liftIO Process.createPipe
+    let p = (Process.shell (Text.unpack cmd))
+            { Process.std_in  = Process.CreatePipe
+            , Process.std_out = Process.UseHandle pWrite
+            , Process.std_err = Process.UseHandle pWrite
+            }
+    (Just hIn, Nothing, Nothing, ph) <- liftIO (Process.createProcess p)
+    let feedIn = runShell (do
+            txt <- s
+            liftIO (Text.hPutStrLn hIn txt) )
+    a   <- with (fork feedIn)
+    handleIn pRead <|> (liftIO (wait a) >> empty)
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
-cat = foldr (<|>) empty
+cat = msum
+
+-- | Change the current directory
+cd :: FilePath -> IO ()
+cd = Filesystem.setWorkingDirectory
+
+-- | Get the current directory
+pwd :: IO FilePath
+pwd = Filesystem.getWorkingDirectory
+
+-- | Get the home directory
+home :: IO FilePath
+home = Filesystem.getWorkingDirectory
+
+-- | Move a file or directory
+mv :: FilePath -> FilePath -> IO ()
+mv = Filesystem.rename
+
+{-| Make a directory
+
+    This is actually equivalent to @mkdir -p@, creating the entire directory
+    tree if necessary
+-}
+mkdir :: FilePath -> IO ()
+mkdir = Filesystem.createTree
+
+--  List the immediate children of a directory, excluding @\".\"@ and @\"..\"@
+-- ls :: FilePath -> Shell String
 
 -- | Keep all lines that match the given `Pattern` anywhere within the line
 grep :: Pattern a -> Shell Text -> Shell Text
-grep pattern shell = do
-    txt <- shell
+grep pattern s = do
+    txt <- s
     let pattern' = do
             _ <- star anyChar
             pattern
@@ -54,16 +104,16 @@ grep pattern shell = do
 
 -- | Replace all occurrences of a `Pattern` with its `Text` result
 sed :: Pattern Text -> Shell Text -> Shell Text
-sed pattern shell = do
+sed pattern s = do
     let pattern' = fmap Text.concat (many (pattern <|> selfless (plus anyChar)))
-    txt    <- shell
+    txt    <- s
     txt':_ <- return (match pattern' txt)
     return txt'
 
 -- | Parse a structured value from each line of `Text`
 form :: Pattern a -> Shell Text -> Shell a
-form pattern shell = do
-    txt <- shell
+form pattern s = do
+    txt <- s
     a:_ <- return (match pattern txt)
     return a
 
@@ -89,8 +139,8 @@ fileIn file = do
 
 -- | Tee lines of `Text` to a `Handle`
 handleOut :: Handle -> Shell Text -> Shell Text
-handleOut handle shell = do
-    txt <- shell
+handleOut handle s = do
+    txt <- s
     liftIO (Text.hPutStrLn handle txt)
     return txt
 
@@ -100,6 +150,24 @@ stdOut = handleOut IO.stdout
 
 -- | Tee lines of `Text` to a file
 fileOut :: FilePath -> Shell Text -> Shell Text
-fileOut file shell = do
+fileOut file s = do
     handle <- with (writeHandle file)
-    handleOut handle shell
+    handleOut handle s
+
+-- | Acquire a `Protected` read-only `Handle` from a `FilePath`
+readHandle :: FilePath -> Protected Handle
+readHandle file = Protect (do
+    handle <- Filesystem.openFile file IO.ReadMode
+    return (handle, IO.hClose handle) )
+
+-- | Acquire a `Protected` write-only `Handle` from a `FilePath`
+writeHandle :: FilePath -> Protected Handle
+writeHandle file = Protect (do
+    handle <- Filesystem.openFile file IO.WriteMode
+    return (handle, IO.hClose handle) )
+
+-- | Fork a thread, acquiring an `Async` value
+fork :: IO a -> Protected (Async a)
+fork io = Protect (do
+    a <- async io
+    return (a, cancel a) )
