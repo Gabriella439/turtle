@@ -3,6 +3,7 @@
 -}
 
 module Turtle.Prelude (
+    -- * Utilities
       select
     , cat
     , grep
