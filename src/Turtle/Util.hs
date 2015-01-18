@@ -5,11 +5,12 @@ import Control.Applicative (Alternative(..))
 import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
+import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 import qualified System.IO as IO
 import Prelude hiding (FilePath)
 
-import Turtle.Pattern (Pattern, anyChar, match, star)
+import Turtle.Pattern (Pattern, anyChar, match, selfless, plus, star)
 import Turtle.Resource
 import Turtle.Shell
 
@@ -22,21 +23,29 @@ select (a:as) = return a <|> select as
 cat :: [Shell a] -> Shell a
 cat = foldr (<|>) empty
 
--- | Keep all lines that match the given `Pattern`
+-- | Keep all lines that match the given `Pattern` anywhere within the line
 grep :: Pattern a -> Shell Text -> Shell Text
-grep p shell = do
+grep pattern shell = do
     txt <- shell
-    let p' = do
+    let pattern' = do
             _ <- star anyChar
-            p
-    guard (not (null (match p' txt)))
+            pattern
+    guard (not (null (match pattern' txt)))
     return txt
+
+-- | Replace all occurrences of a `Pattern` with its `Text` result
+sed :: Pattern Text -> Shell Text -> Shell Text
+sed pattern shell = do
+    let pattern' = fmap Text.concat (many (pattern <|> selfless (plus anyChar)))
+    txt    <- shell
+    txt':_ <- return (match pattern' txt)
+    return txt'
 
 -- | Parse a structured value from each line of `Text`
 form :: Pattern a -> Shell Text -> Shell a
-form p s = do
-    txt <- s
-    a:_ <- return (match p txt)
+form pattern shell = do
+    txt <- shell
+    a:_ <- return (match pattern txt)
     return a
 
 -- | Read lines of `Text` from a `Handle`

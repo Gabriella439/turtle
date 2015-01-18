@@ -75,6 +75,7 @@ module Turtle.Pattern (
     -- * Combinators
     , star
     , plus
+    , selfless
     , choice
     , count
     , between
@@ -434,6 +435,20 @@ signed p = do
 -}
 star :: Pattern Char -> Pattern Text
 star p = fmap Text.pack (many p)
+
+{-| Patterns that match multiple times are greedy by default, meaning that they
+    try to match as many times as possible.  The `selfless` combinator makes a
+    pattern match as few times as possible
+
+>>> match (selfless (star anyChar) *> char '1') "123"
+"1"
+>>> match (selfless (star anyChar)) "123"
+["","1","12","123"]
+>>> match (selfless (star anyChar <* eof)) "123"
+["123"]
+-}
+selfless :: Pattern a -> Pattern a
+selfless p = Pattern (StateT (\s -> reverse (runStateT (runPattern p) s)))
 
 {-| Parse 1 or more occurrences of the given character
 
