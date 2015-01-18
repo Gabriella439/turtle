@@ -4,7 +4,7 @@
 
 module Turtle.Prelude (
     -- * Utilities
-      shell
+      system
     , cat
     , cd
     , pwd
@@ -45,6 +45,7 @@ import qualified Data.Text.IO as Text
 import qualified Filesystem
 import Filesystem.Path (FilePath)
 import System.IO (Handle)
+import System.Exit (ExitCode)
 import qualified System.IO as IO
 import qualified System.Process as Process
 import Prelude hiding (FilePath)
@@ -53,20 +54,23 @@ import Turtle.Pattern (Pattern, anyChar, match, selfless, plus, star)
 import Turtle.Protected
 import Turtle.Shell
 
-shell :: Text -> Shell Text -> Shell Text
-shell cmd s = do
-    (pRead, pWrite) <- liftIO Process.createPipe
+system :: Text -> Shell Text -> Shell Text
+system cmd s = do
     let p = (Process.shell (Text.unpack cmd))
             { Process.std_in  = Process.CreatePipe
-            , Process.std_out = Process.UseHandle pWrite
-            , Process.std_err = Process.UseHandle pWrite
+            , Process.std_out = Process.CreatePipe
+            , Process.std_err = Process.Inherit
             }
-    (Just hIn, Nothing, Nothing, ph) <- liftIO (Process.createProcess p)
-    let feedIn = runShell (do
+    (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p)
+    let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
     a   <- with (fork feedIn)
-    handleIn pRead <|> (liftIO (wait a) >> empty)
+    handleIn hOut <|> (liftIO (wait a) >> empty)
+
+{-
+system' :: Text -> Shell Text -> IO ExitCode
+-}
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
@@ -122,7 +126,6 @@ rmtree = Filesystem.removeTree
 -- | Get a file or directory's size
 du :: FilePath -> IO Integer
 du = Filesystem.getSize
-
 
 -- | Keep all lines that match the given `Pattern` anywhere within the line
 grep :: Pattern a -> Shell Text -> Shell Text
