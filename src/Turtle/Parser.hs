@@ -2,7 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-{-| The simplest possible parser implementation
+{-| A light-weight backtracking parser
 
     Example usage:
 
@@ -98,6 +98,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as Text
 
+-- | A backtracking parser
 newtype Parser a = Parser { runParser :: StateT Text [] a }
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus)
 

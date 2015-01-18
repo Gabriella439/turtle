@@ -30,9 +30,11 @@ import Data.String (IsString(..))
 -- | A @(`Shell` a)@ is a stream of @a@'s
 newtype Shell a = Shell { feedIO :: forall r . FoldM IO a r -> IO r }
 
+-- | Feed the stream of @a@'s produced by a `Shell` to a `Fold`
 feed :: Shell a -> Fold a b -> IO b
 feed s f = feedIO s (Foldl.generalize f)
 
+-- | Run a `Shell` to completion, discarding any unused values
 runShell :: Shell a -> IO ()
 runShell s = feed s (pure ())
 

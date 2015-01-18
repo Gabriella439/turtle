@@ -23,8 +23,8 @@ grep p s = do
     guard (not (null (parse p str)))
     return str
 
-fileRead :: FilePath -> Shell Text
-fileRead file = Shell (\(FoldM step begin done) -> do
+inFile :: FilePath -> Shell Text
+inFile file = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     x1 <- bracket (openFile file ReadMode) hClose (\handle -> do
         let go x = do
@@ -38,8 +38,8 @@ fileRead file = Shell (\(FoldM step begin done) -> do
         go x0 )
     done x1 )
 
-fileWrite :: FilePath -> FoldM IO Text ()
-fileWrite file = FoldM step (openFile file WriteMode) hClose
+outFile :: FilePath -> FoldM IO Text ()
+outFile file = FoldM step (openFile file WriteMode) hClose
   where
     step handle txt = do
         Text.hPutStrLn handle txt
