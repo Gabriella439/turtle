@@ -1,18 +1,17 @@
 {-# LANGUAGE RankNTypes #-}
 
-{- All `Shell`s must satisfy this law:
+{-| All `Shell`s must satisfy this law:
 
-> foldM_ s step begin done = do
+> feedIO s (FoldM step begin done) = do
 >     x  <- step
->     x' <- foldM_ s step (return x) return
+>     x' <- feedIO s (FoldM step (return x) return)
 >     done x'
 
 -}
 
 module Turtle.Shell (
       Shell(..)
-    , fold
-    , foldIO
+    , feed
     , runShell
 
     -- * Re-exports
@@ -23,53 +22,49 @@ module Turtle.Shell (
 import Control.Applicative (Applicative(..), Alternative(..), liftA2)
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Foldl (Fold, FoldM)
+import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
 import Data.Monoid (Monoid(..))
 import Data.String (IsString(..))
 
 -- | A @(`Shell` a)@ is a stream of @a@'s
-newtype Shell a = Shell
-    { foldM_ :: forall r x . (x -> a -> IO x) -> IO x -> (x -> IO r) -> IO r }
+newtype Shell a = Shell { feedIO :: forall r . FoldM IO a r -> IO r }
 
-fold :: Fold a b -> Shell a -> IO b
-fold f = foldIO (Foldl.generalize f)
-
-foldIO :: FoldM IO a b -> Shell a -> IO b
-foldIO f s = Foldl.impurely (foldM_ s) f
+feed :: Shell a -> Fold a b -> IO b
+feed s f = feedIO s (Foldl.generalize f)
 
 runShell :: Shell a -> IO ()
-runShell = fold (pure ())
+runShell s = feed s (pure ())
 
 instance Functor Shell where
-    fmap f s = Shell (\step begin done ->
+    fmap f s = Shell (\(FoldM step begin done) ->
         let step' x a = step x (f a)
-        in  foldM_ s step' begin done )
+        in  feedIO s (FoldM step' begin done) )
 
 instance Applicative Shell where
     pure  = return
     (<*>) = ap
 
 instance Monad Shell where
-    return a = Shell (\step begin done -> do
+    return a = Shell (\(FoldM step begin done) -> do
        x  <- begin
        x' <- step x a
        done x' )
 
-    m >>= f = Shell (\step0 begin0 done0 -> do
-        let step1 x a = foldM_ (f a) step0 (return x) return
-        foldM_ m step1 begin0 done0 )
+    m >>= f = Shell (\(FoldM step0 begin0 done0) -> do
+        let step1 x a = feedIO (f a) (FoldM step0 (return x) return)
+        feedIO m (FoldM step1 begin0 done0) )
 
     fail _ = mzero
 
 instance Alternative Shell where
-    empty = Shell (\_ begin done -> do
+    empty = Shell (\(FoldM _ begin done) -> do
         x <- begin
         done x )
 
-    s1 <|> s2 = Shell (\step begin done -> do
-        x <- foldM_ s1 step begin return
-        foldM_ s2 step (return x) done )
+    s1 <|> s2 = Shell (\(FoldM step begin done) -> do
+        x <- feedIO s1 (FoldM step begin return)
+        feedIO s2 (FoldM step (return x) done) )
 
 instance MonadPlus Shell where
     mzero = empty
@@ -77,7 +72,7 @@ instance MonadPlus Shell where
     mplus = (<|>)
 
 instance MonadIO Shell where
-    liftIO io = Shell (\step begin done -> do
+    liftIO io = Shell (\(FoldM step begin done) -> do
         x  <- begin
         a  <- io
         x' <- step x a

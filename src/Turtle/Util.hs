@@ -24,7 +24,7 @@ grep p s = do
     return str
 
 fileRead :: FilePath -> Shell Text
-fileRead file = Shell (\step begin done -> do
+fileRead file = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     x1 <- bracket (openFile file ReadMode) hClose (\handle -> do
         let go x = do

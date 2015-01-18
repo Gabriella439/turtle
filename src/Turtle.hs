@@ -1,8 +1,7 @@
 module Turtle (
     -- * Shell
-      Shell
-    , fold
-    , foldIO
+      Shell(..)
+    , feed
     , runShell
 
     -- * Utilities
@@ -18,5 +17,5 @@ module Turtle (
 
 import Control.Applicative (Applicative(..), Alternative(..))
 import Control.Monad.IO.Class (MonadIO(..))
-import Turtle.Shell (Shell, fold, runShell)
+import Turtle.Shell (Shell(feedIO), feed, runShell)
 import Turtle.Util (select, cat, grep)
