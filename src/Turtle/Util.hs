@@ -2,45 +2,76 @@ module Turtle.Util where
 
 import Control.Applicative (Alternative(..))
 
-import Control.Exception (bracket)
 import Control.Monad (guard)
+import Control.Monad.IO.Class (liftIO)
+import Data.Text (Text)
 import qualified Data.Text.IO as Text
-import System.IO
+import qualified System.IO as IO
+import Prelude hiding (FilePath)
 
-import Turtle.Parser
+import Turtle.Pattern (Pattern, anyChar, match, star)
+import Turtle.Resource
 import Turtle.Shell
 
+-- | Convert a list to `Shell` that emits each element of the list
 select :: [a] -> Shell a
 select  []    = empty
 select (a:as) = return a <|> select as
 
+-- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
 cat = foldr (<|>) empty
 
-grep :: Parser a -> Shell Text -> Shell Text
-grep p s = do
-    str <- s
-    guard (not (null (parse p str)))
-    return str
+-- | Keep all lines that match the given `Pattern`
+grep :: Pattern a -> Shell Text -> Shell Text
+grep p shell = do
+    txt <- shell
+    let p' = do
+            _ <- star anyChar
+            p
+    guard (not (null (match p' txt)))
+    return txt
 
-inFile :: FilePath -> Shell Text
-inFile file = Shell (\(FoldM step begin done) -> do
-    x0 <- begin
-    x1 <- bracket (openFile file ReadMode) hClose (\handle -> do
-        let go x = do
-                eof <- hIsEOF handle
-                if eof
-                    then return x
-                    else do
-                        str <- Text.hGetLine handle
-                        x'  <- step x str
-                        go x'
-        go x0 )
-    done x1 )
+-- | Parse a structured value from each line of `Text`
+form :: Pattern a -> Shell Text -> Shell a
+form p s = do
+    txt <- s
+    a:_ <- return (match p txt)
+    return a
 
-outFile :: FilePath -> FoldM IO Text ()
-outFile file = FoldM step (openFile file WriteMode) hClose
-  where
-    step handle txt = do
-        Text.hPutStrLn handle txt
-        return handle
+-- | Read lines of `Text` from a `Handle`
+handleIn :: Handle -> Shell Text
+handleIn handle = do
+    eof <- liftIO (IO.hIsEOF handle)
+    if eof
+        then empty
+        else do
+            txt <- liftIO (Text.hGetLine handle)
+            return txt <|> handleIn handle
+
+-- | Read lines of `Text` from standard input
+stdIn :: Shell Text
+stdIn = handleIn IO.stdin
+
+-- | Read lines of `Text` from a file
+fileIn :: FilePath -> Shell Text
+fileIn file = do
+    handle <- with (readHandle file)
+    handleIn handle
+
+-- | Tee lines of `Text` to a `Handle`
+handleOut :: Handle -> Shell Text -> Shell Text
+handleOut handle shell = do
+    txt <- shell
+    liftIO (Text.hPutStrLn handle txt)
+    return txt
+
+-- | Tee lines of `Text` to standard output
+stdOut :: Shell Text -> Shell Text
+stdOut = handleOut IO.stdout
+
+-- | Tee lines of `Text` to a file
+fileOut :: FilePath -> Shell Text -> Shell Text
+fileOut file shell = do
+    handle <- with (writeHandle file)
+    handleOut handle shell
