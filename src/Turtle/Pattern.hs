@@ -7,9 +7,9 @@
     Example usage:
 
 >>> :set -XOverloadedStrings
->>> match (text "cat" <|> text "dog") "cat"
+>>> match ("dog" <|> "cat") "cat"
 ["cat"]
->>> match (some (notChar ',') <* char ',') "cat,dog"
+>>> match (plus (notChar ',') <* char ',') "cat,dog"
 ["cat"]
 >>> match (count 3 anyChar) "cat,dog"
 ["cat"]
@@ -17,9 +17,9 @@
     This pattern has unlimited backtracking, and will return as many solutions
     as possible:
 
->>> match (some anyChar) "123"
+>>> match (plus anyChar) "123"
 ["123","12","1"]
->>> match (some anyChar <* eof) "123"
+>>> match (plus anyChar <* eof) "123"
 ["123"]
 
     Use @do@ notation to structure more complex patterns:
@@ -220,6 +220,12 @@ notChar c = satisfy (/= c)
 {-| Match a specific string
 
 >>> match (text "12") "123"
+["12"]
+
+    You can also omit the `text` function if you enable the @OverloadedStrings@
+    extension:
+
+>>> match "12" "123"
 ["12"]
 
 -}
@@ -452,11 +458,11 @@ selfless p = Pattern (StateT (\s -> reverse (runStateT (runPattern p) s)))
 
 {-| Parse 1 or more occurrences of the given character
 
->>> match (some anyChar) "123"
+>>> match (plus anyChar) "123"
 ["123","12","1"]
->>> match (some anyChar <* eof) "123"
+>>> match (plus anyChar <* eof) "123"
 ["123"]
->>> match (some anyChar) ""
+>>> match (plus anyChar) ""
 []
 -}
 plus :: Pattern Char -> Pattern Text

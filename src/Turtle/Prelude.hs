@@ -1,4 +1,22 @@
-module Turtle.Util where
+{-| These are derived utilities built on the primitives exposed by other
+    modules
+-}
+
+module Turtle.Prelude (
+      select
+    , cat
+    , grep
+    , sed
+    , form
+
+    -- * Input and output
+    , handleIn
+    , stdIn
+    , fileIn
+    , handleOut
+    , stdOut
+    , fileOut
+    ) where
 
 import Control.Applicative (Alternative(..))
 

@@ -1,6 +1,32 @@
+{-| This module handles exception-safety.
+
+    You can build `Protected` resources using `protect`:
+
+> readHandle :: FilePath -> Protected Handle
+> readHandle file = protect (do
+>     handle <- Filesystem.openFile file ReadMode
+>     return (handle, hClose handle) )
+
+    You can combine `Protected` resources using @do@ notation:
+
+> twoFiles :: Protected (Handle, Handle)
+> twoFiles = do
+>     handle1 <- readHandle "file1.txt"
+>     handle2 <- readHandle "file2.txt"
+>     return (handle1, handle2)
+
+    You can consume `Protected` resources within a `Shell` using `with`:
+
+> example = do
+>     (handle1, handle2) <- with twoFiles
+>     ...
+ 
+-}
+
 module Turtle.Protected (
     -- * Protected
-      Protected(..)
+      Protected
+    , protect
     , with
 
     -- * Utilities
@@ -25,11 +51,12 @@ import Prelude hiding (FilePath)
 
 import Turtle.Shell
 
--- | A `Protected` resource of type @a@
-data Protected a = Protected { acquire :: IO (a, IO ()) }
+{-| A `Protected` resource of type @a@
+-}
+data Protected a = Protect { acquire :: IO (a, IO ()) }
 
 instance Functor Protected where
-    fmap f r = Protected (do
+    fmap f r = Protect (do
         (a, release) <- acquire r
         return (f a, release) )
 
@@ -39,15 +66,15 @@ instance Applicative Protected where
     (<*>) = ap
 
 instance Monad Protected where
-    return a = Protected (return (a, return ()))
+    return a = Protect (return (a, return ()))
 
-    m >>= f = Protected (do
+    m >>= f = Protect (do
         (a, release1) <- acquire m
         (b, release2) <- acquire (f a) `onException` release1
         return (b, release2 >> release1) )
 
 instance MonadIO Protected where
-    liftIO io = Protected (do
+    liftIO io = Protect (do
         a <- io
         return (a, return ()) )
 
@@ -98,7 +125,26 @@ instance Floating a => Floating (Protected a) where
 instance IsString a => IsString (Protected a) where
     fromString str = pure (fromString str)
 
--- | Acquire a `Protected` resource within a `Shell`
+{-| Create `Protected` @\'a\'@
+
+    The outer `IO` action acquires the @\'a\'@ and the inner @IO@ action
+    releases the acquired resource:
+
+> example :: Protected A
+> example = protect (do
+>     a <- acquireResource
+>     return (a, releaseResource a)
+>
+> acquireResource :: IO A
+> releaseResource :: A -> IO ()
+-}
+protect :: IO (a, IO ()) -> Protected a
+protect = Protect
+
+{-| Acquire a `Protected` resource within a `Shell` in an exception-safe way
+
+> do { x <- with m; with (f x) } = with (do { x <- m; f x })
+-}
 with :: Protected a -> Shell a
 with resource = Shell (\(FoldM step begin done) -> do
     x <- begin
@@ -107,12 +153,12 @@ with resource = Shell (\(FoldM step begin done) -> do
 
 -- | Acquire a `Protected` read-only `Handle` from a `FilePath`
 readHandle :: FilePath -> Protected Handle
-readHandle file = Protected (do
+readHandle file = protect (do
     handle <- Filesystem.openFile file ReadMode
     return (handle, hClose handle) )
 
 -- | Acquire a `Protected` write-only `Handle` from a `FilePath`
 writeHandle :: FilePath -> Protected Handle
-writeHandle file = Protected (do
+writeHandle file = protect (do
     handle <- Filesystem.openFile file WriteMode
     return (handle, hClose handle) )

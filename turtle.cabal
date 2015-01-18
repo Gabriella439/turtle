@@ -39,7 +39,7 @@ Library
         Turtle.Pattern,
         Turtle.Protected,
         Turtle.Shell,
-        Turtle.Util
+        Turtle.Prelude
     GHC-Options: -O2 -Wall
     Default-Language: Haskell2010
 
