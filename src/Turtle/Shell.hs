@@ -12,13 +12,18 @@
 module Turtle.Shell (
       Shell(..)
     , fold
+    , foldIO
     , runShell
+
+    -- * Re-exports
+    , Fold(..)
+    , FoldM(..)
     ) where
 
 import Control.Applicative (Applicative(..), Alternative(..), liftA2)
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Foldl (Fold)
+import Control.Foldl (Fold, FoldM)
 import qualified Control.Foldl as Foldl
 import Data.Monoid (Monoid(..))
 import Data.String (IsString(..))
@@ -28,7 +33,10 @@ newtype Shell a = Shell
     { foldM_ :: forall r x . (x -> a -> IO x) -> IO x -> (x -> IO r) -> IO r }
 
 fold :: Fold a b -> Shell a -> IO b
-fold f s = Foldl.impurely (foldM_ s) (Foldl.generalize f)
+fold f = foldIO (Foldl.generalize f)
+
+foldIO :: FoldM IO a b -> Shell a -> IO b
+foldIO f s = Foldl.impurely (foldM_ s) f
 
 runShell :: Shell a -> IO ()
 runShell = fold (pure ())

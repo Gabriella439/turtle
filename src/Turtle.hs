@@ -2,6 +2,7 @@ module Turtle (
     -- * Shell
       Shell
     , fold
+    , foldIO
     , runShell
 
     -- * Utilities
