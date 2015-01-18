@@ -1,6 +1,6 @@
-module Turtle.Resource (
-    -- * Resource
-      Resource(..)
+module Turtle.Protected (
+    -- * Protected
+      Protected(..)
     , with
 
     -- * Utilities
@@ -25,36 +25,37 @@ import Prelude hiding (FilePath)
 
 import Turtle.Shell
 
-data Resource a = Resource { acquire :: IO (a, IO ()) }
+-- | A `Protected` resource of type @a@
+data Protected a = Protected { acquire :: IO (a, IO ()) }
 
-instance Functor Resource where
-    fmap f r = Resource (do
+instance Functor Protected where
+    fmap f r = Protected (do
         (a, release) <- acquire r
         return (f a, release) )
 
-instance Applicative Resource where
+instance Applicative Protected where
     pure = return
 
     (<*>) = ap
 
-instance Monad Resource where
-    return a = Resource (return (a, return ()))
+instance Monad Protected where
+    return a = Protected (return (a, return ()))
 
-    m >>= f = Resource (do
+    m >>= f = Protected (do
         (a, release1) <- acquire m
         (b, release2) <- acquire (f a) `onException` release1
         return (b, release2 >> release1) )
 
-instance MonadIO Resource where
-    liftIO io = Resource (do
+instance MonadIO Protected where
+    liftIO io = Protected (do
         a <- io
         return (a, return ()) )
 
-instance Monoid a => Monoid (Resource a) where
+instance Monoid a => Monoid (Protected a) where
     mempty  = pure mempty
     mappend = liftA2 mappend
 
-instance Num a => Num (Resource a) where
+instance Num a => Num (Protected a) where
     fromInteger n = pure (fromInteger n)
 
     (+) = liftA2 (+)
@@ -65,14 +66,14 @@ instance Num a => Num (Resource a) where
     signum = fmap signum
     negate = fmap negate
 
-instance Fractional a => Fractional (Resource a) where
+instance Fractional a => Fractional (Protected a) where
     fromRational n = pure (fromRational n)
 
     recip = fmap recip
 
     (/) = liftA2 (/)
 
-instance Floating a => Floating (Resource a) where
+instance Floating a => Floating (Protected a) where
     pi = pure pi
 
     exp   = fmap exp
@@ -94,24 +95,24 @@ instance Floating a => Floating (Resource a) where
     (**)    = liftA2 (**)
     logBase = liftA2 logBase
 
-instance IsString a => IsString (Resource a) where
+instance IsString a => IsString (Protected a) where
     fromString str = pure (fromString str)
 
--- | Acquire a `Resource` within a `Shell`
-with :: Resource a -> Shell a
+-- | Acquire a `Protected` resource within a `Shell`
+with :: Protected a -> Shell a
 with resource = Shell (\(FoldM step begin done) -> do
     x <- begin
     x' <- bracket (acquire resource) snd (\(a, _) -> step x a)
     done x' )
 
--- | Acquire a read-only `Handle` from a `FilePath`
-readHandle :: FilePath -> Resource Handle
-readHandle file = Resource (do
+-- | Acquire a `Protected` read-only `Handle` from a `FilePath`
+readHandle :: FilePath -> Protected Handle
+readHandle file = Protected (do
     handle <- Filesystem.openFile file ReadMode
     return (handle, hClose handle) )
 
--- | Acquire a write-only `Handle` from a `FilePath`
-writeHandle :: FilePath -> Resource Handle
-writeHandle file = Resource (do
+-- | Acquire a `Protected` write-only `Handle` from a `FilePath`
+writeHandle :: FilePath -> Protected Handle
+writeHandle file = Protected (do
     handle <- Filesystem.openFile file WriteMode
     return (handle, hClose handle) )

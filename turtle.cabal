@@ -37,7 +37,7 @@ Library
     Exposed-Modules:
         Turtle,
         Turtle.Pattern,
-        Turtle.Resource,
+        Turtle.Protected,
         Turtle.Shell,
         Turtle.Util
     GHC-Options: -O2 -Wall

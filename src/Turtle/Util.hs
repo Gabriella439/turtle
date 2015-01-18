@@ -11,7 +11,7 @@ import qualified System.IO as IO
 import Prelude hiding (FilePath)
 
 import Turtle.Pattern (Pattern, anyChar, match, selfless, plus, star)
-import Turtle.Resource
+import Turtle.Protected
 import Turtle.Shell
 
 -- | Convert a list to `Shell` that emits each element of the list
