@@ -118,7 +118,7 @@ module Turtle.Prelude (
     ) where
 
 import Control.Applicative (Alternative(..))
-import Control.Concurrent.Async (Async, async, cancel, wait, withAsync)
+import Control.Concurrent.Async (Async, async, cancel, withAsync)
 import Control.Exception (bracket)
 import Control.Foldl (FoldM(..))
 import Control.Monad (msum)
@@ -171,9 +171,7 @@ system cmd s = do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    withAsync feedIn (\a -> do
-        liftIO (wait a)
-        liftIO (Process.waitForProcess ph) )
+    withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) )
 
 {-| Stream a system command's @stdout@ as lines of `Text`
 
@@ -196,8 +194,8 @@ stream cmd s = do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    a <- with (fork feedIn)
-    handlein hOut <|> (liftIO (wait a) >> empty)
+    _ <- with (fork feedIn)
+    handlein hOut
 
 -- | Change the current directory
 cd :: FilePath -> IO ()
