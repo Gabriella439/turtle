@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
@@ -87,7 +88,10 @@ module Turtle.Prelude (
     , testdir
     , date
     , dateFile
+#ifdef mingw32_HOST_OS
+#else
     , touch
+#endif
 
     -- * Protected
     , mktemp
@@ -236,7 +240,7 @@ ls path = Shell (\(FoldM step begin done) -> do
         then bracket
             (Win32.findFirstFile (Filesystem.encodeString (path </> "*")))
             (\(h, _) -> Win32.findClose h)
-            (\(h, fdat) -> 
+            (\(h, fdat) -> do
                 let loop x = do
                         file' <- Win32.getFindDataFileName fdat
                         let file = Filesystem.decodeString file'
@@ -393,7 +397,7 @@ yes :: Shell Text
 yes = Shell (\(FoldM step begin _) -> do
     x0 <- begin
     let loop x = do
-            x' <- step x (Text.pack "y")
+            x' <- step x "y"
             loop $! x'
     loop $! x0 )
 
