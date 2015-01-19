@@ -46,6 +46,7 @@ module Turtle.Prelude (
     , testdir
     , date
     , dateFile
+    , touch
 
     -- * Protected
     , mktemp
@@ -96,7 +97,7 @@ import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
 import qualified System.Win32 as Win32
 #else
-import System.Posix (openDirStream, readDirStream, closeDirStream)
+import System.Posix (openDirStream, readDirStream, closeDirStream, touchFile)
 #endif
 import Prelude hiding (FilePath)
 
@@ -267,6 +268,16 @@ testfile = Filesystem.isFile
 -- | Check if a directory exists
 testdir :: FilePath -> IO Bool
 testdir = Filesystem.isDirectory
+
+#ifdef mingw32_HOST_OS
+#else
+{-| Touch a file, updating the access and modification times to the current time
+
+    Creates the file if it does not exist
+-}
+touch :: FilePath -> IO ()
+touch file = touchFile (Filesystem.encodeString file)
+#endif
 
 {-| Create a temporary directory underneath the given directory
 
