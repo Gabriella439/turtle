@@ -48,6 +48,11 @@ module Turtle (
     , module Control.Applicative
     , module Control.Monad
     , module Control.Monad.IO.Class
+    , Text
+    , FilePath
+    , UTCTime
+    , Fold(..)
+    , FoldM(..)
     ) where
 
 import Turtle.Pattern
@@ -57,3 +62,9 @@ import Turtle.Prelude
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
+
+import Control.Foldl (Fold(..), FoldM(..))
+import Data.Text (Text)
+import Data.Time (UTCTime)
+import Filesystem.Path (FilePath)
+import Prelude hiding (FilePath)

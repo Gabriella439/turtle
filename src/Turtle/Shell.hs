@@ -64,10 +64,6 @@ module Turtle.Shell (
     , select
     , liftIO
     , with
-
-    -- * Re-exports
-    , Fold(..)
-    , FoldM(..)
     ) where
 
 import Control.Applicative (Applicative(..), Alternative(..), liftA2)

@@ -84,9 +84,6 @@ module Turtle.Pattern (
     , fixed
     , sepBy
     , sepBy1
-
-    -- * Re-exports
-    , Text
     ) where
 
 import Control.Applicative

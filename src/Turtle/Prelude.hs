@@ -32,6 +32,7 @@ module Turtle.Prelude (
     , grep
     , sed
     , yes
+    , date
 
     -- * Input and output
     , stdIn
@@ -46,19 +47,18 @@ module Turtle.Prelude (
     , readHandle
     , writeHandle
     , fork
-
-    -- * Re-exports
-    , FilePath
     ) where
 
 import Control.Applicative (Alternative(..))
 import Control.Concurrent.Async (Async, async, cancel, wait, withAsync)
 import Control.Exception (bracket)
+import Control.Foldl (FoldM(..))
 import Control.Monad (guard, msum)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
 import Data.Text (Text)
+import Data.Time (UTCTime, getCurrentTime)
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 import qualified Filesystem
@@ -274,6 +274,10 @@ yes = Shell (\(FoldM step begin _) -> do
             x' <- step x (Text.pack "y")
             loop $! x'
     loop $! x0 )
+
+-- | Get the current time
+date :: IO UTCTime
+date = getCurrentTime
 
 -- | Read lines of `Text` from standard input
 stdIn :: Shell Text
