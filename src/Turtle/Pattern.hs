@@ -19,7 +19,7 @@
 
 >>> prefix (plus anyChar) "123"
 ["123","12","1"]
->>> prefix (plus anyChar <* eof) "123"
+>>> match (plus anyChar) "123"
 ["123"]
 
     Use @do@ notation to structure more complex patterns:
@@ -428,9 +428,9 @@ octDigit = satisfy isOctDigit
 
 {-| Match an unsigned decimal number
 
->>> prefix (decimal <* eof) "123"
+>>> match decimal "123"
 [123]
->>> prefix (decimal <* eof) "-123"
+>>> match decimal "-123"
 []
 -}
 decimal :: Num n => Pattern n
@@ -442,11 +442,11 @@ decimal = do
 
 {-| Parse a number with an optional leading @\'+\'@ or @\'-\'@ sign
 
->>> prefix (signed decimal <* eof) "+123"
+>>> match (signed decimal) "+123"
 [123]
->>> prefix (signed decimal <* eof) "-123"
+>>> match (signed decimal) "-123"
 [-123]
->>> prefix (signed decimal <* eof)  "123"
+>>> match (signed decimal)  "123"
 [123]
 -}
 signed :: Num a => Pattern a -> Pattern a
@@ -458,7 +458,7 @@ signed p = do
 
 >>> prefix (star anyChar) "123"
 ["123","12","1",""]
->>> prefix (star anyChar <* eof) "123"
+>>> match  (star anyChar) "123"
 ["123"]
 >>> prefix (star anyChar) ""
 [""]
@@ -484,7 +484,7 @@ selfless p = Pattern (StateT (\s -> reverse (runStateT (runPattern p) s)))
 
 >>> prefix (plus anyChar) "123"
 ["123","12","1"]
->>> prefix (plus anyChar <* eof) "123"
+>>> match  (plus anyChar) "123"
 ["123"]
 >>> prefix (plus anyChar) ""
 []
@@ -566,7 +566,7 @@ fixed n p = within n (p <* eof)
 
 >>> prefix (decimal `sepBy` char ',') "1,2,3"
 [[1,2,3],[1,2],[1],[]]
->>> prefix (decimal `sepBy` char ',' <* eof) "1,2,3"
+>>> match  (decimal `sepBy` char ',') "1,2,3"
 [[1,2,3]]
 >>> prefix (decimal `sepBy` char ',') ""
 [[]]
@@ -578,7 +578,7 @@ p `sepBy` sep = (p `sepBy1` sep) <|> pure []
 
 >>> prefix (decimal `sepBy1` char ',') "1,2,3"
 [[1,2,3],[1,2],[1]]
->>> prefix (decimal `sepBy1` char ',' <* eof) "1,2,3"
+>>> match  (decimal `sepBy1` char ',') "1,2,3"
 [[1,2,3]]
 >>> prefix (decimal `sepBy1` char ',') ""
 []
