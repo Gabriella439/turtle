@@ -58,6 +58,7 @@
 module Turtle.Shell (
       Shell(..)
     , feed
+    , shell
     , sh
 
     -- * Embeddings
@@ -85,8 +86,14 @@ feed :: Shell a -> Fold a b -> IO b
 feed s f = feedIO s (Foldl.generalize f)
 
 -- | Run a `Shell` to completion, discarding any unused values
-sh :: Shell a -> IO ()
-sh s = feed s (pure ())
+shell :: Shell a -> IO ()
+shell s = feed s (pure ())
+
+-- | Run a `Shell` to completion, `print`ing any unused values
+sh :: Show a => Shell a -> IO ()
+sh s = shell (do
+    x <- s
+    liftIO (print x) )
 
 instance Functor Shell where
     fmap f s = Shell (\(FoldM step begin done) ->
