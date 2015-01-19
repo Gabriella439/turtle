@@ -26,10 +26,11 @@
 module Turtle.Protected (
     -- * Protected
       Protected(..)
+    , using
     ) where
 
 import Control.Applicative (Applicative(..), liftA2)
-import Control.Exception (onException)
+import Control.Exception (bracket, onException)
 import Control.Monad (ap)
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Monoid (Monoid(..))
@@ -108,3 +109,7 @@ instance Floating a => Floating (Protected a) where
 
 instance IsString a => IsString (Protected a) where
     fromString str = pure (fromString str)
+
+-- | Acquire a `Protected` resource using `bracket`
+using :: Protected a -> (a -> IO r) -> IO r
+using p k = bracket (acquire p) (\(_, release) -> release) (\(a, _) -> k a)
