@@ -163,12 +163,12 @@ ls path = Shell (\(FoldM step begin done) -> do
             (\(h, _) -> Win32.findClose h)
             (\(h, fdat) -> 
                 let loop x = do
-                        file' <- liftIO (Win32.getFindDataFileName fdat)
+                        file' <- Win32.getFindDataFileName fdat
                         let file = Filesystem.decodeString file'
                         x' <- if (file' /= "." && file' /= "..")
                             then step x (path </> file)
                             else return x
-                        more <- liftIO (Win32.findNextFile h fdat)
+                        more <- Win32.findNextFile h fdat
                         if more then loop $! x' else done x'
                 loop $! x0 )
         else done x0 )
@@ -285,15 +285,6 @@ handleIn handle = Shell (\(FoldM step begin done) -> do
                     x'  <- step x txt
                     loop $! x'
     loop $! x0 )
-{-
-handleIn handle = do
-    eof <- liftIO (IO.hIsEOF handle)
-    if eof
-        then empty
-        else do
-            txt <- liftIO (Text.hGetLine handle)
-            return txt <|> handleIn handle
--}
 
 -- | Tee lines of `Text` to standard output
 stdOut :: Shell Text -> Shell Text
