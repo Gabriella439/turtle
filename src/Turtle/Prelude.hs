@@ -1,21 +1,39 @@
 {-# LANGUAGE CPP #-}
 
-{-| These are derived utilities built on the primitives exposed by other
-    modules
+{-| This module provides a large suite of utilities that resemble Unix
+    utilities.  With the exception of `system` and `stream`, none of these
+    invoke an external shell process.
+
+    Example use of these utilities:
+
+>>> :set -XOverloadedStrings
+>>> import qualified Control.Foldl as Fold
+>>> cd "/usr"
+>>> pwd
+FilePath "/usr"
+>>> feed (ls "lib") list
+[FilePath "./lib",FilePath "./src",FilePath "./sbin",FilePath "./include",
+FilePath "./share",FilePath "./games",FilePath "./local",FilePath "./bin"]
+>>> sh (do { path <- find "Browser.py" "lib"; liftIO (print path) })
+FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
+FilePath "lib/python3.2/idlelib/PathBrowser.py"
+FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
+FilePath "lib/python3.2/idlelib/ClassBrowser.py"
+>>> feed (lsTree "lib") Fold.length
+33354
+>>> cd "/tmp"
+>>> mkdir "foo"
+>>> cd "foo"
+
 -}
 
 module Turtle.Prelude (
-    -- * Shell
+    -- * IO
       system
-    , stream
-
-    -- * Filesystem
     , cd
     , pwd
     , home
     , realpath
-    , ls
-    , lsTree
     , mv
     , mkdir
     , mktree
@@ -26,16 +44,25 @@ module Turtle.Prelude (
     , du
     , testfile
     , testdir
-    , mktemp
-    , mktempdir
-    , cat
-    , grep
-    , sed
-    , yes
     , date
     , dateFile
 
-    -- * Input and output
+    -- * Protected
+    , mktemp
+    , mktempdir
+    , readHandle
+    , writeHandle
+    , fork
+
+    -- * Shell
+    , stream
+    , ls
+    , lsTree
+    , cat
+    , grep
+    , sed
+    , find
+    , yes
     , stdIn
     , fileIn
     , handleIn
@@ -43,18 +70,13 @@ module Turtle.Prelude (
     , fileOut
     , handleOut
     , fileAppend
-
-    -- * Resources
-    , readHandle
-    , writeHandle
-    , fork
     ) where
 
 import Control.Applicative (Alternative(..))
 import Control.Concurrent.Async (Async, async, cancel, wait, withAsync)
 import Control.Exception (bracket)
 import Control.Foldl (FoldM(..))
-import Control.Monad (guard, msum)
+import Control.Monad (msum)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
@@ -78,7 +100,7 @@ import System.Posix (openDirStream, readDirStream, closeDirStream)
 #endif
 import Prelude hiding (FilePath)
 
-import Turtle.Pattern (Pattern, anyChar, match, selfless, plus, star)
+import Turtle.Pattern (Pattern, anyChar, inside, match, selfless, plus)
 import Turtle.Protected
 import Turtle.Shell
 
@@ -288,10 +310,7 @@ cat = msum
 grep :: Pattern a -> Shell Text -> Shell Text
 grep pattern s = do
     txt <- s
-    let pattern' = do
-            _ <- star anyChar
-            pattern
-    guard (not (null (match pattern' txt)))
+    _:_ <- return (inside pattern txt)
     return txt
 
 -- | Replace all occurrences of a `Pattern` with its `Text` result
@@ -301,6 +320,14 @@ sed pattern s = do
     txt    <- s
     txt':_ <- return (match pattern' txt)
     return txt'
+
+-- | Search a directory recursively for all files matching the given `Pattern`
+find :: Pattern a -> FilePath -> Shell FilePath
+find pattern dir = do
+    path <- lsTree dir
+    Right txt <- return (Filesystem.toText path)
+    _:_       <- return (inside pattern txt)
+    return path
 
 -- | A Stream of @\"y\"@s
 yes :: Shell Text

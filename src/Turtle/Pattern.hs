@@ -7,19 +7,19 @@
     Example usage:
 
 >>> :set -XOverloadedStrings
->>> match ("dog" <|> "cat") "cat"
+>>> prefix ("dog" <|> "cat") "cat"
 ["cat"]
->>> match (plus (notChar ',') <* char ',') "cat,dog"
+>>> prefix (plus (notChar ',') <* char ',') "cat,dog"
 ["cat"]
->>> match (count 3 anyChar) "cat,dog"
+>>> prefix (count 3 anyChar) "cat,dog"
 ["cat"]
 
     This pattern has unlimited backtracking, and will return as many solutions
     as possible:
 
->>> match (plus anyChar) "123"
+>>> prefix (plus anyChar) "123"
 ["123","12","1"]
->>> match (plus anyChar <* eof) "123"
+>>> prefix (plus anyChar <* eof) "123"
 ["123"]
 
     Use @do@ notation to structure more complex patterns:
@@ -32,7 +32,7 @@ let bit = (char '0' *> pure False) <|> (char '1' *> pure True);
         ; height <- spaces1 *> decimal
         ; count width (count height (spaces1 *> bit))
         };
-in  match portableBitMap "P1\n2 2\n0 0\n1 0\n"
+in  prefix portableBitMap "P1\n2 2\n0 0\n1 0\n"
 :}
 [[[False,False],[True,False]]]
 
@@ -42,6 +42,9 @@ module Turtle.Pattern (
     -- * Pattern
       Pattern
     , match
+    , prefix
+    , inside
+    , suffix
 
     -- * Primitive patterns
     , anyChar
@@ -147,15 +150,39 @@ instance Floating a => Floating (Pattern a) where
 instance (a ~ Text) => IsString (Pattern a) where
     fromString str = text (Text.pack str)
 
--- | Supply a `Pattern` with a `Text` input, returning all possible matches
+{-| Match a `Pattern` against a `Text` input, returning all possible matches
+
+    The `Pattern` must match the entire `Text`
+-}
 match :: Pattern a -> Text -> [a]
-match p = evalStateT (runPattern p)
+match p = prefix (p <* eof)
+
+{-| Match a `Pattern` against a `Text` input, returning all possible matches
+
+    The `Pattern` must match some prefix of the `Text`
+-}
+prefix :: Pattern a -> Text -> [a]
+prefix p = evalStateT (runPattern p)
+
+{-| Match a `Pattern` against a `Text` input, returning all possible matches
+
+    The `Pattern` must match some suffix of the `Text`
+-}
+suffix :: Pattern a -> Text -> [a]
+suffix p = inside (p <* eof)
+
+{-| Match a `Pattern` against a `Text` input, returning all possible matches
+
+    The `Pattern` can match any subset of the `Text`
+-}
+inside :: Pattern a -> Text -> [a]
+inside p = prefix (selfless (star anyChar) *> p)
 
 {-| Match any character
 
->>> match anyChar "123"
+>>> prefix anyChar "123"
 "1"
->>> match anyChar ""
+>>> prefix anyChar ""
 ""
 
 -}
@@ -167,9 +194,9 @@ anyChar = Pattern (do
 
 {-| Matches the end of input
 
->>> match eof "123"
+>>> prefix eof "123"
 []
->>> match eof ""
+>>> prefix eof ""
 [()]
 
 -}
@@ -180,9 +207,9 @@ eof = Pattern (do
 
 {-| Match any character that satisfies the given predicate
 
->>> match (satisfy (== '1')) "123"
+>>> prefix (satisfy (== '1')) "123"
 "1"
->>> match (satisfy (== '2')) "123"
+>>> prefix (satisfy (== '2')) "123"
 ""
 
 -}
@@ -194,9 +221,9 @@ satisfy predicate = do
 
 {-| Match a specific character
 
->>> match (char '1') "123"
+>>> prefix (char '1') "123"
 "1"
->>> match (char '2') "123"
+>>> prefix (char '2') "123"
 ""
 
 -}
@@ -205,9 +232,9 @@ char c = satisfy (== c)
 
 {-| Match any character except the given one
 
->>> match (notChar '2') "123"
+>>> prefix (notChar '2') "123"
 "1"
->>> match (notChar '1') "123"
+>>> prefix (notChar '1') "123"
 ""
 
 -}
@@ -216,29 +243,29 @@ notChar c = satisfy (/= c)
 
 {-| Match a specific string
 
->>> match (text "12") "123"
+>>> prefix (text "12") "123"
 ["12"]
 
     You can also omit the `text` function if you enable the @OverloadedStrings@
     extension:
 
->>> match "12" "123"
+>>> prefix "12" "123"
 ["12"]
 
 -}
 text :: Text -> Pattern Text
-text prefix' = Pattern (do
+text before' = Pattern (do
     txt <- get
-    let (prefix, suffix) = Text.splitAt (Text.length prefix') txt
-    guard (prefix == prefix')
-    put suffix
-    return prefix )
+    let (before, after) = Text.splitAt (Text.length before') txt
+    guard (before == after)
+    put after
+    return before)
 
 {-| Match any one of the given characters
 
->>> match (oneOf "1a") "123"
+>>> prefix (oneOf "1a") "123"
 "1"
->>> match (oneOf "2a") "123"
+>>> prefix (oneOf "2a") "123"
 ""
 
 -}
@@ -247,9 +274,9 @@ oneOf cs = satisfy (`elem` cs)
 
 {-| Match anything other than the given characters
 
->>> match (noneOf "2a") "123"
+>>> prefix (noneOf "2a") "123"
 "1"
->>> match (noneOf "1a") "123"
+>>> prefix (noneOf "1a") "123"
 ""
 
 -}
@@ -258,9 +285,9 @@ noneOf cs = satisfy (`notElem` cs)
 
 {-| Match a whitespace character
 
->>> match space " a"
+>>> prefix space " a"
 " "
->>> match space "a "
+>>> prefix space "a "
 ""
 
 -}
@@ -269,9 +296,9 @@ space = satisfy isSpace
 
 {-| Match zero or more whitespace characters
 
->>> match spaces "  "
+>>> prefix spaces "  "
 ["  "," ",""]
->>> match spaces "a "
+>>> prefix spaces "a "
 [""]
 
 -}
@@ -280,9 +307,9 @@ spaces = star space
 
 {-| Match one or more whitespace characters
 
->>> match spaces1 "  "
+>>> prefix spaces1 "  "
 ["  "," "]
->>> match spaces1 "a "
+>>> prefix spaces1 "a "
 []
 
 -}
@@ -291,9 +318,9 @@ spaces1 = plus space
 
 {-| Match the tab character (@\'\t\'@)
 
->>> match tab "\t"
+>>> prefix tab "\t"
 "\t"
->>> match tab " "
+>>> prefix tab " "
 ""
 -}
 tab :: Pattern Char
@@ -301,9 +328,9 @@ tab = char '\t'
 
 {-| Match the newline character (@\'\n\'@)
 
->>> match newline "\n"
+>>> prefix newline "\n"
 "\n"
->>> match newline " "
+>>> prefix newline " "
 ""
 -}
 newline :: Pattern Char
@@ -311,9 +338,9 @@ newline = char '\n'
 
 {-| Matches a carriage return (@\'\r\'@) followed by a newline (@\'\n\'@)
 
->>> match crlf "\r\n"
+>>> prefix crlf "\r\n"
 ["\r\n"]
->>> match crlf "\n\r"
+>>> prefix crlf "\n\r"
 []
 -}
 crlf :: Pattern Text
@@ -321,9 +348,9 @@ crlf = text "\r\n"
 
 {-| Match an uppercase letter
 
->>> match upper "ABC"
+>>> prefix upper "ABC"
 "A"
->>> match upper "abc"
+>>> prefix upper "abc"
 ""
 -}
 upper :: Pattern Char
@@ -331,9 +358,9 @@ upper = satisfy isUpper
 
 {-| Match a lowercase letter
 
->>> match lower "abc"
+>>> prefix lower "abc"
 "a"
->>> match lower "ABC"
+>>> prefix lower "ABC"
 ""
 -}
 lower :: Pattern Char
@@ -341,13 +368,13 @@ lower = satisfy isLower
 
 {-| Match a letter or digit
 
->>> match alphaNum "123"
+>>> prefix alphaNum "123"
 "1"
->>> match alphaNum "abc"
+>>> prefix alphaNum "abc"
 "a"
->>> match alphaNum "ABC"
+>>> prefix alphaNum "ABC"
 "A"
->>> match alphaNum "..."
+>>> prefix alphaNum "..."
 ""
 -}
 alphaNum :: Pattern Char
@@ -355,11 +382,11 @@ alphaNum = satisfy isAlphaNum
 
 {-| Match a letter
 
->>> match letter "ABC"
+>>> prefix letter "ABC"
 "A"
->>> match letter "abc"
+>>> prefix letter "abc"
 "a"
->>> match letter "123"
+>>> prefix letter "123"
 ""
 -}
 letter :: Pattern Char
@@ -367,9 +394,9 @@ letter = satisfy isLetter
 
 {-| Match a digit
 
->>> match digit "123"
+>>> prefix digit "123"
 "1"
->>> match digit "abc"
+>>> prefix digit "abc"
 ""
 -}
 digit :: Pattern Char
@@ -377,13 +404,13 @@ digit = satisfy isDigit
 
 {-| Match a hexadecimal digit
 
->>> match hexDigit "123"
+>>> prefix hexDigit "123"
 "1"
->>> match hexDigit "ABC"
+>>> prefix hexDigit "ABC"
 "A"
->>> match hexDigit "abc"
+>>> prefix hexDigit "abc"
 "a"
->>> match hexDigit "ghi"
+>>> prefix hexDigit "ghi"
 ""
 -}
 hexDigit :: Pattern Char
@@ -391,9 +418,9 @@ hexDigit = satisfy isHexDigit
 
 {-| Match an octal digit
 
->>> match octDigit "123"
+>>> prefix octDigit "123"
 "1"
->>> match octDigit "9"
+>>> prefix octDigit "9"
 ""
 -}
 octDigit :: Pattern Char
@@ -401,9 +428,9 @@ octDigit = satisfy isOctDigit
 
 {-| Match an unsigned decimal number
 
->>> match (decimal <* eof) "123"
+>>> prefix (decimal <* eof) "123"
 [123]
->>> match (decimal <* eof) "-123"
+>>> prefix (decimal <* eof) "-123"
 []
 -}
 decimal :: Num n => Pattern n
@@ -415,11 +442,11 @@ decimal = do
 
 {-| Parse a number with an optional leading @\'+\'@ or @\'-\'@ sign
 
->>> match (signed decimal <* eof) "+123"
+>>> prefix (signed decimal <* eof) "+123"
 [123]
->>> match (signed decimal <* eof) "-123"
+>>> prefix (signed decimal <* eof) "-123"
 [-123]
->>> match (signed decimal <* eof)  "123"
+>>> prefix (signed decimal <* eof)  "123"
 [123]
 -}
 signed :: Num a => Pattern a -> Pattern a
@@ -429,11 +456,11 @@ signed p = do
 
 {-| Pattern 0 or more occurrecnes of the given character
 
->>> match (star anyChar) "123"
+>>> prefix (star anyChar) "123"
 ["123","12","1",""]
->>> match (star anyChar <* eof) "123"
+>>> prefix (star anyChar <* eof) "123"
 ["123"]
->>> match (star anyChar) ""
+>>> prefix (star anyChar) ""
 [""]
 -}
 star :: Pattern Char -> Pattern Text
@@ -443,11 +470,11 @@ star p = fmap Text.pack (many p)
     try to match as many times as possible.  The `selfless` combinator makes a
     pattern match as few times as possible
 
->>> match (selfless (star anyChar) *> char '1') "123"
+>>> prefix (selfless (star anyChar) *> char '1') "123"
 "1"
->>> match (selfless (star anyChar)) "123"
+>>> prefix (selfless (star anyChar)) "123"
 ["","1","12","123"]
->>> match (selfless (star anyChar <* eof)) "123"
+>>> prefix (selfless (star anyChar <* eof)) "123"
 ["123"]
 -}
 selfless :: Pattern a -> Pattern a
@@ -455,11 +482,11 @@ selfless p = Pattern (StateT (\s -> reverse (runStateT (runPattern p) s)))
 
 {-| Parse 1 or more occurrences of the given character
 
->>> match (plus anyChar) "123"
+>>> prefix (plus anyChar) "123"
 ["123","12","1"]
->>> match (plus anyChar <* eof) "123"
+>>> prefix (plus anyChar <* eof) "123"
 ["123"]
->>> match (plus anyChar) ""
+>>> prefix (plus anyChar) ""
 []
 -}
 plus :: Pattern Char -> Pattern Text
@@ -467,11 +494,11 @@ plus p = fmap Text.pack (some p)
 
 {-| Apply the patterns in the list in order, until one of them succeeds
 
->>> match (choice [text "cat", text "dog", text "egg"]) "egg"
+>>> prefix (choice [text "cat", text "dog", text "egg"]) "egg"
 ["egg"]
->>> match (choice [text "cat", text "dog", text "egg"]) "cat"
+>>> prefix (choice [text "cat", text "dog", text "egg"]) "cat"
 ["cat"]
->>> match (choice [text "cat", text "dog", text "egg"]) "fan"
+>>> prefix (choice [text "cat", text "dog", text "egg"]) "fan"
 []
 -}
 choice :: [Pattern a] -> Pattern a
@@ -479,9 +506,9 @@ choice = msum
 
 {-| Apply the given pattern a fixed number of times, collecting the results
 
->>> match (count 2 anyChar) "123"
+>>> prefix (count 2 anyChar) "123"
 ["12"]
->>> match (count 4 anyChar) "123"
+>>> prefix (count 4 anyChar) "123"
 []
 -}
 count :: Int -> Pattern a -> Pattern [a]
@@ -489,11 +516,11 @@ count = replicateM
 
 {-| @between open close p@ matches @p@ in between @open@ and @close@
 
->>> match (between (char '(') (char ')') (star anyChar)) "(123)"
+>>> prefix (between (char '(') (char ')') (star anyChar)) "(123)"
 ["123"]
->>> match (between (char '(') (char ')') (star anyChar)) "(123))"
+>>> prefix (between (char '(') (char ')') (star anyChar)) "(123))"
 ["123)","123"]
->>> match (between (char '(') (char ')') (star anyChar)) "(123"
+>>> prefix (between (char '(') (char ')') (star anyChar)) "(123"
 []
 -}
 between :: Pattern a -> Pattern b -> Pattern c -> Pattern c
@@ -501,9 +528,9 @@ between open close p = open *> p <* close
 
 {-| Discard the pattern's result
 
->>> match (skip anyChar) "123"
+>>> prefix (skip anyChar) "123"
 [()]
->>> match (skip anyChar) ""
+>>> prefix (skip anyChar) ""
 []
 -}
 skip :: Pattern a -> Pattern ()
@@ -511,25 +538,25 @@ skip = void
 
 {-| Restrict the pattern to consume no more than the given number of characters
 
->>> match (within 2 decimal) "123"
+>>> prefix (within 2 decimal) "123"
 [12,1]
->>> match (within 2 decimal) "1a3"
+>>> prefix (within 2 decimal) "1a3"
 [1]
 -}
 within :: Int -> Pattern a -> Pattern a
 within n p = Pattern (do
     txt <- get
-    let (prefix, suffix) = Text.splitAt n txt
-    put prefix
+    let (before, after) = Text.splitAt n txt
+    put before
     a <- runPattern p
-    modify (<> suffix)
+    modify (<> after)
     return a )
 
 {-| Require the pattern to consume exactly the given number of characters
 
->>> match (fixed 2 decimal) "123"
+>>> prefix (fixed 2 decimal) "123"
 [12]
->>> match (fixed 2 decimal) "1a3"
+>>> prefix (fixed 2 decimal) "1a3"
 []
 -}
 fixed :: Int -> Pattern a -> Pattern a
@@ -537,11 +564,11 @@ fixed n p = within n (p <* eof)
 
 {-| @p `sepBy` sep@ matches zero or more occurrences of @p@ separated by @sep@
 
->>> match (decimal `sepBy` char ',') "1,2,3"
+>>> prefix (decimal `sepBy` char ',') "1,2,3"
 [[1,2,3],[1,2],[1],[]]
->>> match (decimal `sepBy` char ',' <* eof) "1,2,3"
+>>> prefix (decimal `sepBy` char ',' <* eof) "1,2,3"
 [[1,2,3]]
->>> match (decimal `sepBy` char ',') ""
+>>> prefix (decimal `sepBy` char ',') ""
 [[]]
 -}
 sepBy :: Pattern a -> Pattern b -> Pattern [a]
@@ -549,11 +576,11 @@ p `sepBy` sep = (p `sepBy1` sep) <|> pure []
 
 {-| @p `sepBy1` sep@ matches one or more occurrences of @p@ separated by @sep@
 
->>> match (decimal `sepBy1` char ',') "1,2,3"
+>>> prefix (decimal `sepBy1` char ',') "1,2,3"
 [[1,2,3],[1,2],[1]]
->>> match (decimal `sepBy1` char ',' <* eof) "1,2,3"
+>>> prefix (decimal `sepBy1` char ',' <* eof) "1,2,3"
 [[1,2,3]]
->>> match (decimal `sepBy1` char ',') ""
+>>> prefix (decimal `sepBy1` char ',') ""
 []
 -}
 sepBy1 :: Pattern a -> Pattern b -> Pattern [a]
