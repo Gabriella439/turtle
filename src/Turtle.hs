@@ -38,7 +38,7 @@
 --
 --  "Filesystem.Path.CurrentOS" provides `FilePath`-manipulation utilities
 --
---  "Control.Foldl" provides the `Fold` \/ `FoldM` types and `list`
+--  "Control.Foldl" provides the `Fold` \/ `FoldM` types
 --
 --  Additionally, you might also want to import the following modules qualified:
 --
@@ -115,11 +115,12 @@ import Filesystem.Path.CurrentOS
     , (<.>)
     , dropExtension
     , splitExtension
+    , toText
+    , fromText
     )
 import Control.Foldl
     ( Fold(..)
     , FoldM(..)
-    , list
     )
 import Data.Text (Text)
 import Data.Time (UTCTime)
