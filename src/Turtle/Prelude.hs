@@ -24,6 +24,8 @@ module Turtle.Prelude (
     , rmdir
     , rmtree
     , du
+    , testFile
+    , testDir
 
     -- * Utilities
     , cat
@@ -38,6 +40,7 @@ module Turtle.Prelude (
     , stdOut
     , fileOut
     , handleOut
+    , fileAppend
 
     -- * Resources
     , readHandle
@@ -196,7 +199,7 @@ ls path = Shell (\(FoldM step begin done) -> do
 lsTree :: FilePath -> Shell FilePath
 lsTree path = do
     child <- ls path
-    isDir <- liftIO (Filesystem.isDirectory child)
+    isDir <- liftIO (testDir child)
     if isDir
         then return child <|> lsTree child
         else return child
@@ -232,6 +235,14 @@ rmtree = Filesystem.removeTree
 -- | Get a file or directory's size
 du :: FilePath -> IO Integer
 du = Filesystem.getSize
+
+-- | Check if a file exists
+testFile :: FilePath -> IO Bool
+testFile = Filesystem.isFile
+
+-- | Check if a directory exists
+testDir :: FilePath -> IO Bool
+testDir = Filesystem.isDirectory
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
@@ -305,6 +316,12 @@ handleOut handle s = do
     liftIO (Text.hPutStrLn handle txt)
     return txt
 
+-- | Tee lines of `Text` to append to a file
+fileAppend :: FilePath -> Shell Text -> Shell Text
+fileAppend file s = do
+    handle <- with (appendHandle file)
+    handleOut handle s
+
 -- | Acquire a `Protected` read-only `Handle` from a `FilePath`
 readHandle :: FilePath -> Protected Handle
 readHandle file = Protect (do
@@ -315,6 +332,12 @@ readHandle file = Protect (do
 writeHandle :: FilePath -> Protected Handle
 writeHandle file = Protect (do
     handle <- Filesystem.openFile file IO.WriteMode
+    return (handle, IO.hClose handle) )
+
+-- | Acquire a `Protected` append-only `Handle` from a `FilePath`
+appendHandle :: FilePath -> Protected Handle
+appendHandle file = Protect (do
+    handle <- Filesystem.openFile file IO.AppendMode
     return (handle, IO.hClose handle) )
 
 -- | Fork a thread, acquiring an `Async` value
