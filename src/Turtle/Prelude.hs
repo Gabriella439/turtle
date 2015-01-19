@@ -29,6 +29,7 @@ module Turtle.Prelude (
     , cat
     , grep
     , sed
+    , yes
 
     -- * Input and output
     , stdIn
@@ -49,6 +50,7 @@ module Turtle.Prelude (
 
 import Control.Applicative (Alternative(..))
 import Control.Concurrent.Async (Async, async, cancel, wait, withAsync)
+import Control.Exception (bracket)
 import Control.Monad (guard, msum)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
@@ -149,46 +151,42 @@ reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
 #endif
 
 ls :: FilePath -> Shell FilePath
-ls path = do
+ls path = Shell (\(FoldM step begin done) -> do
+    x0 <- begin
     let path' = Filesystem.encodeString path
-    canRead <- liftIO (fmap readable (getPermissions path'))
+    canRead <- fmap readable (getPermissions path')
 #ifdef mingw32_HOST_OS
-    reparse <- liftIO (fmap reparsePoint (Win32.getFileAttributes path'))
-    guard (canRead && not reparse)
-
-    (h, fdat) <- with (Protect (do
-        (h, fdat) <- Win32.findFirstFile
-            (Filesystem.encodeString (path </> "*"))
-        return ((h, fdat), Win32.findClose h) ))
-
-    let loop = do
-            file' <- liftIO (Win32.getFindDataFileName fdat)
-            let file = Filesystem.decodeString file'
-            let continue = do
-                    more <- liftIO (Win32.findNextFile h fdat)
-                    guard more
-                    loop
-            if (file' /= "." && file' /= "..")
-                then return (path </> file) <|> continue
-                else continue
-    loop
+    reparse <- fmap reparsePoint (Win32.getFileAttributes path')
+    if (canRead && not reparse)
+        then bracket
+            (Win32.findFirstFile (Filesystem.encodeString (path </> "*")))
+            (\(h, _) -> Win32.findClose h)
+            (\(h, fdat) -> 
+                let loop x = do
+                        file' <- liftIO (Win32.getFindDataFileName fdat)
+                        let file = Filesystem.decodeString file'
+                        x' <- if (file' /= "." && file' /= "..")
+                            then step x (path </> file)
+                            else return x
+                        more <- liftIO (Win32.findNextFile h fdat)
+                        if more then loop $! x' else done x'
+                loop $! x0 )
+        else done x0 )
 #else
-    guard canRead
-
-    dirp <- with (Protect (do
-        dirp <- openDirStream path'
-        return (dirp, closeDirStream dirp) ))
-
-    let loop = do
-            file' <- liftIO (readDirStream dirp)
-            case file' of
-                "" -> empty
-                _  -> do
-                    let file = Filesystem.decodeString file'
-                    if (file' /= "." && file' /= "..")
-                        then return (path </> file) <|> loop
-                        else loop
-    loop
+    if canRead
+        then bracket (openDirStream path') closeDirStream (\dirp -> do
+            let loop x = do
+                    file' <- readDirStream dirp
+                    case file' of
+                        "" -> done x
+                        _  -> do
+                            let file = Filesystem.decodeString file'
+                            x' <- if (file' /= "." && file' /= "..")
+                                then step x (path </> file)
+                                else return x
+                            loop $! x'
+            loop $! x0 )
+        else done x0 )
 #endif
 
 lsTree :: FilePath -> Shell FilePath
@@ -256,6 +254,14 @@ sed pattern s = do
     txt':_ <- return (match pattern' txt)
     return txt'
 
+yes :: Shell Text
+yes = Shell (\(FoldM step begin _) -> do
+    x0 <- begin
+    let loop x = do
+            x' <- step x (Text.pack "y")
+            loop $! x'
+    loop $! x0 )
+
 -- | Read lines of `Text` from standard input
 stdIn :: Shell Text
 stdIn = handleIn IO.stdin
@@ -268,6 +274,18 @@ fileIn file = do
 
 -- | Read lines of `Text` from a `Handle`
 handleIn :: Handle -> Shell Text
+handleIn handle = Shell (\(FoldM step begin done) -> do
+    x0 <- begin
+    let loop x = do
+            eof <- IO.hIsEOF handle
+            if eof
+                then done x
+                else do
+                    txt <- Text.hGetLine handle
+                    x'  <- step x txt
+                    loop $! x'
+    loop $! x0 )
+{-
 handleIn handle = do
     eof <- liftIO (IO.hIsEOF handle)
     if eof
@@ -275,6 +293,7 @@ handleIn handle = do
         else do
             txt <- liftIO (Text.hGetLine handle)
             return txt <|> handleIn handle
+-}
 
 -- | Tee lines of `Text` to standard output
 stdOut :: Shell Text -> Shell Text
