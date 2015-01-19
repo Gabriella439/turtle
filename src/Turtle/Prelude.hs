@@ -175,7 +175,7 @@ system cmd s = do
         liftIO (wait a)
         liftIO (Process.waitForProcess ph) )
 
-{-| Stream a system command as lines of `Text`
+{-| Stream a system command's @stdout@ as lines of `Text`
 
     The command inherits @stderr@ for the current process
 -}
