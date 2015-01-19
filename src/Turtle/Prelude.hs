@@ -1,31 +1,72 @@
 {-# LANGUAGE CPP #-}
 
-{-| This module provides a large suite of utilities that resemble Unix
-    utilities.  With the exception of `system` and `stream`, none of these
-    invoke an external shell process.
-
-    Example use of these utilities:
-
->>> :set -XOverloadedStrings
->>> import qualified Control.Foldl as Fold
->>> cd "/usr"
->>> pwd
-FilePath "/usr"
->>> feed (ls "lib") list
-[FilePath "./lib",FilePath "./src",FilePath "./sbin",FilePath "./include",
-FilePath "./share",FilePath "./games",FilePath "./local",FilePath "./bin"]
->>> sh (do { path <- find "Browser.py" "lib"; liftIO (print path) })
-FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
-FilePath "lib/python3.2/idlelib/PathBrowser.py"
-FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
-FilePath "lib/python3.2/idlelib/ClassBrowser.py"
->>> feed (lsTree "lib") Fold.length
-33354
->>> cd "/tmp"
->>> mkdir "foo"
->>> cd "foo"
-
--}
+-- | This module provides a large suite of utilities that resemble Unix
+--  utilities.
+--
+--  Example one-liners:
+--
+-- >>> :set -XOverloadedStrings
+-- >>>
+-- >>> -- `list` displays all values in a `Shell` stream
+-- >>> cd "/usr"
+-- >>> pwd
+-- FilePath "/usr"
+-- >>> list (ls ".")
+-- FilePath "./lib"
+-- FilePath "./src"
+-- FilePath "./sbin"
+-- FilePath "./include",
+-- FilePath "./share"
+-- FilePath "./games"
+-- FilePath "./local"
+-- FilePath "./bin"
+-- >>> list (find "Browser.py" "lib")
+-- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
+-- FilePath "lib/python3.2/idlelib/PathBrowser.py"
+-- FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
+-- FilePath "lib/python3.2/idlelib/ClassBrowser.py"
+-- >>>
+-- >>> -- Use `fold` to fold the output of a `Shell` stream
+-- >>> import qualified Control.Foldl as Fold
+-- >>> fold (ls ".") Fold.null
+-- False
+-- >>> fold (lsTree ".") Fold.length
+-- 301966
+-- >>> fold (find "Browser.py" "lib") Fold.head
+-- Just (FilePath "lib/python3.2/idlelib/ObjectBrowser.py")
+-- >>>
+-- >>> -- `sh` runs a `Shell` only for its effects, discarding any output
+-- >>> cd "/tmp"
+-- >>> sh (fileOut "foo.txt" ("123" <|> "456" <|> "789"))
+-- >>> sh (stdOut (fileIn "foo.txt"))
+-- 123
+-- 456
+-- 789
+-- >>> sh (stdOut (grep ("1" <|> "8") (fileIn "foo.txt")))
+-- 123
+-- 789
+--
+--  You can also build up more sophisticated `Shell` programs using @do@
+--  notation:
+--
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > import Turtle
+-- >
+-- > main = sh example
+-- >
+-- > example = do
+-- >     -- Read in lines containing "bar" from "files1.txt" and "files2.txt"
+-- >     -- and interpret them as files
+-- >     fileStr <- grep "bar" (fileIn "files1.txt" <|> fileIn "files2.txt")
+-- >     let file = fromText fileStr
+-- >
+-- >     -- Stream the file to standard output if it exists
+-- >     exists <- liftIO (testfile file)
+-- >     stdOut (if exists then fileIn file else empty)
+--
+-- The above program will stream in constant space, bringing no more than two
+-- lines into memory at any time.
 
 module Turtle.Prelude (
     -- * IO
