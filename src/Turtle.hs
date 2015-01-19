@@ -36,8 +36,19 @@
 --
 --  * `MonadIO`, which works with `Protected` and `Shell`
 --
---  Additionally, you might also want to import "Control.Foldl" or
---  "Control.Foldl.Text" qualified.
+--  "Filesystem.Path.CurrentOS" provides `FilePath`-manipulation utilities
+--
+--  Additionally, you might also want to import the following modules qualified:
+--
+--  * "Control.Foldl" (for general folds)
+--
+--  * "Control.Foldl.Text" (for `Text`-specific folds)
+--
+--  * "Data.Text" (for `Text`-manipulation utilities)
+--
+--  * "Data.Text.IO" (for reading and writing `Text`)
+--
+--  * "Filesystem.Path.CurrentOS" (for the remaining `FilePath` utilities)
 
 module Turtle (
     -- * Modules
@@ -48,8 +59,8 @@ module Turtle (
     , module Control.Applicative
     , module Control.Monad
     , module Control.Monad.IO.Class
+    , module Filesystem.Path.CurrentOS
     , Text
-    , FilePath
     , UTCTime
     , Handle
     , Fold(..)
@@ -82,10 +93,30 @@ import Control.Monad
     , unless
     )
 import Control.Monad.IO.Class (MonadIO(..))
+import Filesystem.Path.CurrentOS
+    ( FilePath
+    , root
+    , directory
+    , parent
+    , filename
+    , dirname
+    , basename
+    , absolute
+    , relative
+    , (</>)
+    , commonPrefix
+    , stripPrefix
+    , collapse
+    , splitDirectories
+    , extension
+    , hasExtension
+    , (<.>)
+    , dropExtension
+    , splitExtension
+    )
 
 import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
 import Data.Time (UTCTime)
-import Filesystem.Path (FilePath)
 import System.IO (Handle)
 import Prelude hiding (FilePath)
