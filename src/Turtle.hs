@@ -61,8 +61,27 @@ import Turtle.Protected
 import Turtle.Shell
 import Turtle.Prelude
 import Control.Applicative
+    ( Applicative(..)
+    , Alternative(..)
+    , (<$>)
+    , liftA2
+    , optional
+    )
 import Control.Monad
-import Control.Monad.IO.Class
+    ( MonadPlus(..)
+    , forever
+    , void
+    , (>=>)
+    , (<=<)
+    , join
+    , msum
+    , mfilter
+    , replicateM_
+    , guard
+    , when
+    , unless
+    )
+import Control.Monad.IO.Class (MonadIO(..))
 
 import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
