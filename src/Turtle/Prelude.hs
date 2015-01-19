@@ -212,7 +212,7 @@ pwd = Filesystem.getWorkingDirectory
 
 -- | Get the home directory
 home :: IO FilePath
-home = Filesystem.getWorkingDirectory
+home = Filesystem.getHomeDirectory
 
 -- | Canonicalize a path
 realpath :: FilePath -> IO FilePath
