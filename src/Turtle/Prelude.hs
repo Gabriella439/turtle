@@ -38,12 +38,12 @@
 -- >>>
 -- >>> -- `sh` runs a `Shell` only for its effects, discarding any output
 -- >>> cd "/tmp"
--- >>> sh (fileOut "foo.txt" ("123" <|> "456" <|> "789"))
--- >>> sh (stdOut (fileIn "foo.txt"))
+-- >>> sh (fileout "foo.txt" ("123" <|> "456" <|> "789"))
+-- >>> sh (stdout (filein "foo.txt"))
 -- 123
 -- 456
 -- 789
--- >>> sh (stdOut (grep ("1" <|> "8") (fileIn "foo.txt")))
+-- >>> sh (stdout (grep ("1" <|> "8") (filein "foo.txt")))
 -- 123
 -- 789
 --
@@ -59,12 +59,12 @@
 -- > example = do
 -- >     -- Read in lines containing "bar" from "files1.txt" and "files2.txt"
 -- >     -- and interpret them as files
--- >     fileStr <- grep "bar" (fileIn "files1.txt" <|> fileIn "files2.txt")
+-- >     fileStr <- grep "bar" (filein "files1.txt" <|> filein "files2.txt")
 -- >     let file = fromText fileStr
 -- >
 -- >     -- Stream the file to standard output if it exists
 -- >     exists <- liftIO (testfile file)
--- >     stdOut (if exists then fileIn file else empty)
+-- >     stdout (if exists then filein file else empty)
 --
 -- The above program will stream in constant space, bringing no more than two
 -- lines into memory at any time.
@@ -87,17 +87,14 @@ module Turtle.Prelude (
     , testfile
     , testdir
     , date
-    , dateFile
-#ifdef mingw32_HOST_OS
-#else
+    , datefile
     , touch
-#endif
 
     -- * Protected
     , mktemp
     , mktempdir
-    , readHandle
-    , writeHandle
+    , readhandle
+    , writehandle
     , fork
 
     -- * Shell
@@ -111,13 +108,13 @@ module Turtle.Prelude (
     , yes
     , limit
     , limitWhile
-    , stdIn
-    , fileIn
-    , handleIn
-    , stdOut
-    , fileOut
-    , handleOut
-    , fileAppend
+    , stdin
+    , filein
+    , handlein
+    , stdout
+    , fileout
+    , handleout
+    , fileappend
     ) where
 
 import Control.Applicative (Alternative(..))
@@ -200,7 +197,7 @@ stream cmd s = do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
     a <- with (fork feedIn)
-    handleIn hOut <|> (liftIO (wait a) >> empty)
+    handlein hOut <|> (liftIO (wait a) >> empty)
 
 -- | Change the current directory
 cd :: FilePath -> IO ()
@@ -317,8 +314,6 @@ testfile = Filesystem.isFile
 testdir :: FilePath -> IO Bool
 testdir = Filesystem.isDirectory
 
-#ifdef mingw32_HOST_OS
-#else
 {-| Touch a file, updating the access and modification times to the current time
 
     Creates the file if it does not exist
@@ -327,9 +322,23 @@ touch :: FilePath -> IO ()
 touch file = do
     exists <- testfile file
     if exists
+#ifdef mingw32_HOST_OS
+        then do
+            handle <- Win32.createFile
+                (Filesystem.encodeString file)
+                Win32.gENERIC_WRITE
+                Win32.fILE_SHARE_NONE
+                Nothing
+                Win32.oPEN_EXISTING
+                Win32.fILE_ATTRIBUTE_NORMAL
+                Nothing
+            (creationTime, _, _) <- Win32.getFileTime handle
+            systemTime <- Win32.getSystemTimeAsFileTime
+            Win32.setFileTime handle creationTime systemTime systemTime
+#else
         then touchFile (Filesystem.encodeString file)
-        else sh (fileOut file empty)
 #endif
+        else sh (fileout file empty)
 
 {-| Create a temporary directory underneath the given directory
 
@@ -431,22 +440,22 @@ date :: IO UTCTime
 date = getCurrentTime
 
 -- | Get the time a file was last modified
-dateFile :: FilePath -> IO UTCTime
-dateFile = Filesystem.getModified
+datefile :: FilePath -> IO UTCTime
+datefile = Filesystem.getModified
 
 -- | Read lines of `Text` from standard input
-stdIn :: Shell Text
-stdIn = handleIn IO.stdin
+stdin :: Shell Text
+stdin = handlein IO.stdin
 
 -- | Read lines of `Text` from a file
-fileIn :: FilePath -> Shell Text
-fileIn file = do
-    handle <- with (readHandle file)
-    handleIn handle
+filein :: FilePath -> Shell Text
+filein file = do
+    handle <- with (readhandle file)
+    handlein handle
 
 -- | Read lines of `Text` from a `Handle`
-handleIn :: Handle -> Shell Text
-handleIn handle = Shell (\(FoldM step begin done) -> do
+handlein :: Handle -> Shell Text
+handlein handle = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     let loop x = do
             eof <- IO.hIsEOF handle
@@ -459,37 +468,37 @@ handleIn handle = Shell (\(FoldM step begin done) -> do
     loop $! x0 )
 
 -- | Tee lines of `Text` to standard output
-stdOut :: Shell Text -> Shell Text
-stdOut = handleOut IO.stdout
+stdout :: Shell Text -> Shell Text
+stdout = handleout IO.stdout
 
 -- | Tee lines of `Text` to a file
-fileOut :: FilePath -> Shell Text -> Shell Text
-fileOut file s = do
-    handle <- with (writeHandle file)
-    handleOut handle s
+fileout :: FilePath -> Shell Text -> Shell Text
+fileout file s = do
+    handle <- with (writehandle file)
+    handleout handle s
 
 -- | Tee lines of `Text` to a `Handle`
-handleOut :: Handle -> Shell Text -> Shell Text
-handleOut handle s = do
+handleout :: Handle -> Shell Text -> Shell Text
+handleout handle s = do
     txt <- s
     liftIO (Text.hPutStrLn handle txt)
     return txt
 
 -- | Tee lines of `Text` to append to a file
-fileAppend :: FilePath -> Shell Text -> Shell Text
-fileAppend file s = do
+fileappend :: FilePath -> Shell Text -> Shell Text
+fileappend file s = do
     handle <- with (appendHandle file)
-    handleOut handle s
+    handleout handle s
 
 -- | Acquire a `Protected` read-only `Handle` from a `FilePath`
-readHandle :: FilePath -> Protected Handle
-readHandle file = Protect (do
+readhandle :: FilePath -> Protected Handle
+readhandle file = Protect (do
     handle <- Filesystem.openFile file IO.ReadMode
     return (handle, IO.hClose handle) )
 
 -- | Acquire a `Protected` write-only `Handle` from a `FilePath`
-writeHandle :: FilePath -> Protected Handle
-writeHandle file = Protect (do
+writehandle :: FilePath -> Protected Handle
+writehandle file = Protect (do
     handle <- Filesystem.openFile file IO.WriteMode
     return (handle, IO.hClose handle) )
 
