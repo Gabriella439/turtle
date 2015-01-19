@@ -38,9 +38,11 @@
 --
 --  "Filesystem.Path.CurrentOS" provides `FilePath`-manipulation utilities
 --
+--  "Control.Foldl" provides the `Fold` \/ `FoldM` types and `list`
+--
 --  Additionally, you might also want to import the following modules qualified:
 --
---  * "Control.Foldl" (for general folds)
+--  * "Control.Foldl" (for folds)
 --
 --  * "Control.Foldl.Text" (for `Text`-specific folds)
 --
@@ -60,11 +62,10 @@ module Turtle (
     , module Control.Monad
     , module Control.Monad.IO.Class
     , module Filesystem.Path.CurrentOS
+    , module Control.Foldl
     , Text
     , UTCTime
     , Handle
-    , Fold(..)
-    , FoldM(..)
     ) where
 
 import Turtle.Pattern
@@ -114,8 +115,11 @@ import Filesystem.Path.CurrentOS
     , dropExtension
     , splitExtension
     )
-
-import Control.Foldl (Fold(..), FoldM(..))
+import Control.Foldl
+    ( Fold(..)
+    , FoldM(..)
+    , list
+    )
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import System.IO (Handle)
