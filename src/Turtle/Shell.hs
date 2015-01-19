@@ -184,10 +184,17 @@ instance Floating a => Floating (Shell a) where
 instance IsString a => IsString (Shell a) where
     fromString str = pure (fromString str)
 
--- | Convert a list to `Shell` that emits each element of the list
+{-| Convert a list to `Shell` that emits each element of the list
+
+    Like `Control.Monad.msum`, but more efficient
+-}
 select :: [a] -> Shell a
-select  []    = empty
-select (a:as) = return a <|> select as
+select as = Shell (\(FoldM step begin done) -> do
+    x0 <- begin
+    let step' a k x = do
+            x' <- step x a
+            k $! x'
+    foldr step' done as $! x0 )
 
 {-| Acquire a `Protected` resource within a `Shell` in an exception-safe way
 
