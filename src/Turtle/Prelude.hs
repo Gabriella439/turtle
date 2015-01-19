@@ -276,7 +276,11 @@ testdir = Filesystem.isDirectory
     Creates the file if it does not exist
 -}
 touch :: FilePath -> IO ()
-touch file = touchFile (Filesystem.encodeString file)
+touch file = do
+    exists <- testfile file
+    if exists
+        then touchFile (Filesystem.encodeString file)
+        else sh (fileOut file empty)
 #endif
 
 {-| Create a temporary directory underneath the given directory
