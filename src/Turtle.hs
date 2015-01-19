@@ -66,6 +66,7 @@ module Turtle (
     , Text
     , UTCTime
     , Handle
+    , ExitCode(..)
     ) where
 
 import Turtle.Pattern
@@ -123,4 +124,5 @@ import Control.Foldl
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import System.IO (Handle)
+import System.Exit (ExitCode(..))
 import Prelude hiding (FilePath)
