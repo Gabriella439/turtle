@@ -33,6 +33,7 @@ module Turtle.Prelude (
     , sed
     , yes
     , date
+    , dateFile
 
     -- * Input and output
     , stdIn
@@ -278,6 +279,10 @@ yes = Shell (\(FoldM step begin _) -> do
 -- | Get the current time
 date :: IO UTCTime
 date = getCurrentTime
+
+-- | Get the time a file was last modified
+dateFile :: FilePath -> IO UTCTime
+dateFile = Filesystem.getModified
 
 -- | Read lines of `Text` from standard input
 stdIn :: Shell Text
