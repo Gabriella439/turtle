@@ -105,6 +105,8 @@ module Turtle.Prelude (
     , sed
     , find
     , yes
+    , limit
+    , limitWhile
     , stdIn
     , fileIn
     , handleIn
@@ -122,6 +124,7 @@ import Control.Monad (msum)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
+import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
 import Data.Time (UTCTime, getCurrentTime)
 import qualified Data.Text    as Text
@@ -393,6 +396,31 @@ yes = Shell (\(FoldM step begin _) -> do
             x' <- step x (Text.pack "y")
             loop $! x'
     loop $! x0 )
+
+-- | Limit a `Shell` to a fixed number of values
+limit :: Int -> Shell a -> Shell a
+limit n s = Shell (\(FoldM step begin done) -> do
+    ref <- newIORef 0  -- I feel so dirty
+    let step' x a = do
+            n' <- readIORef ref
+            writeIORef ref (n' + 1)
+            if n' < n then step x a else return x
+    foldIO s (FoldM step' begin done) )
+
+{-| Limit a `Shell` to values that satisfy the predicate
+
+    This terminates the stream on the first value that does not satisfy the
+    predicate
+-}
+limitWhile :: (a -> Bool) -> Shell a -> Shell a
+limitWhile predicate s = Shell (\(FoldM step begin done) -> do
+    ref <- newIORef True
+    let step' x a = do
+            b <- readIORef ref
+            let b' = b && predicate a
+            writeIORef ref b'
+            if b' then step x a else return x
+    foldIO s (FoldM step' begin done) )
 
 -- | Get the current time
 date :: IO UTCTime
