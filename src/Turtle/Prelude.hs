@@ -24,10 +24,10 @@ module Turtle.Prelude (
     , rmdir
     , rmtree
     , du
-    , testFile
-    , testDir
-
-    -- * Utilities
+    , testfile
+    , testdir
+    , mktemp
+    , mktempdir
     , cat
     , grep
     , sed
@@ -69,6 +69,7 @@ import System.IO (Handle)
 import System.Directory (getPermissions, readable)
 import System.Exit (ExitCode)
 import qualified System.IO as IO
+import System.IO.Temp (createTempDirectory, openTempFile)
 import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
 import qualified System.Win32 as Win32
@@ -200,7 +201,7 @@ ls path = Shell (\(FoldM step begin done) -> do
 lsTree :: FilePath -> Shell FilePath
 lsTree path = do
     child <- ls path
-    isDir <- liftIO (testDir child)
+    isDir <- liftIO (testdir child)
     if isDir
         then return child <|> lsTree child
         else return child
@@ -238,12 +239,46 @@ du :: FilePath -> IO Integer
 du = Filesystem.getSize
 
 -- | Check if a file exists
-testFile :: FilePath -> IO Bool
-testFile = Filesystem.isFile
+testfile :: FilePath -> IO Bool
+testfile = Filesystem.isFile
 
 -- | Check if a directory exists
-testDir :: FilePath -> IO Bool
-testDir = Filesystem.isDirectory
+testdir :: FilePath -> IO Bool
+testdir = Filesystem.isDirectory
+
+{-| Create a temporary directory underneath the given directory
+
+    Deletes the temporary directory when done
+-}
+mktempdir
+    :: FilePath
+    -- ^ Parent directory
+    -> Text
+    -- ^ Directory name template
+    -> Protected FilePath
+mktempdir parent prefix = Protect (do
+    dir' <- createTempDirectory
+        (Filesystem.encodeString parent)
+        (Text.unpack prefix)
+    let dir = Filesystem.decodeString dir'
+    return (dir, rmtree dir) )
+
+{-| Create a temporary file underneath the given directory
+
+    Deletes the temporary file when done
+-}
+mktemp
+    :: FilePath
+    -- ^ Parent directory
+    -> Text
+    -- ^ File name template
+    -> Protected (FilePath, Handle)
+mktemp parent prefix = Protect (do
+    (file', handle) <- openTempFile
+        (Filesystem.encodeString parent)
+        (Text.unpack prefix)
+    let file = Filesystem.decodeString file'
+    return ((file, handle), rm file) )
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a

@@ -51,6 +51,7 @@ module Turtle (
     , Text
     , FilePath
     , UTCTime
+    , Handle
     , Fold(..)
     , FoldM(..)
     ) where
@@ -67,4 +68,5 @@ import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Filesystem.Path (FilePath)
+import System.IO (Handle)
 import Prelude hiding (FilePath)
