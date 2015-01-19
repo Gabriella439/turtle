@@ -31,7 +31,7 @@
 -- >>> import qualified Control.Foldl as Fold
 -- >>> fold (ls ".") Fold.null
 -- False
--- >>> fold (lsTree ".") Fold.length
+-- >>> fold (lstree ".") Fold.length
 -- 301966
 -- >>> fold (find "Browser.py" "lib") Fold.head
 -- Just (FilePath "lib/python3.2/idlelib/ObjectBrowser.py")
@@ -103,7 +103,7 @@ module Turtle.Prelude (
     -- * Shell
     , stream
     , ls
-    , lsTree
+    , lstree
     , cat
     , grep
     , sed
@@ -269,12 +269,12 @@ ls path = Shell (\(FoldM step begin done) -> do
 #endif
 
 -- | List all recursive descendents of the given directory
-lsTree :: FilePath -> Shell FilePath
-lsTree path = do
+lstree :: FilePath -> Shell FilePath
+lstree path = do
     child <- ls path
     isDir <- liftIO (testdir child)
     if isDir
-        then return child <|> lsTree child
+        then return child <|> lstree child
         else return child
 
 -- | Move a file or directory
@@ -387,7 +387,7 @@ sed pattern s = do
 -- | Search a directory recursively for all files matching the given `Pattern`
 find :: Pattern a -> FilePath -> Shell FilePath
 find pattern dir = do
-    path <- lsTree dir
+    path <- lstree dir
     Right txt <- return (Filesystem.toText path)
     _:_       <- return (inside pattern txt)
     return path
