@@ -257,7 +257,7 @@ text :: Text -> Pattern Text
 text before' = Pattern (do
     txt <- get
     let (before, after) = Text.splitAt (Text.length before') txt
-    guard (before == after)
+    guard (before == before')
     put after
     return before)
 
