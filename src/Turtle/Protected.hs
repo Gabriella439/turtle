@@ -2,8 +2,8 @@
 
     You can build `Protected` resources using `Protect`:
 
-> readHandle :: FilePath -> Protected Handle
-> readHandle file = Protect (do
+> readhandle :: FilePath -> Protected Handle
+> readhandle file = Protect (do
 >     handle <- Filesystem.openFile file ReadMode
 >     return (handle, hClose handle) )
 
@@ -11,14 +11,19 @@
 
 > twoFiles :: Protected (Handle, Handle)
 > twoFiles = do
->     handle1 <- readHandle "file1.txt"
->     handle2 <- readHandle "file2.txt"
+>     handle1 <- readhandle "file1.txt"
+>     handle2 <- readhandle "file2.txt"
 >     return (handle1, handle2)
 
-    You can consume `Protected` resources within a `Shell` using `with`:
+    You can consume `Protected` resources with `using`:
+
+> using (readhandle "file.txt") (\handle -> ...)
+
+    ... or you can acquire `Protected` resources within a `Turtle.Shell.Shell`
+    using `Turtle.Shell.with`:
 
 > example = do
->     (handle1, handle2) <- with twoFiles
+>     handle <- with (readhandle "file.txt")
 >     ...
  
 -}

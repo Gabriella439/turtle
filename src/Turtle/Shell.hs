@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {-| You can think of `Shell` as @[]@ + `IO` + `Protected`.  In fact, you can
-    embed all three of them within `Shell`:
+    embed all three of them within a `Shell`:
 
 > select :: [a]         -> Shell a
 > liftIO :: IO a        -> Shell a
@@ -25,22 +25,22 @@
     You typically won't build `Shell`s using the `Shell` constructor.  Instead,
     use these functions to generate primitive `Shell`s:
 
-    * `empty`
+    * `empty`, to create a `Shell` that outputs nothing
 
-    * `return`
+    * `return`, to create a `Shell` that outputs a single value
 
-    * `select`
+    * `select`, to range over a list of values within a `Shell`
 
-    * `liftIO`
+    * `liftIO`, to embed an `IO` action within a `Shell`
 
-    * `with`
+    * `with`, to acquire a `Protected` resource within a `Shell`
     
-    ... and use these classes to combine those primitive `Shell`s into larger
+    Then use these classes to combine those primitive `Shell`s into larger
     `Shell`s:
 
-    * `Monad` (i.e. @do@ notation)
+    * `Alternative`, to concatenate `Shell` outputs using (`<|>`)
 
-    * `Alternative`
+    * `Monad`, to build `Shell` comprehensions using @do@ notation
 
     If you still insist on building your own `Shell` from scratch, then the
     `Shell` you build must satisfy this law:
@@ -78,7 +78,7 @@ import Data.String (IsString(..))
 
 import Turtle.Protected
 
--- | A @(Shell a)@ is a protected stream of @a@'s
+-- | A @(Shell a)@ is a `Protected` list of @a@'s with side effects
 newtype Shell a = Shell { foldIO :: forall r . FoldM IO a r -> IO r }
 
 -- | Feed the stream of @a@'s produced by a `Shell` to a `Fold`
