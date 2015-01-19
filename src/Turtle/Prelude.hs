@@ -1,15 +1,21 @@
+{-# LANGUAGE CPP #-}
+
 {-| These are derived utilities built on the primitives exposed by other
     modules
 -}
 
 module Turtle.Prelude (
-    -- * Utilities
+    -- * Shell
       system
-    , cat
+    , stream
+
+    -- * Filesystem
     , cd
     , pwd
     , home
     , realpath
+    , ls
+    , lsTree
     , mv
     , mkdir
     , mktree
@@ -18,63 +24,105 @@ module Turtle.Prelude (
     , rmdir
     , rmtree
     , du
+
+    -- * Utilities
+    , cat
     , grep
     , sed
-    , form
 
     -- * Input and output
-    , handleIn
     , stdIn
     , fileIn
-    , handleOut
+    , handleIn
     , stdOut
     , fileOut
+    , handleOut
 
     -- * Resources
     , readHandle
     , writeHandle
     , fork
+
+    -- * Re-exports
+    , FilePath
     ) where
 
 import Control.Applicative (Alternative(..))
-import Control.Concurrent.Async (Async, async, cancel, wait)
+import Control.Concurrent.Async (Async, async, cancel, wait, withAsync)
 import Control.Monad (guard, msum)
+#ifdef mingw32_HOST_OS
+import Data.Bits ((.&.))
+#endif
 import Data.Text (Text)
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 import qualified Filesystem
-import Filesystem.Path (FilePath)
+import Filesystem.Path.CurrentOS (FilePath, (</>))
+import qualified Filesystem.Path.CurrentOS as Filesystem
 import System.IO (Handle)
+import System.Directory (getPermissions, readable)
 import System.Exit (ExitCode)
 import qualified System.IO as IO
 import qualified System.Process as Process
+#ifdef mingw32_HOST_OS
+import qualified System.Win32 as Win32
+#else
+import System.Posix (openDirStream, readDirStream, closeDirStream)
+#endif
 import Prelude hiding (FilePath)
 
 import Turtle.Pattern (Pattern, anyChar, match, selfless, plus, star)
 import Turtle.Protected
 import Turtle.Shell
 
-system :: Text -> Shell Text -> Shell Text
+{-| Call a system command, and retrieve the exit code
+
+    The command inherits @stdout@ and @stderr@ for the current process
+-}
+system
+    :: Text
+    -- ^ Command
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> IO ExitCode
+    -- ^ Exit code
 system cmd s = do
+    let p = (Process.shell (Text.unpack cmd))
+            { Process.std_in  = Process.CreatePipe
+            , Process.std_out = Process.Inherit
+            , Process.std_err = Process.Inherit
+            }
+    (Just hIn, Nothing, Nothing, ph) <- liftIO (Process.createProcess p)
+    let feedIn = sh (do
+            txt <- s
+            liftIO (Text.hPutStrLn hIn txt) )
+    withAsync feedIn (\a -> do
+        liftIO (wait a)
+        liftIO (Process.waitForProcess ph) )
+
+{-| Stream a system command as lines of `Text`
+
+    The command inherits @stderr@ for the current process
+-}
+stream
+    :: Text
+    -- ^ Command
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> Shell Text
+    -- ^ Lines of standard output
+stream cmd s = do
     let p = (Process.shell (Text.unpack cmd))
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.CreatePipe
             , Process.std_err = Process.Inherit
             }
-    (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p)
+    (Just hIn, Just hOut, Nothing, _) <- liftIO (Process.createProcess p)
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    a   <- with (fork feedIn)
+    a <- with (fork feedIn)
     handleIn hOut <|> (liftIO (wait a) >> empty)
-
-{-
-system' :: Text -> Shell Text -> IO ExitCode
--}
-
--- | Combine the output of multiple `Shell`s, in order
-cat :: [Shell a] -> Shell a
-cat = msum
 
 -- | Change the current directory
 cd :: FilePath -> IO ()
@@ -91,6 +139,65 @@ home = Filesystem.getWorkingDirectory
 -- | Canonicalize a path
 realpath :: FilePath -> IO FilePath
 realpath = Filesystem.canonicalizePath
+
+#ifdef mingw32_HOST_OS
+fILE_ATTRIBUTE_REPARSE_POINT :: Win32.FileAttributeOrFlag
+fILE_ATTRIBUTE_REPARSE_POINT = 1024
+
+reparsePoint :: Win32.FileAttributeOrFlag -> Bool
+reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
+#endif
+
+ls :: FilePath -> Shell FilePath
+ls path = do
+    let path' = Filesystem.encodeString path
+    canRead <- liftIO (fmap readable (getPermissions path'))
+#ifdef mingw32_HOST_OS
+    reparse <- liftIO (fmap reparsePoint (Win32.getFileAttributes path'))
+    guard (canRead && not reparse)
+
+    (h, fdat) <- with (Protect (do
+        (h, fdat) <- Win32.findFirstFile
+            (Filesystem.encodeString (path </> "*"))
+        return ((h, fdat), Win32.findClose h) ))
+
+    let loop = do
+            file' <- liftIO (Win32.getFindDataFileName fdat)
+            let file = Filesystem.decodeString file'
+            let continue = do
+                    more <- liftIO (Win32.findNextFile h fdat)
+                    guard more
+                    loop
+            if (file' /= "." && file' /= "..")
+                then return (path </> file) <|> continue
+                else continue
+    loop
+#else
+    guard canRead
+
+    dirp <- with (Protect (do
+        dirp <- openDirStream path'
+        return (dirp, closeDirStream dirp) ))
+
+    let loop = do
+            file' <- liftIO (readDirStream dirp)
+            case file' of
+                "" -> empty
+                _  -> do
+                    let file = Filesystem.decodeString file'
+                    if (file' /= "." && file' /= "..")
+                        then return (path </> file) <|> loop
+                        else loop
+    loop
+#endif
+
+lsTree :: FilePath -> Shell FilePath
+lsTree path = do
+    child <- ls path
+    isDir <- liftIO (Filesystem.isDirectory child)
+    if isDir
+        then return child <|> lsTree child
+        else return child
 
 -- | Move a file or directory
 mv :: FilePath -> FilePath -> IO ()
@@ -127,6 +234,10 @@ rmtree = Filesystem.removeTree
 du :: FilePath -> IO Integer
 du = Filesystem.getSize
 
+-- | Combine the output of multiple `Shell`s, in order
+cat :: [Shell a] -> Shell a
+cat = msum
+
 -- | Keep all lines that match the given `Pattern` anywhere within the line
 grep :: Pattern a -> Shell Text -> Shell Text
 grep pattern s = do
@@ -145,12 +256,15 @@ sed pattern s = do
     txt':_ <- return (match pattern' txt)
     return txt'
 
--- | Parse a structured value from each line of `Text`
-form :: Pattern a -> Shell Text -> Shell a
-form pattern s = do
-    txt <- s
-    a:_ <- return (match pattern txt)
-    return a
+-- | Read lines of `Text` from standard input
+stdIn :: Shell Text
+stdIn = handleIn IO.stdin
+
+-- | Read lines of `Text` from a file
+fileIn :: FilePath -> Shell Text
+fileIn file = do
+    handle <- with (readHandle file)
+    handleIn handle
 
 -- | Read lines of `Text` from a `Handle`
 handleIn :: Handle -> Shell Text
@@ -162,23 +276,6 @@ handleIn handle = do
             txt <- liftIO (Text.hGetLine handle)
             return txt <|> handleIn handle
 
--- | Read lines of `Text` from standard input
-stdIn :: Shell Text
-stdIn = handleIn IO.stdin
-
--- | Read lines of `Text` from a file
-fileIn :: FilePath -> Shell Text
-fileIn file = do
-    handle <- with (readHandle file)
-    handleIn handle
-
--- | Tee lines of `Text` to a `Handle`
-handleOut :: Handle -> Shell Text -> Shell Text
-handleOut handle s = do
-    txt <- s
-    liftIO (Text.hPutStrLn handle txt)
-    return txt
-
 -- | Tee lines of `Text` to standard output
 stdOut :: Shell Text -> Shell Text
 stdOut = handleOut IO.stdout
@@ -188,6 +285,13 @@ fileOut :: FilePath -> Shell Text -> Shell Text
 fileOut file s = do
     handle <- with (writeHandle file)
     handleOut handle s
+
+-- | Tee lines of `Text` to a `Handle`
+handleOut :: Handle -> Shell Text -> Shell Text
+handleOut handle s = do
+    txt <- s
+    liftIO (Text.hPutStrLn handle txt)
+    return txt
 
 -- | Acquire a `Protected` read-only `Handle` from a `FilePath`
 readHandle :: FilePath -> Protected Handle
