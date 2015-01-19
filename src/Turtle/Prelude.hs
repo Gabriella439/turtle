@@ -150,6 +150,9 @@ reparsePoint :: Win32.FileAttributeOrFlag -> Bool
 reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
 #endif
 
+{-| List all immediate children of the given directory, excluding @\".\"@ and
+    @\"..\"@
+-}
 ls :: FilePath -> Shell FilePath
 ls path = Shell (\(FoldM step begin done) -> do
     x0 <- begin
@@ -189,6 +192,7 @@ ls path = Shell (\(FoldM step begin done) -> do
         else done x0 )
 #endif
 
+-- | List all recursive descendents of the given directory
 lsTree :: FilePath -> Shell FilePath
 lsTree path = do
     child <- ls path
@@ -208,9 +212,6 @@ mkdir = Filesystem.createDirectory False
 -- | Create a directory tree (equivalent to @mkdir -p@)
 mktree :: FilePath -> IO ()
 mktree = Filesystem.createTree
-
---  List the immediate children of a directory, excluding @\".\"@ and @\"..\"@
--- ls :: FilePath -> Shell String
 
 -- | Copy a file
 cp :: FilePath -> FilePath -> IO ()
@@ -254,6 +255,7 @@ sed pattern s = do
     txt':_ <- return (match pattern' txt)
     return txt'
 
+-- | A Stream of @\"y\"@s
 yes :: Shell Text
 yes = Shell (\(FoldM step begin _) -> do
     x0 <- begin
