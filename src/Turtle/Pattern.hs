@@ -40,7 +40,7 @@ in  prefix portableBitMap "P1\n2 2\n0 0\n1 0\n"
 
 module Turtle.Pattern (
     -- * Pattern
-      Pattern
+      Pattern(..)
     , match
     , prefix
     , inside
