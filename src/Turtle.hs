@@ -46,6 +46,9 @@
 --
 --  Additionally, you might also want to import the following modules qualified:
 --
+--  * "Options.Applicative" from @optparse-applicative@ for command-line option
+--     parsing
+--
 --  * "Control.Foldl" (for folds)
 --
 --  * "Control.Foldl.Text" (for `Text`-specific folds)
