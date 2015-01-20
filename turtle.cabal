@@ -10,7 +10,7 @@ Maintainer: Gabriel439@gmail.com
 Bug-Reports: https://github.com/Gabriel439/Haskell-Turtle-Library/issues
 Synopsis: Shell programming, Haskell-style
 Description: @turtle@ is a Haskell reimplementation of the Unix command line
-    environment which lets you script directly within Haskell.
+    environment which lets you use Haskell as a scripting language
     .
     Features include:
     .
@@ -62,7 +62,8 @@ Library
         Turtle.Pattern,
         Turtle.Protected,
         Turtle.Shell,
-        Turtle.Prelude
+        Turtle.Prelude,
+        Turtle.Tutorial
     GHC-Options: -O2 -Wall
     Default-Language: Haskell2010
 
