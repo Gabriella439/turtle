@@ -74,6 +74,15 @@
 module Turtle.Prelude (
     -- * IO
       system
+    , echo
+#if MIN_VERSION_base(4,7,0)
+    , export
+    , unset
+#endif
+#if MIN_VERSION_base(4,6,0)
+    , need
+#endif
+    , env
     , cd
     , pwd
     , home
@@ -135,6 +144,15 @@ import qualified Data.Text.IO as Text
 import qualified Filesystem
 import Filesystem.Path.CurrentOS (FilePath, (</>))
 import qualified Filesystem.Path.CurrentOS as Filesystem
+import System.Environment (
+#if MIN_VERSION_base(4,7,0)
+    setEnv,
+    unsetEnv,
+#endif
+#if MIN_VERSION_base(4,6,0)
+    lookupEnv,
+#endif
+    getEnvironment )
 import System.IO (Handle)
 import System.Directory (getPermissions, readable)
 import System.Exit (ExitCode)
@@ -198,6 +216,35 @@ stream cmd s = do
             liftIO (Text.hPutStrLn hIn txt) )
     _ <- with (fork feedIn)
     handlein hOut
+
+{-| Print to @stdout@
+
+    Synonym for `putStrLn`
+-}
+echo :: String -> IO ()
+echo = putStrLn
+
+#if MIN_VERSION_base(4,7,0)
+-- | Set or modify an environment variable
+export :: Text -> Text -> IO ()
+export key val = setEnv (Text.unpack key) (Text.unpack val)
+
+-- | Delete an environment variable
+unset :: Text -> IO ()
+unset key = unsetEnv (Text.unpack key)
+#endif
+
+#if MIN_VERSION_base(4,6,0)
+-- | Look up an environment variable
+need :: Text -> IO (Maybe Text)
+need key = fmap (fmap Text.pack) (lookupEnv (Text.unpack key))
+#endif
+
+-- | Retrieve all environment variables
+env :: IO [(Text, Text)]
+env = fmap (fmap toTexts) getEnvironment
+  where
+    toTexts (key, val) = (Text.pack key, Text.pack val)
 
 -- | Change the current directory
 cd :: FilePath -> IO ()
