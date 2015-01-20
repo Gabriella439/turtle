@@ -100,6 +100,7 @@ module Turtle.Prelude (
     , date
     , datefile
     , touch
+    , time
 
     -- * Protected
     , mktemp
@@ -144,6 +145,7 @@ import qualified Data.Text.IO as Text
 import qualified Filesystem
 import Filesystem.Path.CurrentOS (FilePath, (</>))
 import qualified Filesystem.Path.CurrentOS as Filesystem
+import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Environment (
 #if MIN_VERSION_base(4,7,0)
     setEnv,
@@ -386,6 +388,18 @@ touch file = do
         then touchFile (Filesystem.encodeString file)
 #endif
         else sh (fileout file empty)
+
+{-| Time how long a command takes, returning the duration in seconds alongside
+    the return value
+-}
+time :: IO a -> IO (a, Double)
+time io = do
+    TimeSpec seconds1 nanoseconds1 <- getTime Monotonic
+    a  <- io
+    TimeSpec seconds2 nanoseconds2 <- getTime Monotonic
+    let t = fromIntegral (    seconds2 -     seconds1)
+          + fromIntegral (nanoseconds2 - nanoseconds1) / 10^(9::Int)
+    return (a, t)
 
 {-| Create a temporary directory underneath the given directory
 
