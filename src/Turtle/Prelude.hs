@@ -109,6 +109,7 @@ module Turtle.Prelude (
     , readhandle
     , writehandle
     , fork
+    , wait
 
     -- * Shell
     , stream
@@ -131,7 +132,7 @@ module Turtle.Prelude (
     ) where
 
 import Control.Applicative (Alternative(..))
-import Control.Concurrent.Async (Async, async, cancel, withAsync)
+import Control.Concurrent.Async (Async, async, cancel, withAsync, wait)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket)
 import Control.Foldl (FoldM(..))
