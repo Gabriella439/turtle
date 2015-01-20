@@ -1,4 +1,7 @@
--- | This is the recommended way to import this library:
+-- | See "Turtle.Tutorial" to learn how to use this library or "Turtle.Prelude"
+--  for a quick-start guide.
+--
+--  Here is the recommended way to import this library:
 --
 --  > {-# LANGUAGE OverloadedStrings #-}
 --  >

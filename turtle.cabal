@@ -9,11 +9,14 @@ Author: Gabriel Gonzalez
 Maintainer: Gabriel439@gmail.com
 Bug-Reports: https://github.com/Gabriel439/Haskell-Turtle-Library/issues
 Synopsis: Shell programming, Haskell-style
-Description: This package provides utilities for shell programming.
+Description: @turtle@ is a Haskell reimplementation of the Unix command line
+    environment which lets you script directly within Haskell.
     .
     Features include:
     .
     * Batteries included: Command a rich suite of predefined utilities
+    .
+    * Interoperability: Easily integrate external shell commands
     .
     * Portability: Works on Windows, OS X, and Linux
     .
@@ -23,7 +26,12 @@ Description: This package provides utilities for shell programming.
     .
     * Patterns: Use typed regular expressions that can parse structured values
     .
-    * Support for @text@ and @system-filepath@
+    * Formatting: Format text in a type-safe way
+    .
+    * Modern: Supports @text@ and @system-filepath@
+    .
+    Read "Turtle.Tutorial" for a detailed tutorial or "Turtle.Prelude" for a
+    quick-start guide
 Category: System
 Source-Repository head
     Type: git
