@@ -7,45 +7,48 @@
 --  Example one-liners:
 --
 -- >>> :set -XOverloadedStrings
--- >>>
--- >>> -- `list` displays all values in a `Shell` stream
 -- >>> cd "/usr"
 -- >>> pwd
 -- FilePath "/usr"
--- >>> list (ls ".")
--- FilePath "./lib"
--- FilePath "./src"
--- FilePath "./sbin"
--- FilePath "./include",
--- FilePath "./share"
--- FilePath "./games"
--- FilePath "./local"
--- FilePath "./bin"
+-- >>> -- `list` displays all values in a `Shell` stream
+-- >>> list (limit 3 (ls "lib"))
+-- FilePath "lib/gnome-screensaver"
+-- FilePath "lib/libplist.so.1.1.8"
+-- FilePath "lib/tracker"
 -- >>> list (find "Browser.py" "lib")
 -- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
 -- FilePath "lib/python3.2/idlelib/PathBrowser.py"
 -- FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
 -- FilePath "lib/python3.2/idlelib/ClassBrowser.py"
--- >>>
--- >>> -- Use `fold` to fold the output of a `Shell` stream
+-- >>> -- Use `fold` to reduce the output of a `Shell` stream
 -- >>> import qualified Control.Foldl as Fold
--- >>> fold (ls ".") Fold.null
--- False
--- >>> fold (lstree ".") Fold.length
--- 301966
+-- >>> fold (ls "lib") Fold.length
+-- 846
 -- >>> fold (find "Browser.py" "lib") Fold.head
--- Just (FilePath "lib/python3.2/idlelib/ObjectBrowser.py")
--- >>>
+-- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
 -- >>> -- `sh` runs a `Shell` only for its effects, discarding any output
 -- >>> cd "/tmp"
--- >>> sh (fileout "foo.txt" ("123" <|> "456" <|> "789"))
+-- >>> sh (fileout "foo.txt" ("123" <|> "456" <|> "ABC"))
+-- >>> realpath "foo.txt"
+-- FilePath "/tmp/foo.txt"
 -- >>> sh (stdout (filein "foo.txt"))
 -- 123
 -- 456
--- 789
--- >>> sh (stdout (grep ("1" <|> "8") (filein "foo.txt")))
+-- ABC
+-- >> -- Commands like `grep`, `sed` and `find` accept arbitrary `Pattern`s
+-- >>> sh (stdout (grep ("1" <|> "B") (filein "foo.txt")))
 -- 123
--- 789
+-- ABC
+-- >>> let exclaim = fmap (<> "!") (plus digit)
+-- >>> sh (stdout (sed exclaim (filein "foo.txt")))
+-- 123!
+-- 456!
+-- ABC
+-- >>> testfile "foo.txt"
+-- True
+-- >>> rm "foo.txt"
+-- >>> testfile "foo.txt"
+-- False
 --
 --  You can also build up more sophisticated `Shell` programs using @do@
 --  notation:
@@ -57,17 +60,16 @@
 -- > main = sh example
 -- >
 -- > example = do
--- >     -- Read in lines containing "bar" from "files1.txt" and "files2.txt"
--- >     -- and interpret them as files
--- >     fileStr <- grep "bar" (filein "files1.txt" <|> filein "files2.txt")
+-- >     -- Read in file names from "files1.txt" and "files2.txt"
+-- >     fileStr <- filein "files1.txt" <|> filein "files2.txt"
 -- >     let file = fromText fileStr
 -- >
--- >     -- Stream the file to standard output if it exists
--- >     exists <- liftIO (testfile file)
--- >     stdout (if exists then filein file else empty)
+-- >     -- Stream each file to standard output only if the file exists
+-- >     True <- liftIO (testfile file)
+-- >     stdout (filein file)
 --
--- The above program will stream in constant space, bringing no more than two
--- lines into memory at any time.
+-- See "Turtle.Tutorial" for an extended tutorial explaining how to use this
+-- library in greater detail.
 
 module Turtle.Prelude (
     -- * IO
@@ -383,7 +385,11 @@ grep pattern s = do
     _:_ <- return (inside pattern txt)
     return txt
 
--- | Replace all occurrences of a `Pattern` with its `Text` result
+{-| Replace all occurrences of a `Pattern` with its `Text` result
+
+    Warning: Do not use a `Pattern` that matches the empty string, since it will
+    match an infinite number of times
+-}
 sed :: Pattern Text -> Shell Text -> Shell Text
 sed pattern s = do
     let pattern' = fmap Text.concat (many (pattern <|> selfless (plus anyChar)))
