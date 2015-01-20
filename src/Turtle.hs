@@ -36,6 +36,10 @@
 --
 --  * `MonadIO`, which works with `Protected` and `Shell`
 --
+--  "Data.Monoid" provides on class:
+--
+--  * `Monoid`, which works with `Fold`, `Pattern`, `Protected`, and `Shell`
+--
 --  "Filesystem.Path.CurrentOS" provides `FilePath`-manipulation utilities
 --
 --  "Control.Foldl" provides the `Fold` \/ `FoldM` types
@@ -61,6 +65,7 @@ module Turtle (
     , module Control.Applicative
     , module Control.Monad
     , module Control.Monad.IO.Class
+    , module Data.Monoid
     , module Filesystem.Path.CurrentOS
     , module Control.Foldl
     , Text
@@ -95,6 +100,7 @@ import Control.Monad
     , unless
     )
 import Control.Monad.IO.Class (MonadIO(..))
+import Data.Monoid (Monoid(..), (<>))
 import Filesystem.Path.CurrentOS
     ( FilePath
     , root
@@ -118,10 +124,7 @@ import Filesystem.Path.CurrentOS
     , toText
     , fromText
     )
-import Control.Foldl
-    ( Fold(..)
-    , FoldM(..)
-    )
+import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import System.IO (Handle)
