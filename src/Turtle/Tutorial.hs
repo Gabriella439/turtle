@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
+
 {-| Use @turtle@ if you want to write light-weight and maintainable shell
     scripts.
 
