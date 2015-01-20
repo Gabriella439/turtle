@@ -226,8 +226,8 @@ stream cmd s = do
 
     Synonym for `putStrLn`
 -}
-echo :: String -> IO ()
-echo = putStrLn
+echo :: Text -> IO ()
+echo = Text.putStrLn
 
 #if MIN_VERSION_base(4,7,0)
 -- | Set or modify an environment variable
