@@ -50,6 +50,7 @@ Library
         Build-Depends: unix  >= 2.5.1.0 && < 2.8
     Exposed-Modules:
         Turtle,
+        Turtle.Format,
         Turtle.Pattern,
         Turtle.Protected,
         Turtle.Shell,

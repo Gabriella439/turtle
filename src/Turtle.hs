@@ -8,6 +8,8 @@
 --  This module re-exports the rest of the library and also re-exports useful
 --  modules from @base@:
 --
+--  "Turtle.Format" provides type-safe string formatting
+--
 --  "Turtle.Pattern" provides `Pattern`s, which are like more powerful regular
 --  expressions
 --
@@ -61,7 +63,8 @@
 
 module Turtle (
     -- * Modules
-      module Turtle.Pattern
+      module Turtle.Format
+    , module Turtle.Pattern
     , module Turtle.Protected
     , module Turtle.Shell
     , module Turtle.Prelude
@@ -77,6 +80,7 @@ module Turtle (
     , ExitCode(..)
     ) where
 
+import Turtle.Format
 import Turtle.Pattern
 import Turtle.Protected
 import Turtle.Shell
