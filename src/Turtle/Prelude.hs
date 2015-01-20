@@ -101,6 +101,7 @@ module Turtle.Prelude (
     , datefile
     , touch
     , time
+    , sleep
 
     -- * Protected
     , mktemp
@@ -131,6 +132,7 @@ module Turtle.Prelude (
 
 import Control.Applicative (Alternative(..))
 import Control.Concurrent.Async (Async, async, cancel, withAsync)
+import Control.Concurrent (threadDelay)
 import Control.Exception (bracket)
 import Control.Foldl (FoldM(..))
 import Control.Monad (msum)
@@ -389,8 +391,9 @@ touch file = do
 #endif
         else sh (fileout file empty)
 
-{-| Time how long a command takes, returning the duration in seconds alongside
-    the return value
+{-| Time how long a command takes in monotonic wall clock time
+
+    Returns the duration in seconds alongside the return value
 -}
 time :: IO a -> IO (a, Double)
 time io = do
@@ -400,6 +403,10 @@ time io = do
     let t = fromIntegral (    seconds2 -     seconds1)
           + fromIntegral (nanoseconds2 - nanoseconds1) / 10^(9::Int)
     return (a, t)
+
+-- | Sleep for the given number of seconds
+sleep :: Double -> IO ()
+sleep n = threadDelay (truncate (n * 10^(6::Int)))
 
 {-| Create a temporary directory underneath the given directory
 
