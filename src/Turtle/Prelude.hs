@@ -152,7 +152,7 @@ import Data.Bits ((.&.))
 #endif
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
-import Data.Time (UTCTime, getCurrentTime)
+import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 import qualified Filesystem
@@ -407,14 +407,14 @@ touch file = do
 
     Returns the duration in seconds alongside the return value
 -}
-time :: IO a -> IO (a, Double)
+time :: IO a -> IO (a, NominalDiffTime)
 time io = do
     TimeSpec seconds1 nanoseconds1 <- getTime Monotonic
-    a  <- io
+    a <- io
     TimeSpec seconds2 nanoseconds2 <- getTime Monotonic
     let t = fromIntegral (    seconds2 -     seconds1)
           + fromIntegral (nanoseconds2 - nanoseconds1) / 10^(9::Int)
-    return (a, t)
+    return (a, fromRational t)
 
 -- | Sleep for the given number of seconds
 sleep :: Double -> IO ()
