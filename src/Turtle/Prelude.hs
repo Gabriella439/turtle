@@ -183,7 +183,7 @@ import System.Posix (openDirStream, readDirStream, closeDirStream, touchFile)
 #endif
 import Prelude hiding (FilePath)
 
-import Turtle.Pattern (Pattern, anyChar, inside, match, selfless, plus)
+import Turtle.Pattern (Pattern, anyChar, inside, match)
 import Turtle.Protected
 import Turtle.Shell
 
@@ -562,7 +562,8 @@ grep pattern s = do
 -}
 sed :: Pattern Text -> Shell Text -> Shell Text
 sed pattern s = do
-    let pattern' = fmap Text.concat (many (pattern <|> selfless (plus anyChar)))
+    let pattern' = fmap Text.concat
+            (many (pattern <|> fmap Text.singleton anyChar))
     txt    <- s
     txt':_ <- return (match pattern' txt)
     return txt'
