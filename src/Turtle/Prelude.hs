@@ -63,20 +63,20 @@
 --  You can also build up more sophisticated `Shell` programs using `sh` in
 --  conjunction with @do@ notation:
 --
--- > {-# LANGUAGE OverloadedStrings #-}
+-- >{-# LANGUAGE OverloadedStrings #-}
 -- >
--- > import Turtle
+-- >import Turtle
 -- >
--- > main = sh example
+-- >main = sh example
 -- >
--- > example = do
--- >     -- Read in file names from "files1.txt" and "files2.txt"
--- >     file <- fmap fromText (input "files1.txt" <|> input "files2.txt")
+-- >example = do
+-- >    -- Read in file names from "files1.txt" and "files2.txt"
+-- >    file <- fmap fromText (input "files1.txt" <|> input "files2.txt")
 -- >
--- >     -- Stream each file to standard output only if the file exists
--- >     True <- liftIO (testfile file)
--- >     txt  <- input file
--- >     liftIO (echo txt)
+-- >    -- Stream each file to standard output only if the file exists
+-- >    True <- liftIO (testfile file)
+-- >    txt  <- input file
+-- >    liftIO (echo txt)
 --
 -- See "Turtle.Tutorial" for an extended tutorial explaining how to use this
 -- library in greater detail.
