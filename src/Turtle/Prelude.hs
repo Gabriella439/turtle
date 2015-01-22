@@ -11,9 +11,9 @@
 -- >>> pwd
 -- FilePath "/tmp"
 --
--- `list` displays all values in a `Shell` stream
+-- `view` prints all values in a `Shell` stream
 --
--- >>> list (ls "/usr")
+-- >>> view (ls "/usr")
 -- FilePath "/usr/lib"
 -- FilePath "/usr/src"
 -- FilePath "/usr/sbin"
@@ -22,7 +22,7 @@
 -- FilePath "/usr/games"
 -- FilePath "/usr/local"
 -- FilePath "/usr/bin"
--- >>> list (find "Browser.py" "/usr/lib")
+-- >>> view (find "Browser.py" "/usr/lib")
 -- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
 -- FilePath "lib/python3.2/idlelib/PathBrowser.py"
 -- FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
@@ -33,8 +33,8 @@
 -- >>> import qualified Control.Foldl as Fold
 -- >>> fold (ls "/usr") Fold.length
 -- 8
--- >>> fold (find "Browser.py" "lib") Fold.head
--- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
+-- >>> fold (find "Browser.py" "/usr/lib") Fold.head
+-- Just (FilePath "/usr/lib/python3.2/idlelib/ObjectBrowser.py")
 --
 -- Create files using `output`:
 --

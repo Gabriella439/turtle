@@ -56,10 +56,11 @@
 -}
 
 module Turtle.Shell (
+    -- * Shell
       Shell(..)
     , fold
     , sh
-    , list
+    , view
 
     -- * Embeddings
     , select
@@ -90,8 +91,8 @@ sh :: Shell a -> IO ()
 sh s = fold s (pure ())
 
 -- | Run a `Shell` to completion, `print`ing any unused values
-list :: Show a => Shell a -> IO ()
-list s = sh (do
+view :: Show a => Shell a -> IO ()
+view s = sh (do
     x <- s
     liftIO (print x) )
 
@@ -184,10 +185,7 @@ instance Floating a => Floating (Shell a) where
 instance IsString a => IsString (Shell a) where
     fromString str = pure (fromString str)
 
-{-| Convert a list to `Shell` that emits each element of the list
-
-    Like `Control.Monad.msum`, but more efficient
--}
+-- | Convert a list to a `Shell` that emits each element of the list
 select :: [a] -> Shell a
 select as = Shell (\(FoldM step begin done) -> do
     x0 <- begin
@@ -196,10 +194,7 @@ select as = Shell (\(FoldM step begin done) -> do
             k $! x'
     foldr step' done as $! x0 )
 
-{-| Acquire a `Protected` resource within a `Shell` in an exception-safe way
-
-> do { x <- with m; with (f x) } = with (do { x <- m; f x })
--}
+-- | Acquire a `Protected` resource within a `Shell` in an exception-safe way
 with :: Protected a -> Shell a
 with resource = Shell (\(FoldM step begin done) -> do
     x <- begin
