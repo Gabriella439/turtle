@@ -4,14 +4,16 @@
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
 --
---  Example one-liners:
+--  Many of these commands are just existing Haskell commands renamed to match
+--  their Unix counterparts:
 --
 -- >>> :set -XOverloadedStrings
 -- >>> cd "/tmp"
 -- >>> pwd
 -- FilePath "/tmp"
 --
--- `view` prints all values in a `Shell` stream
+-- Some commands are `Shell`s that emit streams of values.  `view` prints all
+-- values in a `Shell` stream:
 --
 -- >>> view (ls "/usr")
 -- FilePath "/usr/lib"
@@ -28,7 +30,7 @@
 -- FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
 -- FilePath "lib/python3.2/idlelib/ClassBrowser.py"
 --
--- Use `fold` to reduce the output of a `Shell` stream
+-- Use `fold` to reduce the output of a `Shell` stream:
 --
 -- >>> import qualified Control.Foldl as Fold
 -- >>> fold (ls "/usr") Fold.length
