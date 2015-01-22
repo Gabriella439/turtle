@@ -7,47 +7,58 @@
 --  Example one-liners:
 --
 -- >>> :set -XOverloadedStrings
--- >>> cd "/usr"
+-- >>> cd "/tmp"
 -- >>> pwd
--- FilePath "/usr"
--- >>> -- `list` displays all values in a `Shell` stream
--- >>> list (limit 3 (ls "lib"))
--- FilePath "lib/gnome-screensaver"
--- FilePath "lib/libplist.so.1.1.8"
--- FilePath "lib/tracker"
--- >>> list (find "Browser.py" "lib")
+-- FilePath "/tmp"
+--
+-- `list` displays all values in a `Shell` stream
+--
+-- >>> list (ls "/usr")
+-- FilePath "/usr/lib"
+-- FilePath "/usr/src"
+-- FilePath "/usr/sbin"
+-- FilePath "/usr/include"
+-- FilePath "/usr/share"
+-- FilePath "/usr/games"
+-- FilePath "/usr/local"
+-- FilePath "/usr/bin"
+-- >>> list (find "Browser.py" "/usr/lib")
 -- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
 -- FilePath "lib/python3.2/idlelib/PathBrowser.py"
 -- FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
 -- FilePath "lib/python3.2/idlelib/ClassBrowser.py"
--- >>> -- Use `fold` to reduce the output of a `Shell` stream
+--
+-- Use `fold` to reduce the output of a `Shell` stream
+--
 -- >>> import qualified Control.Foldl as Fold
--- >>> fold (ls "lib") Fold.length
--- 846
+-- >>> fold (ls "/usr") Fold.length
+-- 8
 -- >>> fold (find "Browser.py" "lib") Fold.head
 -- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
--- >>> cd "/tmp"
--- >>> fileout "foo.txt" ("123" <|> "456" <|> "ABC")
+--
+-- Create files using `output`:
+--
+-- >>> output "foo.txt" ("123" <|> "456" <|> "ABC")
 -- >>> realpath "foo.txt"
 -- FilePath "/tmp/foo.txt"
--- >>> stdout (filein "foo.txt")
+--
+-- Read in files using `input`:
+--
+-- >>> stdout (input "foo.txt")
 -- 123
 -- 456
 -- ABC
--- >> -- Commands like `grep`, `sed` and `find` accept arbitrary `Pattern`s
--- >>> stdout (grep ("1" <|> "B") (filein "foo.txt"))
+--
+-- Commands like `grep`, `sed` and `find` accept arbitrary `Pattern`s
+--
+-- >>> stdout (grep ("1" <|> "B") (input "foo.txt"))
 -- 123
 -- ABC
 -- >>> let exclaim = fmap (<> "!") (plus digit)
--- >>> stdout (sed exclaim (filein "foo.txt"))
+-- >>> stdout (sed exclaim (input "foo.txt"))
 -- 123!
 -- 456!
 -- ABC
--- >>> testfile "foo.txt"
--- True
--- >>> rm "foo.txt"
--- >>> testfile "foo.txt"
--- False
 --
 --  You can also build up more sophisticated `Shell` programs using `sh` in
 --  conjunction with @do@ notation:
@@ -60,12 +71,11 @@
 -- >
 -- > example = do
 -- >     -- Read in file names from "files1.txt" and "files2.txt"
--- >     fileStr <- filein "files1.txt" <|> filein "files2.txt"
--- >     let file = fromText fileStr
+-- >     file <- fmap fromText (input "files1.txt" <|> input "files2.txt")
 -- >
 -- >     -- Stream each file to standard output only if the file exists
 -- >     True <- liftIO (testfile file)
--- >     txt  <- filein file
+-- >     txt  <- input file
 -- >     liftIO (echo txt)
 --
 -- See "Turtle.Tutorial" for an extended tutorial explaining how to use this
@@ -109,13 +119,17 @@ module Turtle.Prelude (
     -- * Protected
     , mktemp
     , mktempdir
-    , readhandle
-    , writehandle
     , fork
     , wait
 
     -- * Shell
     , stream
+    , stdin
+    , input
+    , stdout
+    , stderr
+    , output
+    , append
     , ls
     , lstree
     , cat
@@ -125,14 +139,6 @@ module Turtle.Prelude (
     , yes
     , limit
     , limitWhile
-    , stdin
-    , filein
-    , handlein
-    , stdout
-    , stderr
-    , fileout
-    , handleout
-    , fileappend
     ) where
 
 import Control.Applicative (Alternative(..))
@@ -395,7 +401,7 @@ touch file = do
 #else
         then touchFile (Filesystem.encodeString file)
 #endif
-        else sh (fileout file empty)
+        else output file empty
 
 {-| Time how long a command takes in monotonic wall clock time
 
@@ -461,6 +467,80 @@ mktemp parent prefix = Protect (do
         (Text.unpack prefix)
     let file = Filesystem.decodeString file'
     return ((file, handle), rm file) )
+
+-- | Fork a thread, acquiring an `Async` value
+fork :: IO a -> Protected (Async a)
+fork io = Protect (do
+    a <- async io
+    return (a, cancel a) )
+
+-- | Read lines of `Text` from a `Handle`
+handlein :: Handle -> Shell Text
+handlein handle = Shell (\(FoldM step begin done) -> do
+    x0 <- begin
+    let loop x = do
+            eof <- IO.hIsEOF handle
+            if eof
+                then done x
+                else do
+                    txt <- Text.hGetLine handle
+                    x'  <- step x txt
+                    loop $! x'
+    loop $! x0 )
+
+-- | Read lines of `Text` from standard input
+stdin :: Shell Text
+stdin = handlein IO.stdin
+
+-- | Stream lines of `Text` to standard output
+stdout :: Shell Text -> IO ()
+stdout s = sh (do
+    txt <- s
+    liftIO (echo txt) )
+
+-- | Stream lines of `Text` to standard error
+stderr :: Shell Text -> IO ()
+stderr s = sh (do
+    txt <- s
+    liftIO (err txt) )
+
+-- | Read lines of `Text` from a file
+input :: FilePath -> Shell Text
+input file = do
+    handle <- with (readhandle file)
+    handlein handle
+
+-- | Tee lines of `Text` to a file
+output :: FilePath -> Shell Text -> IO ()
+output file s = sh (do
+    handle <- with (writehandle file)
+    txt    <- s
+    liftIO (Text.hPutStrLn handle txt) )
+
+-- | Tee lines of `Text` to append to a file
+append :: FilePath -> Shell Text -> IO ()
+append file s = sh (do
+    handle <- with (appendhandle file)
+    txt    <- s
+    liftIO (Text.hPutStrLn handle txt) )
+
+-- | Acquire a `Protected` read-only `Handle` from a `FilePath`
+readhandle :: FilePath -> Protected Handle
+readhandle file = Protect (do
+    handle <- Filesystem.openFile file IO.ReadMode
+    return (handle, IO.hClose handle) )
+
+-- | Acquire a `Protected` write-only `Handle` from a `FilePath`
+writehandle :: FilePath -> Protected Handle
+writehandle file = Protect (do
+    handle <- Filesystem.openFile file IO.WriteMode
+    return (handle, IO.hClose handle) )
+
+-- | Acquire a `Protected` append-only `Handle` from a `FilePath`
+appendhandle :: FilePath -> Protected Handle
+appendhandle file = Protect (do
+    handle <- Filesystem.openFile file IO.AppendMode
+    return (handle, IO.hClose handle) )
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
@@ -534,82 +614,3 @@ date = getCurrentTime
 -- | Get the time a file was last modified
 datefile :: FilePath -> IO UTCTime
 datefile = Filesystem.getModified
-
--- | Read lines of `Text` from standard input
-stdin :: Shell Text
-stdin = handlein IO.stdin
-
--- | Read lines of `Text` from a file
-filein :: FilePath -> Shell Text
-filein file = do
-    handle <- with (readhandle file)
-    handlein handle
-
--- | Read lines of `Text` from a `Handle`
-handlein :: Handle -> Shell Text
-handlein handle = Shell (\(FoldM step begin done) -> do
-    x0 <- begin
-    let loop x = do
-            eof <- IO.hIsEOF handle
-            if eof
-                then done x
-                else do
-                    txt <- Text.hGetLine handle
-                    x'  <- step x txt
-                    loop $! x'
-    loop $! x0 )
-
--- | Stream lines of `Text` to standard output
-stdout :: Shell Text -> IO ()
-stdout s = sh (do
-    txt <- s
-    liftIO (echo txt) )
-
--- | Stream lines of `Text` to standard error
-stderr :: Shell Text -> IO ()
-stderr s = sh (do
-    txt <- s
-    liftIO (err txt) )
-
--- | Tee lines of `Text` to a file
-fileout :: FilePath -> Shell Text -> Shell Text
-fileout file s = do
-    handle <- with (writehandle file)
-    handleout handle s
-
--- | Tee lines of `Text` to a `Handle`
-handleout :: Handle -> Shell Text -> Shell Text
-handleout handle s = do
-    txt <- s
-    liftIO (Text.hPutStrLn handle txt)
-    return txt
-
--- | Tee lines of `Text` to append to a file
-fileappend :: FilePath -> Shell Text -> Shell Text
-fileappend file s = do
-    handle <- with (appendHandle file)
-    handleout handle s
-
--- | Acquire a `Protected` read-only `Handle` from a `FilePath`
-readhandle :: FilePath -> Protected Handle
-readhandle file = Protect (do
-    handle <- Filesystem.openFile file IO.ReadMode
-    return (handle, IO.hClose handle) )
-
--- | Acquire a `Protected` write-only `Handle` from a `FilePath`
-writehandle :: FilePath -> Protected Handle
-writehandle file = Protect (do
-    handle <- Filesystem.openFile file IO.WriteMode
-    return (handle, IO.hClose handle) )
-
--- | Acquire a `Protected` append-only `Handle` from a `FilePath`
-appendHandle :: FilePath -> Protected Handle
-appendHandle file = Protect (do
-    handle <- Filesystem.openFile file IO.AppendMode
-    return (handle, IO.hClose handle) )
-
--- | Fork a thread, acquiring an `Async` value
-fork :: IO a -> Protected (Async a)
-fork io = Protect (do
-    a <- async io
-    return (a, cancel a) )
