@@ -26,21 +26,20 @@
 -- 846
 -- >>> fold (find "Browser.py" "lib") Fold.head
 -- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
--- >>> -- `sh` runs a `Shell` only for its effects, discarding any output
 -- >>> cd "/tmp"
--- >>> sh (fileout "foo.txt" ("123" <|> "456" <|> "ABC"))
+-- >>> fileout "foo.txt" ("123" <|> "456" <|> "ABC")
 -- >>> realpath "foo.txt"
 -- FilePath "/tmp/foo.txt"
--- >>> sh (stdout (filein "foo.txt"))
+-- >>> stdout (filein "foo.txt")
 -- 123
 -- 456
 -- ABC
 -- >> -- Commands like `grep`, `sed` and `find` accept arbitrary `Pattern`s
--- >>> sh (stdout (grep ("1" <|> "B") (filein "foo.txt")))
+-- >>> stdout (grep ("1" <|> "B") (filein "foo.txt"))
 -- 123
 -- ABC
 -- >>> let exclaim = fmap (<> "!") (plus digit)
--- >>> sh (stdout (sed exclaim (filein "foo.txt")))
+-- >>> stdout (sed exclaim (filein "foo.txt"))
 -- 123!
 -- 456!
 -- ABC
@@ -50,8 +49,8 @@
 -- >>> testfile "foo.txt"
 -- False
 --
---  You can also build up more sophisticated `Shell` programs using @do@
---  notation:
+--  You can also build up more sophisticated `Shell` programs using `sh` in
+--  conjunction with @do@ notation:
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- >
@@ -66,7 +65,8 @@
 -- >
 -- >     -- Stream each file to standard output only if the file exists
 -- >     True <- liftIO (testfile file)
--- >     stdout (filein file)
+-- >     txt  <- filein file
+-- >     liftIO (echo txt)
 --
 -- See "Turtle.Tutorial" for an extended tutorial explaining how to use this
 -- library in greater detail.
@@ -75,6 +75,7 @@ module Turtle.Prelude (
     -- * IO
       system
     , echo
+    , err
 #if MIN_VERSION_base(4,7,0)
     , export
     , unset
@@ -102,6 +103,8 @@ module Turtle.Prelude (
     , touch
     , time
     , sleep
+    , exit
+    , die
 
     -- * Protected
     , mktemp
@@ -126,6 +129,7 @@ module Turtle.Prelude (
     , filein
     , handlein
     , stdout
+    , stderr
     , fileout
     , handleout
     , fileappend
@@ -158,9 +162,9 @@ import System.Environment (
     lookupEnv,
 #endif
     getEnvironment )
-import System.IO (Handle)
 import System.Directory (getPermissions, readable)
-import System.Exit (ExitCode)
+import System.Exit (ExitCode(..), exitWith)
+import System.IO (Handle)
 import qualified System.IO as IO
 import System.IO.Temp (createTempDirectory, openTempFile)
 import qualified System.Process as Process
@@ -222,12 +226,13 @@ stream cmd s = do
     _ <- with (fork feedIn)
     handlein hOut
 
-{-| Print to @stdout@
-
-    Synonym for `putStrLn`
--}
+-- | Print to @stdout@
 echo :: Text -> IO ()
 echo = Text.putStrLn
+
+-- | Print to @stderr@
+err :: Text -> IO ()
+err = Text.hPutStrLn IO.stderr
 
 #if MIN_VERSION_base(4,7,0)
 -- | Set or modify an environment variable
@@ -409,6 +414,20 @@ time io = do
 sleep :: Double -> IO ()
 sleep n = threadDelay (truncate (n * 10^(6::Int)))
 
+{-| Exit with the given exit code
+
+    An exit code of @0@ indicates success
+-}
+exit :: Int -> IO ()
+exit 0 = exitWith  ExitSuccess
+exit n = exitWith (ExitFailure n)
+
+-- | Print a message to standard error and exit with an exit code of @1@
+die :: Text -> IO ()
+die txt = do
+    err txt
+    exit 1
+
 {-| Create a temporary directory underneath the given directory
 
     Deletes the temporary directory when done
@@ -540,9 +559,17 @@ handlein handle = Shell (\(FoldM step begin done) -> do
                     loop $! x'
     loop $! x0 )
 
--- | Tee lines of `Text` to standard output
-stdout :: Shell Text -> Shell Text
-stdout = handleout IO.stdout
+-- | Stream lines of `Text` to standard output
+stdout :: Shell Text -> IO ()
+stdout s = sh (do
+    txt <- s
+    liftIO (echo txt) )
+
+-- | Stream lines of `Text` to standard error
+stderr :: Shell Text -> IO ()
+stderr s = sh (do
+    txt <- s
+    liftIO (err txt) )
 
 -- | Tee lines of `Text` to a file
 fileout :: FilePath -> Shell Text -> Shell Text
