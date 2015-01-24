@@ -88,6 +88,7 @@ module Turtle.Prelude (
       system
     , echo
     , err
+    , readLine
 #if MIN_VERSION_base(4,7,0)
     , export
     , unset
@@ -241,6 +242,17 @@ echo = Text.putStrLn
 -- | Print to @stderr@
 err :: Text -> IO ()
 err = Text.hPutStrLn IO.stderr
+
+{-| Read in a line from @stdin@
+
+    Returns `Nothing` if at end of input
+-}
+readLine :: IO (Maybe Text)
+readLine = do
+    eof <- IO.isEOF
+    if eof
+        then return Nothing
+        else fmap (Just . pack) getLine
 
 #if MIN_VERSION_base(4,7,0)
 -- | Set or modify an environment variable
