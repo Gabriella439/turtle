@@ -3,6 +3,8 @@
 {-| Minimalist implementation of type-safe formatted strings, borrowing heavily
     from the implementation of the @formatting@ package.
 
+    This module also provides `repr` for rendering values as `Text`
+
     Example use of this module:
 
 >>> :set -XOverloadedStrings
@@ -55,6 +57,9 @@ module Turtle.Format (
     , e
     , g
     , s
+
+    -- * Utilities
+    , repr
     ) where
 
 import Control.Category (Category(..))
@@ -172,3 +177,11 @@ g = makeFormat (\n -> pack (showGFloat (Just 6) n ""))
 -}
 s :: Format r (Text -> r)
 s = makeFormat id
+
+{-| Convert a `Show`able value to `Text`
+
+>>> repr (1,2)
+"(1,2)"
+-}
+repr :: Show a => a -> Text
+repr = pack . show
