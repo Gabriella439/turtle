@@ -25,9 +25,9 @@
     Use @do@ notation to structure more complex patterns:
 
 >>> :{
-let bit = (char '0' *> pure False) <|> (char '1' *> pure True);
+let bit = ("0" *> pure False) <|> ("1" *> pure True);
     portableBitMap = do
-        { text "P1"
+        { "P1"
         ; width  <- spaces1 *> decimal
         ; height <- spaces1 *> decimal
         ; count width (count height (spaces1 *> bit))
@@ -454,7 +454,7 @@ signed p = do
     sign <- (char '+' *> pure id) <|> (char '-' *> pure negate) <|> (pure id)
     fmap sign p
 
-{-| Pattern 0 or more occurrecnes of the given character
+{-| Parse 0 or more occurrences of the given character
 
 >>> prefix (star anyChar) "123"
 ["123","12","1",""]
