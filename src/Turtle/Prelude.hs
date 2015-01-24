@@ -146,7 +146,7 @@ module Turtle.Prelude (
 import Control.Applicative (Alternative(..))
 import Control.Concurrent.Async (Async, async, cancel, withAsync, wait)
 import Control.Concurrent (threadDelay)
-import Control.Exception (bracket)
+import Control.Exception (bracket, throwIO)
 import Control.Foldl (FoldM(..))
 import Control.Monad (msum)
 #ifdef mingw32_HOST_OS
@@ -430,11 +430,9 @@ exit :: Int -> IO ()
 exit 0 = exitWith  ExitSuccess
 exit n = exitWith (ExitFailure n)
 
--- | Print a message to standard error and exit with an exit code of @1@
+-- | Throw an exception using the provided `Text` message
 die :: Text -> IO ()
-die txt = do
-    err txt
-    exit 1
+die txt = throwIO (userError (unpack txt))
 
 {-| Create a temporary directory underneath the given directory
 
