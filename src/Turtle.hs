@@ -81,6 +81,7 @@ module Turtle (
     , UTCTime
     , Handle
     , ExitCode(..)
+    , IsString(..)
     ) where
 
 import Turtle.Format
@@ -111,6 +112,7 @@ import Control.Monad
     )
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Monoid (Monoid(..), (<>))
+import Data.String (IsString(..))
 import Filesystem.Path.CurrentOS
     ( FilePath
     , root
