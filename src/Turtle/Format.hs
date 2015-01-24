@@ -3,7 +3,8 @@
 {-| Minimalist implementation of type-safe formatted strings, borrowing heavily
     from the implementation of the @formatting@ package.
 
-    This module also provides `repr` for rendering values as `Text`
+    This module also provides `repr` for rendering values as `Text`, as a
+    short-hand for @(format w)@
 
     Example use of this module:
 
@@ -184,4 +185,4 @@ s = makeFormat id
 "(1,2)"
 -}
 repr :: Show a => a -> Text
-repr = pack . show
+repr = format w

@@ -38,6 +38,9 @@ module Turtle.Tutorial (
 
     -- * System
     -- $system
+
+    -- * String formatting
+    -- $format
     ) where
 
 import Turtle
@@ -609,3 +612,30 @@ import Turtle
 -- Most of the commands in this library do not actually invoke an external
 -- shell.  Instead, they indirectly wrap multiple libraries that provide foreign
 -- bindings to C code for greater performance and portability.
+
+-- $format
+--
+-- This library provides type-safe string formatting utilities, too.  For
+-- example, instead of writing this:
+--
+-- > cmd <> " failed with exit code: " <> repr n
+--
+-- ... you might prefer to write this in @printf@-style:
+--
+-- > format (s%" failed with exit code: "%d) cmd n
+--
+-- Even neater, the compiler will automatically infer the number of arguments
+-- and their types from the format string:
+--
+-- >$ ghci
+-- >Prelude> :set -XOverloadedStrings
+-- >Prelude> import Turtle
+-- >Prelude Turtle> :type format (s%" failed with exit code: "%d)
+-- >format (s%" failed with exit code: "%d) :: Text -> Int -> Text
+--
+-- The compiler correctly infers that this requires on argument of type `Text`
+-- to satisfy the `s` at the beginning of the format string and another
+-- argument of type `Int` to satisfy the `d` at the end of the format string.
+--
+-- See the "Turtle.Format" module for more details if you are interested in this
+-- feature.
