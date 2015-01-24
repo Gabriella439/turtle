@@ -27,14 +27,17 @@ module Turtle.Tutorial (
     -- * Subroutines
     -- $do
 
-    -- * Type checking
-    -- $typecheck
+    -- * Types
+    -- $types
 
-    -- * Type inference
-    -- $inference
+    -- * Shell
+    -- $shell
 
     -- * Type signatures
     -- $signatures
+
+    -- * System
+    -- $system
     ) where
 
 import Turtle
@@ -215,7 +218,7 @@ import Turtle
 -- trick to simplify both the Haskell and Bash code:
 --
 -- >datePwd = do      -- datePwd() {
--- >    dir  <- pwd   --     DIR=$(pwd)
+-- >    dir <- pwd    --     DIR=$(pwd)
 -- >    datefile dir  --     date -r $DIR
 -- >                  -- }
 --
@@ -245,7 +248,7 @@ import Turtle
 -- >-- Same as:
 -- >main =    echo "Hello, world!"
 
--- $typecheck
+-- $types
 --
 -- Notice how the above Haskell example used `print` instead of `echo`.  Run the
 -- following script to find out what happens if we use `echo` instead of
@@ -275,20 +278,12 @@ import Turtle
 --
 -- The error occurs on the last line of our program.  If you study the error
 -- message closely you'll see that the `echo` function expects a `Text` value,
--- but we passed it @\'time\'@, which was a `UTCTime` value.
---
--- Although the error is at the end of our script, Haskell catches this error
--- before even running the script.  When we \"interpret\" a Haskell script the
--- Haskell compiler actually compiles the script without any optimizations to
--- generate a temporary executable and then runs the executable, much like Perl
--- does for Perl scripts.
---
--- The intermediate compile step detects the type error in our program before
--- the script begins.  We prefer to type-check the script before running
--- anything because type-checking is safe: we don't have to partially execute
--- the script to detect bugs.
-
--- $inference
+-- but we passed it @\'time\'@, which was a `UTCTime` value.  Although the error
+-- is at the end of our script, Haskell catches this error before even running
+-- the script.  When we \"interpret\" a Haskell script the Haskell compiler
+-- actually compiles the script without any optimizations to generate a
+-- temporary executable and then runs the executable, much like Perl does for
+-- Perl scripts.
 --
 -- You might wonder: \"where are the types?\"  None of the above programs had
 -- any type signatures or type annotations, yet the compiler still detected type
@@ -357,11 +352,61 @@ import Turtle
 --
 -- > print txt = echo (repr text)
 
+-- $shell
+--
+-- You can use @ghci@ for more than just inferring types.  You can use @ghci@ as
+-- a general-purpose Haskell shell for your system when you extend it with
+-- @turtle@:
+--
+-- >$ ghci
+-- >...
+-- >Prelude> :set -XOverloadedStrings
+-- >Prelude> import Turtle
+-- >Prelude Turtle> cd "/tmp"
+-- >...
+-- >Prelude Turtle> pwd
+-- >FilePath "/tmp"
+-- >Prelude Turtle> mkdir "test"
+-- >Prelude Turtle> cd "test"
+-- >Prelude Turtle> touch "file"
+-- >Prelude Turtle> testfile "file"
+-- >True
+-- >Prelude Turtle> rm "file"
+-- >Prelude Turtle> testfile "file"
+-- >False
+--
+-- You can also optionally configure @ghci@ to run the first two commands every
+-- time you launch @ghci@.  Just create a @.ghci@ within your current directory
+-- with these two lines:
+--
+-- >:set -XOverloadedStrings
+-- >import Turtle
+--
+-- You can enable those two commands permanently by adding the above file to
+-- your home directory.
+--
+-- @ghci@ accepts two types of commands.  You can provide a subroutine for
+-- @ghci@ to run and @ghci@ will execute the subroutine, printing the return
+-- value if it is not empty:
+--
+-- >Prelude Turtle> system "true" empty
+-- >ExitSuccess
+-- >Prelude Turtle> system "false" empty
+-- >ExitFailure 1
+--
+-- You can also type in a pure expression and @ghci@ will evaluate that
+-- expression:
+--
+-- >Prelude Turtle> 2 + 2
+-- >4
+-- >Prelude Turtle> "123" <> "456"  -- (<>) concatenates strings
+-- >"123456"
+
 -- $signatures
 --
--- Global type inference means that Haskell never requires any type signatures,
--- ever.  Type signatures in Haskell are entirely for the benefit of programmers
--- and behave like machine-checked documentation.
+-- Haskell performs global type inference, meaning that Haskell never requires
+-- any type signatures.  Type signatures in Haskell are entirely for the benefit
+-- of programmers and behave like machine-checked documentation.
 --
 -- Let's illustrate this by adding types to our original script:
 --
@@ -371,7 +416,7 @@ import Turtle
 -- >
 -- >datePwd :: IO UTCTime  -- Type signature
 -- >datePwd = do
--- >    dir    <- pwd
+-- >    dir <- pwd
 -- >    datefile dir
 -- >
 -- >main :: IO ()          -- Type signature
@@ -454,9 +499,10 @@ import Turtle
 -- When we enable @OverloadedStrings@ the compiler overloads string literals,
 -- interpreting them as any type that implements the `IsString` interface.  The
 -- error message says that `Int` does not implement the `IsString` interface so
--- the compiler cannot interpret a string literal as an Int`.  On the other
--- hand the `Text` type does implement `IsString`, which is why we can interpret
--- string literals as `Text` values.
+-- the compiler cannot interpret a string literal as an `Int`.  On the other
+-- hand the `Text` and `Turtle.FilePath` types do implement `IsString`, which
+-- is why we can interpret string literals as `Text` or `Turtle.FilePath`
+-- values.
 --
 -- The second error message says that `echo` expects a `Text` value, but we
 -- declared @str@ to be an `Int`, so the compiler aborts compilation, requiring
@@ -498,3 +544,68 @@ import Turtle
 -- interprets integer literals as any type that implements the `Num` interface.
 -- The `Text` type does not implement the `Num` interface, so we cannot
 -- interpret numeric literals as `Text` strings.
+
+-- $system
+--
+-- You can invoke arbitrary shell commands using the `system` command.  For
+-- example, we can write a program to create an empty directory and then archive
+-- the directory:
+--
+-- >#!/usr/bin/env runhaskell                    -- #!/bin/bash
+-- >                                             --
+-- >{-# LANGUAGE OverloadedStrings #-}           --
+-- >                                             --
+-- >import Turtle                                --
+-- >                                             --
+-- >main = do                                    --
+-- >    mktree "test"                            -- mkdir -p test
+-- >    system "tar czf test.tar.gz test" empty  -- tar czf test.tar.gz test
+--
+-- If you run this program, it will generate the @test.tar.gz@ archive:
+--
+-- >$ ./example.hs
+-- >ExitSuccess
+-- >$ echo $?
+-- >0
+-- >$ ls test.tar.gz
+-- >test.tar.gz
+--
+-- Like @ghci@, @runhaskell@ prints any non-empty result of the @main@
+-- subroutine (`ExitSuccess` in this case).
+--
+-- Let's look at the type of `system` to understand how it works:
+--
+-- >system
+-- >    :: Text         -- Shell command to run
+-- >    -> Shell Text   -- Standard input (as lines of `Text`)
+-- >    -> IO ExitCode  -- Exit code of the shell command
+--
+-- The first argument is a `Text` representation of the command to run.  The
+-- second argument lets you feed input to the command, and you can provide
+-- `empty` for now to feed no input.
+--
+-- The final result is an `ExitCode`, which you can use to detect whether the
+-- command completed successfully.  For example, we could print a more
+-- descriptive error message if an external command fails:
+--
+-- >#!/usr/bin/env runhaskell
+-- >
+-- >{-# LANGUAGE OverloadedStrings #-}
+-- >
+-- >import Turtle
+-- >
+-- >main = do
+-- >    let cmd = "false"
+-- >    x <- system cmd empty
+-- >    case x of
+-- >        ExitSuccess   -> return ()
+-- >        ExitFailure n -> die (cmd <> " failed with exit code: " <> repr n)
+--
+-- This prints an error message since the @false@ command always fails:
+--
+-- >$ ./example.hs
+-- >example.hs: user error (false failed with exit code: 1)
+--
+-- Most of the commands in this library do not actually invoke an external
+-- shell.  Instead, they indirectly wrap multiple libraries that provide foreign
+-- bindings to C code for greater performance and portability.
