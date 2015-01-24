@@ -153,7 +153,7 @@ import Control.Monad (msum)
 import Data.Bits ((.&.))
 #endif
 import Data.IORef (newIORef, readIORef, writeIORef)
-import Data.Text (Text)
+import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
@@ -199,7 +199,7 @@ system
     -> IO ExitCode
     -- ^ Exit code
 system cmd s = do
-    let p = (Process.shell (Text.unpack cmd))
+    let p = (Process.shell (unpack cmd))
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.Inherit
             , Process.std_err = Process.Inherit
@@ -222,7 +222,7 @@ stream
     -> Shell Text
     -- ^ Lines of standard output
 stream cmd s = do
-    let p = (Process.shell (Text.unpack cmd))
+    let p = (Process.shell (unpack cmd))
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.CreatePipe
             , Process.std_err = Process.Inherit
@@ -245,24 +245,24 @@ err = Text.hPutStrLn IO.stderr
 #if MIN_VERSION_base(4,7,0)
 -- | Set or modify an environment variable
 export :: Text -> Text -> IO ()
-export key val = setEnv (Text.unpack key) (Text.unpack val)
+export key val = setEnv (unpack key) (unpack val)
 
 -- | Delete an environment variable
 unset :: Text -> IO ()
-unset key = unsetEnv (Text.unpack key)
+unset key = unsetEnv (unpack key)
 #endif
 
 #if MIN_VERSION_base(4,6,0)
 -- | Look up an environment variable
 need :: Text -> IO (Maybe Text)
-need key = fmap (fmap Text.pack) (lookupEnv (Text.unpack key))
+need key = fmap (fmap pack) (lookupEnv (unpack key))
 #endif
 
 -- | Retrieve all environment variables
 env :: IO [(Text, Text)]
 env = fmap (fmap toTexts) getEnvironment
   where
-    toTexts (key, val) = (Text.pack key, Text.pack val)
+    toTexts (key, val) = (pack key, pack val)
 
 -- | Change the current directory
 cd :: FilePath -> IO ()
@@ -447,7 +447,7 @@ mktempdir
 mktempdir parent prefix = Protect (do
     dir' <- createTempDirectory
         (Filesystem.encodeString parent)
-        (Text.unpack prefix)
+        (unpack prefix)
     let dir = Filesystem.decodeString dir'
     return (dir, rmtree dir) )
 
@@ -464,7 +464,7 @@ mktemp
 mktemp parent prefix = Protect (do
     (file', handle) <- openTempFile
         (Filesystem.encodeString parent)
-        (Text.unpack prefix)
+        (unpack prefix)
     let file = Filesystem.decodeString file'
     return ((file, handle), rm file) )
 
