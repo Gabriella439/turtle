@@ -3,14 +3,14 @@
 {-| Use @turtle@ if you want to write light-weight and maintainable shell
     scripts.
 
-    @turtle@ embeds shell scripting directly within Haskell for three reasons:
+    @turtle@ embeds shell scripting directly within Haskell for two reasons:
 
     * Haskell code is easy to refactor and maintain because Haskell is
       statically typed
 
     * Haskell is syntactically lightweight, thanks to global type inference
 
-    These two features make Haskell ideal for scripting.
+    These features make Haskell ideal for scripting.
 
     This tutorial introduces how to use the @turtle@ library for scripting and
     this tutorial assumes no prior knowledge of Haskell, but does assume prior
@@ -41,6 +41,15 @@ module Turtle.Tutorial (
 
     -- * String formatting
     -- $format
+
+    -- * Streams
+    -- $streams
+
+    -- * Loops
+    -- $loops
+
+    -- * Folds
+    -- $folds
     ) where
 
 import Turtle
@@ -58,7 +67,7 @@ import Turtle
 -- >                                    --
 -- >main = echo "Hello, world!"         -- echo Hello, world!
 --
--- In Haskell you can use @--@ to comment out the rest of a line.  The above
+-- In Haskell you can use @--@ to comment out the rest of a line and the above
 -- example uses comments to show the equivalent Bash script side-by-side with
 -- the Haskell script.
 --
@@ -77,7 +86,7 @@ import Turtle
 -- >Hello, world!
 --
 -- You can even run Haskell code interactively using @ghci@, which is an
--- interactive REPL for Haskell code.  You can either use @ghci@ by itself:
+-- interactive REPL for Haskell.  You can either use @ghci@ by itself:
 --
 -- >$ ghci
 -- >...
@@ -140,11 +149,11 @@ import Turtle
 -- >str = "Hello, world!"
 --
 -- Notice how the above program defines @str@ after @main@, which is valid.
--- Haskell does not care in what order you define top-level values and functions
+-- Haskell does not care in what order you define top-level values or functions
 -- (using the @=@ sign).
 --
--- The top level of a Haskell program only permits definitions.  For example, if
--- you were to insert a statement at the top-level:
+-- The top level of a Haskell program only permits definitions.  If you were to
+-- insert a statement at the top-level:
 --
 -- >#!/usr/bin/env runhaskell
 -- >
@@ -176,7 +185,7 @@ import Turtle
 -- >Line 1
 -- >Line 2
 --
--- Some commands can return a value, and you can bind the result of a command
+-- Some commands can return a value, and you can store the result of a command
 -- using the @<-@ symbol.  For example, the following program prints the
 -- creation time of the current working directory by storing two intermediate
 -- results:
@@ -195,8 +204,8 @@ import Turtle
 --
 -- @do@ notation lets you combine smaller subroutines into larger subroutines.
 -- For example, we could refactor the above code to split the first two commands
--- into their own smaller subroutine and then invoke that subroutine within a
--- larger subroutine:
+-- into their own smaller subroutine and then invoke that smaller subroutine
+-- within a larger subroutine:
 --
 -- >#!/usr/bin/env runhaskell   -- #!/bin/bash
 -- >                            --
@@ -227,22 +236,28 @@ import Turtle
 --
 -- However, keep in mind that the `return` statement is something of a misnomer
 -- since it does not break or exit from the surrounding subroutine.  All it
--- does is bind its argument as its result:
+-- does is create a trivial subroutine that has no side effects and returns its
+-- argument as its result:
 --
--- >do x <- return expr
--- >   command x
+-- >return :: a -> IO a
+--
+-- If you `return` an expression, you're just giving it a new name:
+--
+-- >do x <- return expr  -- X=EXPR
+-- >   command x         -- command $X
 -- >
 -- >-- Same as:
--- >command expr
+-- >command expr         -- command EXPR
 --
 -- In fact, Haskell lets you use the @=@ sign for this common case where you
--- just want to create a new name for an expression:
+-- just want to create a new name for an expression.  This more closely mirrors
+-- the equivalent Bash syntax:
 --
--- >do let x = expr
--- >   command x
+-- >do let x = expr      -- X=EXPR
+-- >   command x         -- command $X
 -- >
 -- >-- Same as:
--- >command expr
+-- >command expr         -- command EXPR
 --
 -- Also, for a subroutine with a single command, you can omit the @do@:
 --
@@ -254,8 +269,7 @@ import Turtle
 -- $types
 --
 -- Notice how the above Haskell example used `print` instead of `echo`.  Run the
--- following script to find out what happens if we use `echo` instead of
--- `print`:
+-- following script to find out what happens if we choose `echo` instead:
 --
 -- >#!/usr/bin/env runhaskell
 -- >
@@ -279,7 +293,7 @@ import Turtle
 -- >           time <- datefile dir;
 -- >           echo time }
 --
--- The error occurs on the last line of our program.  If you study the error
+-- The error points to the last line of our program.  If you study the error
 -- message closely you'll see that the `echo` function expects a `Text` value,
 -- but we passed it @\'time\'@, which was a `UTCTime` value.  Although the error
 -- is at the end of our script, Haskell catches this error before even running
@@ -312,17 +326,18 @@ import Turtle
 -- Whenever you see something of the form @(x :: t)@, that means that @\'x\'@
 -- is a value of type @\'t\'@.  The above type says that `echo` is a function
 -- whose argument is a value of type `Text` and whose result is a subroutine
--- with an empty return value (denoted @\'()\'@).
+-- (`IO`) with an empty return value (denoted @\'()\'@).
 --
 -- Let's compare that with the type for `pwd`:
 --
 -- >Prelude Turtle> :type pwd
 -- >pwd :: IO Turtle.FilePath
 --
--- That says that `pwd` is a subroutine that returns a `Turtle.FilePath`.  The
--- @Turtle@ prefix before `Turtle.FilePath` is just the module qualifier (since
--- the name `Turtle.FilePath` conflicts with the default `FilePath` provided by
--- Haskell's @Prelude@).
+-- That says that `pwd` is a subroutine ('IO') that returns a `Turtle.FilePath`.
+-- The "Turtle" prefix before `Turtle.FilePath` is just the module name since
+-- the `Turtle.FilePath` exported by the @turtle@ library conflicts with the
+-- default `FilePath` exported by Haskell's @Prelude@.  The compiler uses the
+-- fully qualified name, @"Turtle".`FilePath`@, to avoid ambiguity.
 --
 -- We can similarly ask for the type of `datefile`:
 --
@@ -330,12 +345,15 @@ import Turtle
 -- >datefile :: Turtle.FilePath -> IO UTCTime
 --
 -- `datefile` is a function whose argument must be a `Turtle.FilePath` and whose
--- result is a subroutine that returns a `UTCTime`.
+-- result is a subroutine (`IO`) that returns a `UTCTime`.
 --
--- `UTCTime` is not the same type as `Text`.  If you try to use either one in
--- place of the other you will get a type error.  This is why our program failed
--- when we tried to `echo` the `UTCTime` returned by `datefile`. The reason
--- `print` works instead of `echo` is because `print` has a more flexible type:
+-- Now we can understand the type error: `echo` expects a `Text` argument but
+-- `datefile` returns a `UTCTime`, which is not the same thing.  Unlike Bash,
+-- not everything is `Text` in Haskell and the compiler will not cast or
+-- coerce anything for you.
+--
+-- The reason `print` worked is because `print` has a more general type than
+-- `echo`:
 --
 -- >Prelude Turtle> :type print
 -- >print :: Show a => a -> IO ()
@@ -351,14 +369,14 @@ import Turtle
 -- > -- This behaves like Python's `repr` function
 -- > repr :: Show a => a -> Text
 --
--- You could therefore implement `print` in terms of `repr`:
+-- You could therefore implement `print` in terms of `echo` and `repr`:
 --
--- > print txt = echo (repr text)
+-- > print x = echo (repr x)
 
 -- $shell
 --
--- You can use @ghci@ for more than just inferring types.  You can use @ghci@ as
--- a general-purpose Haskell shell for your system when you extend it with
+-- You can use @ghci@ for more than just inferring types.  @ghci@ is a
+-- general-purpose Haskell shell for your system when you extend it with
 -- @turtle@:
 --
 -- >$ ghci
@@ -385,12 +403,13 @@ import Turtle
 -- >:set -XOverloadedStrings
 -- >import Turtle
 --
--- You can enable those two commands permanently by adding the above file to
--- your home directory.
+-- The following @ghci@ examples will all assume that you run these commands
+-- at the beginning of every session, either manually or automatically.  You can
+-- even enable those two commands permanently by adding the above file to your
+-- home directory.
 --
--- @ghci@ accepts two types of commands.  You can provide a subroutine for
--- @ghci@ to run and @ghci@ will execute the subroutine, printing the return
--- value if it is not empty:
+-- Within @ghci@ you can run a subroutine and @ghci@ will `print` the
+-- subroutine's value if it is not empty:
 --
 -- >Prelude Turtle> system "true" empty
 -- >ExitSuccess
@@ -404,12 +423,20 @@ import Turtle
 -- >4
 -- >Prelude Turtle> "123" <> "456"  -- (<>) concatenates strings
 -- >"123456"
+--
+-- This works because @ghci@ automatically wraps anything that's not a
+-- subroutine with `print`.  It's as if we had written:
+--
+-- >Prelude Turtle> print (2 + 2)
+-- >4
+-- >Prelude Turtle> print ("123" <> "456")
+-- >"123456"
 
 -- $signatures
 --
--- Haskell performs global type inference, meaning that Haskell never requires
--- any type signatures.  Type signatures in Haskell are entirely for the benefit
--- of programmers and behave like machine-checked documentation.
+-- Haskell performs global type inference, meaning that the compiler never
+-- requires any type signatures.  When you add type signatures, they are purely
+-- for the benefit of programmers and behave like machine-checked documentation.
 --
 -- Let's illustrate this by adding types to our original script:
 --
@@ -463,9 +490,9 @@ import Turtle
 -- >main = echo str
 --
 -- These type annotations do not assist the compiler.  Instead, the compiler
--- infers the type independently and then checks whether the inferred type
--- matches the documented type.  If there is a mismatch the compiler will emit a
--- type error.
+-- independently infers the type and then checks whether it matches the
+-- documented type.  If there is a mismatch the compiler will raise a type
+-- error.
 --
 -- Let's test this out by providing an incorrect type for @\'str\'@:
 --
@@ -515,7 +542,7 @@ import Turtle
 -- signature we added.  If we were to delete the type signature the program
 -- would compile and run correctly.  The sole purpose of the type signature in
 -- this example is for us to communicate our expectations to the compiler so
--- that the compiler can warn us if the code violate our expectations.
+-- that the compiler can warn us if the code does not match our expectations.
 --
 -- Let's also try reversing the type error, providing a number where we expect
 -- a string:
@@ -561,7 +588,7 @@ import Turtle
 -- >import Turtle                                --
 -- >                                             --
 -- >main = do                                    --
--- >    mktree "test"                            -- mkdir -p test
+-- >    mkdir "test"                             -- mkdir test
 -- >    system "tar czf test.tar.gz test" empty  -- tar czf test.tar.gz test
 --
 -- If you run this program, it will generate the @test.tar.gz@ archive:
@@ -576,7 +603,9 @@ import Turtle
 -- Like @ghci@, @runhaskell@ prints any non-empty result of the @main@
 -- subroutine (`ExitSuccess` in this case).
 --
--- Let's look at the type of `system` to understand how it works:
+-- The easiest way to learn a new command is to just click the link to its
+-- documentation.  Click on the word `system`, which will take you to
+-- documentation that looks like this:
 --
 -- >system
 -- >    :: Text         -- Shell command to run
@@ -610,8 +639,8 @@ import Turtle
 -- >example.hs: user error (false failed with exit code: 1)
 --
 -- Most of the commands in this library do not actually invoke an external
--- shell.  Instead, they indirectly wrap multiple libraries that provide foreign
--- bindings to C code for greater performance and portability.
+-- shell.  Instead, they indirectly wrap other Haskell libraries that provide
+-- bindings to C code.
 
 -- $format
 --
@@ -620,22 +649,282 @@ import Turtle
 --
 -- > cmd <> " failed with exit code: " <> repr n
 --
--- ... you might prefer to write this in @printf@-style:
+-- ... you could use @printf@ style instead:
 --
 -- > format (s%" failed with exit code: "%d) cmd n
 --
--- Even neater, the compiler will automatically infer the number of arguments
--- and their types from the format string:
+-- What's neat is that the compiler will automatically infer the number of
+-- arguments and their types from the `Format` string:
 --
 -- >$ ghci
--- >Prelude> :set -XOverloadedStrings
--- >Prelude> import Turtle
 -- >Prelude Turtle> :type format (s%" failed with exit code: "%d)
 -- >format (s%" failed with exit code: "%d) :: Text -> Int -> Text
 --
--- The compiler correctly infers that this requires on argument of type `Text`
--- to satisfy the `s` at the beginning of the format string and another
--- argument of type `Int` to satisfy the `d` at the end of the format string.
+-- The compiler deduces that the above `Format` string requires one argument of
+-- type `Text` to satisfy the `s` at the beginning of the format string and
+-- another argument of type `Int` to satisfy the `d` at the end of the format
+-- string.
 --
 -- See the "Turtle.Format" module for more details if you are interested in this
 -- feature.
+
+-- $streams
+-- The @turtle@ library provides support for streaming computations, just like
+-- Bash.  The primitive Haskell streams are little more verbose than their
+-- Bash counterparts, but the Haskell streams are easier to combine.
+--
+-- The key type for streams is the `Shell` type, which represents a stream of
+-- values.  For example, the `ls` function has a streaming result:
+--
+-- >Prelude Turtle> :type ls
+-- >ls :: Turtle.FilePath -> Shell Turtle.FilePath
+--
+-- That type says that `ls` takes a single `Turtle.FilePath` as its argument and
+-- the result is a `Shell` stream of `Turtle.FilePath`s.
+--
+-- You can't run a `Shell` stream directly within @ghci@.  You will get a type
+-- error like this if you try:
+--
+-- >Prelude Turtle> ls "/tmp"
+-- >
+-- ><interactive>:2:1:
+-- >    No instance for (Show (Shell Turtle.FilePath))
+-- >      arising from a use of `print'
+-- >    Possible fix:
+-- >      add an instance declaration for (Show (Shell Turtle.FilePath))
+-- >    In a stmt of an interactive GHCi command: print it
+--
+-- Instead, you must consume the stream as it is generated and the simplest way
+-- to consume a `Shell` stream is `view`:
+--
+-- > view :: Show a => Shell a -> IO ()
+--
+-- `view` takes any stream of values and `print`s them to standard output:
+--
+-- >Prelude Turtle> view (ls "/tmp")
+-- >FilePath "/tmp/.X11-unix"
+-- >FilePath "/tmp/.X0-lock"
+-- >FilePath "/tmp/pulse-PKdhtXMmr18n"
+-- >FilePath "/tmp/pulse-xHYcZ3zmN3Fv"
+-- >FilePath "/tmp/tracker-gabriel"
+-- >FilePath "/tmp/pulse-PYi1hSlWgNj2"
+-- >FilePath "/tmp/orbit-gabriel"
+-- >FilePath "/tmp/ssh-vREYGbWGpiCa"
+-- >FilePath "/tmp/.ICE-unix
+--
+-- You can build your own `Shell` streams using a few primitive operations,
+--
+-- The first primitive is `empty`, which is just an empty stream of values:
+--
+-- >Prelude Turtle> view empty  -- Outputs nothing
+-- >Prelude Turtle>
+--
+-- Another way to say that is:
+--
+-- >view empty = return ()
+--
+-- The type of empty is:
+--
+-- >empty :: Shell a
+-- 
+-- The lower-case @\'a\'@ is \"polymorphic\" meaning that it will type check as
+-- any type.  That means that you can produce an `empty` stream of any type of
+-- value.
+--
+-- The next simplest function is `return`, which lets you take any value and
+-- transform it into a singleton `Shell` that emits just that one value:
+--
+-- >Prelude Turtle> view (return 1)
+-- >1
+--
+-- Another way to say that is:
+--
+-- >view (return x) = print x
+--
+-- The type of `return` is:
+--
+-- >return :: a -> Shell a
+--
+-- Notice that this is the same `return` function we saw before.  This is
+-- because `return` is overloaded and works with both `IO` and `Shell`.
+--
+-- You can also take any subroutine ('IO') and transform it into a singleton
+-- `Shell` that runs the subroutine and emits the subroutine's return value
+-- once:
+--
+-- Prelude Turtle> view (liftIO readLine)
+-- ABC<Enter>
+-- Just "ABC"
+--
+-- Another way to say that is:
+--
+-- >view (liftIO io) = do x <- io
+-- >                      print x
+--
+-- The type of `liftIO` is:
+--
+-- >liftIO :: IO a -> Shell a
+--
+-- Once you have those primitive `Shell` streams you can begin to combine them
+-- into larger `Shell` streams.  For example, you can concatenate two `Shell`
+-- streams using (`<|>`):
+--
+-- >view (return 1 <|> return 2)
+-- >1
+-- >2
+--
+-- Another way to say that is:
+--
+-- >view (xs <|> ys) = do view xs
+-- >                      view ys
+--
+-- The type of (`<|>`) is:
+--
+-- >(<|>) :: Shell a -> Shell a -> Shell a
+--
+-- In other words, you can concatenate two `Shell` streams of the same element
+-- type to get a new `Shell` stream, also of the same element type.
+--
+-- Let's try using (`<|>`) on two real streams:
+--
+-- >Prelude Turtle> view (ls "/tmp" <|> ls "/usr")
+-- >FilePath "/tmp/.X11-unix"
+-- >FilePath "/tmp/.X0-lock"
+-- >FilePath "/tmp/pulse-PKdhtXMmr18n"
+-- >FilePath "/tmp/pulse-xHYcZ3zmN3Fv"
+-- >FilePath "/tmp/tracker-gabriel"
+-- >FilePath "/tmp/pulse-PYi1hSlWgNj2"
+-- >FilePath "/tmp/orbit-gabriel"
+-- >FilePath "/tmp/ssh-vREYGbWGpiCa"
+-- >FilePath "/tmp/.ICE-unix"
+-- >FilePath "/usr/lib"
+-- >FilePath "/usr/src"
+-- >FilePath "/usr/sbin"
+-- >FilePath "/usr/include"
+-- >FilePath "/usr/share"
+-- >FilePath "/usr/games"
+-- >FilePath "/usr/local"
+-- >FilePath "/usr/bin"
+--
+-- Finally, note that `Shell` implements the `IsString` interface, so a string
+-- literal will type-check as a `Shell` that emits a single `Text` value:
+--
+-- >Prelude Turtle> view "123"
+-- >"123"
+-- >Prelude Turtle> view (return "123")  -- Same thing
+-- >"123"
+-- >Prelude Turtle> view ("123" <|> "456")
+-- >"123"
+-- >"456"
+-- >Prelude Turtle> view (return "123" <|> return "456")  -- Same thing
+-- >"123"
+-- >"456"
+
+-- $loops
+--
+-- This library also provides the `select` function for conveniently emitting a
+-- list of values:
+--
+-- >Prelude Turtle> view (select [1, 2, 3])
+-- >1
+-- >2
+-- >3
+--
+-- We can use `select` to implement loops within a `Shell`:
+--
+-- >#!/usr/bin/env runhaskell           -- #!/bin/bash
+-- >                                    --
+-- >{-# LANGUAGE OverloadedStrings #-}  --
+-- >                                    --
+-- >import Turtle                       --
+-- >                                    --
+-- >example = do                        --
+-- >    x <- select [1, 2]              -- for x in 1 2; do
+-- >    y <- select [3, 4]              --     for y in 3 4; do
+-- >    liftIO (print (x, y))           --         echo \(${x},${y}\);
+-- >                                    --     done;
+-- >main = sh example                   -- done
+--
+-- That will `print` every permutation of @\'x\'@ and @\'y\'@:
+--
+-- >$ ./example
+-- >(1,3)
+-- >(1,4)
+-- >(2,3)
+-- >(2,4)
+--
+-- This uses the `sh` utility instead of `view`.  The only difference is that
+-- `sh` doesn't print any values (since `print` is doing that already):
+--
+-- >sh :: Shell a -> IO ()
+--
+-- This trick isn't limited to `select`.  You can loop over the output of any
+-- `Shell` by just binding its result.  For example, this is how `view` loops
+-- over its argument:
+--
+-- >view shell = sh (do
+-- >    x <- shell  -- `x` ranges over every output of `shell`
+-- >    liftIO (print x) )
+--
+-- You can also loop over a stream in a one-liner, still using @do@ notation.
+-- Just insert semi-colons between statements:
+--
+-- >Prelude Turtle> -- for file in /tmp/*; do echo $file; done
+-- >Prelude Turtle> sh (do file <- ls "/tmp"; liftIO (print file))
+-- >FilePath "/tmp/.X11-unix"
+-- >FilePath "/tmp/.X0-lock"
+-- >FilePath "/tmp/pulse-PKdhtXMmr18n"
+-- >FilePath "/tmp/pulse-xHYcZ3zmN3Fv"
+-- >FilePath "/tmp/tracker-gabriel"
+-- >FilePath "/tmp/pulse-PYi1hSlWgNj2"
+-- >FilePath "/tmp/orbit-gabriel"
+-- >FilePath "/tmp/ssh-vREYGbWGpiCa"
+-- >FilePath "/tmp/.ICE-unix"
+
+-- $folds
+--
+-- There are other ways you can consume a `Shell` stream.  For example, you can
+-- `fold` the stream using predefined `Fold`s from "Control.Foldl":
+--
+-- >Prelude Turtle> import qualified Control.Foldl as Fold
+-- >Prelude Turtle Fold> fold (ls "/tmp") Fold.length
+-- >9
+-- >Prelude Turtle Fold> fold (ls "/tmp") Fold.head
+-- >Just (FilePath "/tmp/.X11-unix")
+-- >Prelude Turtle Fold> fold (ls "/tmp") Fold.list
+-- >[FilePath "/tmp/.X11-unix",FilePath "/tmp/.X0-lock",FilePath "/tmp/pulse-PKd
+-- >htXMmr18n",FilePath "/tmp/pulse-xHYcZ3zmN3Fv",FilePath "/tmp/tracker-gabriel
+-- >",FilePath "/tmp/pulse-PYi1hSlWgNj2",FilePath "/tmp/orbit-gabriel",FilePath 
+-- >"/tmp/ssh-vREYGbWGpiCa",FilePath "/tmp/.ICE-unix"]
+
+-- Another useful `Shell` stream is `stdin`:
+--
+-- >stdin :: Shell Text
+--
+-- That stream emits one line of `Text` per line of standard input.  You can
+-- pair that up with `stdout`, which consumes a stream of `Text`:
+--
+-- >stdout :: Shell Text -> IO ()
+--
+-- For example, this is how you would write a program to echo standard input to
+-- standard output:
+--
+-- >#!/usr/bin/env runhaskell           -- #!/bin/bash
+-- >                                    --
+-- >{-# LANGUAGE OverloadedStrings #-}  --
+-- >                                    --
+-- >import Turtle                       --
+-- >                                    --
+-- >main = stdout stdin                 -- cat
+--
+-- If you run that it will continue to echo lines until you signal end of input:
+--
+-- >$ ./example.hs
+-- >ABC<Enter>
+-- >ABC
+-- >Test<Enter>
+-- >Test
+-- >42<Enter>
+-- >42
+-- ><Ctrl-D>
+-- >$
