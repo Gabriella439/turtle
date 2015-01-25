@@ -120,6 +120,9 @@ module Turtle.Prelude (
     , die
 
     -- * Protected
+    , readonly
+    , writeonly
+    , appendonly
     , mktemp
     , mktempdir
     , fork
@@ -519,38 +522,38 @@ stderr s = sh (do
 -- | Read lines of `Text` from a file
 input :: FilePath -> Shell Text
 input file = do
-    handle <- with (readhandle file)
+    handle <- with (readonly file)
     handlein handle
 
 -- | Tee lines of `Text` to a file
 output :: FilePath -> Shell Text -> IO ()
 output file s = sh (do
-    handle <- with (writehandle file)
+    handle <- with (writeonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
 
 -- | Tee lines of `Text` to append to a file
 append :: FilePath -> Shell Text -> IO ()
 append file s = sh (do
-    handle <- with (appendhandle file)
+    handle <- with (appendonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
 
 -- | Acquire a `Protected` read-only `Handle` from a `FilePath`
-readhandle :: FilePath -> Protected Handle
-readhandle file = Protect (do
+readonly :: FilePath -> Protected Handle
+readonly file = Protect (do
     handle <- Filesystem.openFile file IO.ReadMode
     return (handle, IO.hClose handle) )
 
 -- | Acquire a `Protected` write-only `Handle` from a `FilePath`
-writehandle :: FilePath -> Protected Handle
-writehandle file = Protect (do
+writeonly :: FilePath -> Protected Handle
+writeonly file = Protect (do
     handle <- Filesystem.openFile file IO.WriteMode
     return (handle, IO.hClose handle) )
 
 -- | Acquire a `Protected` append-only `Handle` from a `FilePath`
-appendhandle :: FilePath -> Protected Handle
-appendhandle file = Protect (do
+appendonly :: FilePath -> Protected Handle
+appendonly file = Protect (do
     handle <- Filesystem.openFile file IO.AppendMode
     return (handle, IO.hClose handle) )
 
