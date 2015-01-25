@@ -53,7 +53,7 @@
 --
 -- Commands like `grep`, `sed` and `find` accept arbitrary `Pattern`s
 --
--- >>> stdout (grep ("1" <|> "B") (input "foo.txt"))
+-- >>> stdout (grep ("123" <|> "ABC") (input "foo.txt"))
 -- 123
 -- ABC
 -- >>> let exclaim = fmap (<> "!") (plus digit)
@@ -61,6 +61,9 @@
 -- 123!
 -- 456!
 -- ABC
+--
+-- Note that they differ from their Unix counterparts in that they require
+-- that the `Pattern` matches the entire string.
 --
 --  You can also build up more sophisticated `Shell` programs using `sh` in
 --  conjunction with @do@ notation:
@@ -187,7 +190,7 @@ import System.Posix (openDirStream, readDirStream, closeDirStream, touchFile)
 #endif
 import Prelude hiding (FilePath)
 
-import Turtle.Pattern (Pattern, anyChar, inside, match)
+import Turtle.Pattern (Pattern, anyChar, match)
 import Turtle.Protected
 import Turtle.Shell
 
@@ -565,7 +568,7 @@ cat = msum
 grep :: Pattern a -> Shell Text -> Shell Text
 grep pattern s = do
     txt <- s
-    _:_ <- return (inside pattern txt)
+    _:_ <- return (match pattern txt)
     return txt
 
 {-| Replace all occurrences of a `Pattern` with its `Text` result
@@ -586,7 +589,7 @@ find :: Pattern a -> FilePath -> Shell FilePath
 find pattern dir = do
     path <- lstree dir
     Right txt <- return (Filesystem.toText path)
-    _:_       <- return (inside pattern txt)
+    _:_       <- return (match pattern txt)
     return path
 
 -- | A Stream of @\"y\"@s
