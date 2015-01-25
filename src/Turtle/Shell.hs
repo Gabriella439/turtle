@@ -197,6 +197,6 @@ select as = Shell (\(FoldM step begin done) -> do
 -- | Acquire a `Protected` resource within a `Shell` in an exception-safe way
 with :: Protected a -> Shell a
 with resource = Shell (\(FoldM step begin done) -> do
-    x <- begin
+    x  <- begin
     x' <- bracket (acquire resource) snd (\(a, _) -> step x a)
     done x' )
