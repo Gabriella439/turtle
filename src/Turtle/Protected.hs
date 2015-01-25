@@ -35,7 +35,7 @@ module Turtle.Protected (
     ) where
 
 import Control.Applicative (Applicative(..), liftA2)
-import Control.Exception (bracket, onException)
+import Control.Exception (bracket, finally, onException)
 import Control.Monad (ap)
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Monoid (Monoid(..))
@@ -61,7 +61,7 @@ instance Monad Protected where
     m >>= f = Protect (do
         (a, release1) <- acquire m
         (b, release2) <- acquire (f a) `onException` release1
-        return (b, release2 >> release1) )
+        return (b, release2 `finally` release1) )
 
 instance MonadIO Protected where
     liftIO io = Protect (do
