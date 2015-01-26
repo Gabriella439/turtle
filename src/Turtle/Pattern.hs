@@ -9,7 +9,7 @@
 >>> :set -XOverloadedStrings
 >>> match ("dog" <|> "cat") "cat"
 ["cat"]
->>> match ("cat" <> anyChar) "cats"
+>>> match ("cat" <> once anyChar) "cats"
 ["cats"]
 >>> match (prefix (count 3 anyChar)) "cat,dog"
 ["cat"]
@@ -73,8 +73,8 @@ module Turtle.Pattern (
 
     -- * Combinators
     , prefix
-    , inside
     , suffix
+    , has
     , once
     , star
     , plus
@@ -459,13 +459,13 @@ suffix p = star anyChar *> p
 
 {-| Skip any unmatched prefix or suffix characters
 
->>> match         "B"  "ABC"
+>>> match      "B"  "ABC"
 []
->>> match (inside "B") "ABC"
+>>> match (has "B") "ABC"
 ["B"]
 -}
-inside :: Pattern a -> Pattern a
-inside p = star anyChar *> p <* star anyChar
+has :: Pattern a -> Pattern a
+has p = star anyChar *> p <* star anyChar
 
 {-| Parse 0 or more occurrences of the given character
 
