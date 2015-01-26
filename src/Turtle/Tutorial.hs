@@ -55,8 +55,11 @@ module Turtle.Tutorial (
     -- * Input and output
     -- $io
 
-    -- * Filters
-    -- $filters
+    -- * Patterns
+    -- $patterns
+
+    -- * Exception Safety
+    -- $exceptions
     ) where
 
 import Turtle
@@ -971,7 +974,7 @@ import Turtle
 -- >ABC
 -- >42
 
--- $filters
+-- $patterns
 --
 -- You can transform streams using Unix-like utilities.  For example, you can
 -- filter a stream using `grep`.
@@ -1037,3 +1040,115 @@ import Turtle
 -- >Prelude Turtle> -- grep 'C$' file.txt
 -- >Prelude Turtle> stdout (grep (suffix "C") (input "file.txt"))
 -- >ABC
+--
+-- `sed` also uses `Pattern`s, too, and is more powerful than Unix @sed@:
+--
+-- >Prelude Turtle> -- sed 's/C/D/g' file.txt
+-- >Prelude Turtle> stdout (sed ("C" *> return "D") (input "file.txt"))
+-- >Test
+-- >ABD
+-- >42
+-- >Prelude Turtle> -- sed 's/[[:digit:]]\+/!/g' file.txt
+-- >Prelude Turtle> stdout (sed (plus digit *> return "!") (input "file.txt"))
+-- >Test
+-- >ABC
+-- >!
+-- >Prelude Turtle> import qualified Data.Text as Text
+-- >Prelude Turtle> -- rev file.txt
+-- >Prelude Turtle> stdout (sed (fmap Text.reverse (plus dot)) (input "file.txt"))
+-- >tseT
+-- >CBA
+-- >24
+-- >Prelude Turtle>
+--
+-- You can also use `Pattern`s by themselves to parse arbitrary text into more
+-- structured values:
+--
+-- >Prelude Turtle> let pair = do x <- decimal; " "; y <- decimal; return (x, y)
+-- >Prelude Turtle> :type pair
+-- >pair :: Pattern (Integer, Integer)
+-- >Prelude Turtle> match pair "123 456"
+-- >[(123,456)]
+-- >Prelude Turtle> data Pet = Cat | Dog deriving (Show)
+-- >Prelude Turtle> let pet = ("cat" *> return Cat) <|> ("dog" *> return Dog) :: Pattern Pet
+-- >Prelude Turtle> match pet "dog"
+-- >[Dog]
+-- >Prelude Turtle> match (pet `sepBy` ",") "cat,dog,cat"
+-- >[[Cat,Dog,Cat]]
+--
+-- See the "Turtle.Pattern" module for more details if you are interested in
+-- writing more complex `Pattern`s.
+
+-- $exceptions
+--
+-- Sometimes you may want to acquire resources and ensure they get released
+-- correctly if there are any exceptions.  You can use `Protected` resources
+-- to acquire things safely within a `Shell`.
+--
+-- For example, suppose that you wish to create a temporary directory and
+-- temporary file within that directory.  You also want to ensure that the
+-- temporary directory is deleted correctly, either when your program is done
+-- or you receive an exception.
+--
+-- "Turtle.Prelude" provides two `Protected` utilities for creating temporary
+-- directories or files:
+--
+-- >mktempdir
+-- >    :: FilePath
+-- >    -- ^ Parent directory
+-- >    -> Text
+-- >    -- ^ Directory name template
+-- >    -> Protected FilePath
+-- >    -- ^Temporary directory
+--
+-- >mktemp
+-- >    :: FilePath
+-- >    -- ^ Parent directory
+-- >    -> Text
+-- >    -- ^ File name template
+-- >    -> Protected (FilePath, Handle)
+-- >    -- ^ Temporary file
+--
+-- You can acquire a `Protected` resource within a `Shell` by using `with`:
+--
+-- >with :: Protected a -> Shell a
+--
+-- ... and here is an example of creating a temporary directory and file within
+-- a `Shell`:
+--
+-- >#!/usr/bin/env runhaskell
+-- >
+-- >{-# LANGUAGE OverloadedStrings #-}
+-- >
+-- >import Turtle
+-- >
+-- >main = sh (do
+-- >    dir       <- with (mktempdir "/tmp" "turtle")
+-- >    (file, _) <- with (mktemp dir "turtle")
+-- >    liftIO (print file) )
+--
+-- When you run the above script it will print out the name of the temporary
+-- directory and file:
+--
+-- >$ ./example.hs
+-- >FilePath "/tmp/turtle15976/turtle15976"
+--
+-- ... and you can verify that they were deleted afterwards:
+--
+-- Turtle Prelude> view (find (has "turtle") "/tmp")
+-- Turtle Prelude> -- No results
+--
+-- As an exercise, try inserting an exception and verifying that the temporary:
+-- file and directory are still cleaned up correctly:
+--
+-- >#!/usr/bin/env runhaskell
+-- >
+-- >{-# LANGUAGE OverloadedStrings #-}
+-- >
+-- >import Turtle
+-- >
+-- >main = sh (do
+-- >    dir       <- with (mktempdir "/tmp" "turtle")
+-- >    (file, _) <- with (mktemp dir "turtle")
+-- >    liftIO (print file)
+-- >    liftIO (die "Urk!") )
