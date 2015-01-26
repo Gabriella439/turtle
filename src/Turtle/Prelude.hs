@@ -88,7 +88,8 @@
 
 module Turtle.Prelude (
     -- * IO
-      system
+      proc
+    , shell
     , echo
     , err
     , readLine
@@ -132,7 +133,8 @@ module Turtle.Prelude (
     , wait
 
     -- * Shell
-    , stream
+    , readProc
+    , readShell
     , stdin
     , input
     , stdout
@@ -194,47 +196,95 @@ import Turtle.Pattern (Pattern, anyChar, match)
 import Turtle.Protected
 import Turtle.Shell
 
-{-| Call a system command, and retrieve the exit code
+{-| Run a shell command, retrieving the exit code
 
     The command inherits @stdout@ and @stderr@ for the current process
 -}
-system
+proc
     :: Text
+    -- ^ Command
+    -> [Text]
+    -- ^ Arguments
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> IO ExitCode
+    -- ^ Exit code
+proc cmd args = system (Process.proc (unpack cmd) (map unpack args))
+
+{-| Run a command line, retrieving the exit code
+
+    The command inherits @stdout@ and @stderr@ for the current process
+-}
+shell
+    :: Text
+    -- ^ Command line
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> IO ExitCode
+    -- ^ Exit code
+shell cmdLine = system (Process.shell (unpack cmdLine))
+
+system
+    :: Process.CreateProcess
     -- ^ Command
     -> Shell Text
     -- ^ Lines of standard input
     -> IO ExitCode
     -- ^ Exit code
-system cmd s = do
-    let p = (Process.shell (unpack cmd))
+system p s = do
+    let p' = p
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.Inherit
             , Process.std_err = Process.Inherit
             }
-    (Just hIn, Nothing, Nothing, ph) <- liftIO (Process.createProcess p)
+    (Just hIn, Nothing, Nothing, ph) <- liftIO (Process.createProcess p')
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
     withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) )
 
-{-| Stream a system command's @stdout@ as lines of `Text`
+{-| Run a command, streaming @stdout@ as lines of `Text`
 
     The command inherits @stderr@ for the current process
 -}
-stream
+readProc
     :: Text
+    -- ^ Command
+    -> [Text]
+    -- ^ Arguments
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> Shell Text
+    -- ^ Lines of standard output
+readProc cmd args = stream (Process.proc (unpack cmd) (map unpack args))
+
+{-| Run a command line, streaming @stdout@ as lines of `Text`
+
+    The command inherits @stderr@ for the current process
+-}
+readShell
+    :: Text
+    -- ^ Command line
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> Shell Text
+    -- ^ Lines of standard output
+readShell cmd = stream (Process.shell (unpack cmd))
+
+stream
+    :: Process.CreateProcess
     -- ^ Command
     -> Shell Text
     -- ^ Lines of standard input
     -> Shell Text
     -- ^ Lines of standard output
-stream cmd s = do
-    let p = (Process.shell (unpack cmd))
+stream p s = do
+    let p' = p
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.CreatePipe
             , Process.std_err = Process.Inherit
             }
-    (Just hIn, Just hOut, Nothing, _) <- liftIO (Process.createProcess p)
+    (Just hIn, Just hOut, Nothing, _) <- liftIO (Process.createProcess p')
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )

@@ -415,9 +415,9 @@ import Turtle
 -- Within @ghci@ you can run a subroutine and @ghci@ will `print` the
 -- subroutine's value if it is not empty:
 --
--- >Prelude Turtle> system "true" empty
+-- >Prelude Turtle> shell "true" empty
 -- >ExitSuccess
--- >Prelude Turtle> system "false" empty
+-- >Prelude Turtle> shell "false" empty
 -- >ExitFailure 1
 --
 -- You can also type in a pure expression and @ghci@ will evaluate that
@@ -581,9 +581,9 @@ import Turtle
 
 -- $system
 --
--- You can invoke arbitrary shell commands using the `system` command.  For
+-- You can invoke arbitrary shell commands using the `shell` command.  For
 -- example, we can write a program that creates an empty directory and then
--- uses a `system` command to archive the directory:
+-- uses a `shell` command to archive the directory:
 --
 -- >#!/usr/bin/env runhaskell
 -- >                                             -- #!/bin/bash
@@ -593,7 +593,7 @@ import Turtle
 -- >                                             --
 -- >main = do                                    --
 -- >    mkdir "test"                             -- mkdir test
--- >    system "tar czf test.tar.gz test" empty  -- tar czf test.tar.gz test
+-- >    shell "tar czf test.tar.gz test" empty   -- tar czf test.tar.gz test
 --
 -- If you run this program, it will generate the @test.tar.gz@ archive:
 --
@@ -607,12 +607,12 @@ import Turtle
 -- Like @ghci@, the @runhaskell@ command running our script prints any non-empty
 -- result of the @main@ subroutine (`ExitSuccess` in this case).
 --
--- The easiest way to learn a new command like `system` is to view its
--- documentation.  Click on the word `system`, which will take you to
+-- The easiest way to learn a new command like `shell` is to view its
+-- documentation.  Click on the word `shell`, which will take you to
 -- documentation that looks like this:
 --
--- >system
--- >    :: Text         -- Shell command to run
+-- >shell
+-- >    :: Text         -- Command line
 -- >    -> Shell Text   -- Standard input (as lines of `Text`)
 -- >    -> IO ExitCode  -- Exit code of the shell command
 --
@@ -632,7 +632,7 @@ import Turtle
 -- >
 -- >main = do
 -- >    let cmd = "false"
--- >    x <- system cmd empty
+-- >    x <- shell cmd empty
 -- >    case x of
 -- >        ExitSuccess   -> return ()
 -- >        ExitFailure n -> die (cmd <> " failed with exit code: " <> repr n)
