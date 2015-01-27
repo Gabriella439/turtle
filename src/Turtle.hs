@@ -16,8 +16,6 @@
 --  "Turtle.Pattern" provides `Pattern`s, which are like more powerful regular
 --  expressions
 --
---  "Turtle.Protected" provides `Protected` resources that are exception-safe
---
 --  "Turtle.Shell" provides a streaming `Shell` abstraction for building
 --  exception-safe pipelines
 --
@@ -26,24 +24,25 @@
 --
 --  "Control.Applicative" provides two classes:
 --
---  * `Applicative`, which works with `Fold`, `Pattern`, `Protected`, and
---    `Shell`
+--  * `Applicative`, which works with `Fold`, `Pattern`, `Managed`, and `Shell`
 --
 --  * `Alternative`, which works with `Pattern` and `Shell`
 --
 --  "Control.Monad" provides two classes:
 --
---  * `Monad`, which works with `Pattern`, `Protected` and `Shell`
+--  * `Monad`, which works with `Pattern`, `Managed` and `Shell`
 --
 --  * `MonadPlus`, which works with `Pattern` and `Shell`
 --
 --  "Control.Monad.IO.Class" provides one class:
 --
---  * `MonadIO`, which works with `Protected` and `Shell`
+--  * `MonadIO`, which works with `Managed` and `Shell`
 --
 --  "Data.Monoid" provides on class:
 --
---  * `Monoid`, which works with `Fold`, `Pattern`, `Protected`, and `Shell`
+--  * `Monoid`, which works with `Fold`, `Pattern`, `Managed`, and `Shell`
+--
+--  "Control.Monad.Managed.Safe" provides `Managed` resources
 --
 --  "Filesystem.Path.CurrentOS" provides `FilePath`-manipulation utilities
 --
@@ -68,13 +67,13 @@ module Turtle (
     -- * Modules
       module Turtle.Format
     , module Turtle.Pattern
-    , module Turtle.Protected
     , module Turtle.Shell
     , module Turtle.Prelude
     , module Control.Applicative
     , module Control.Monad
     , module Control.Monad.IO.Class
     , module Data.Monoid
+    , module Control.Monad.Managed.Safe
     , module Filesystem.Path.CurrentOS
     , module Control.Foldl
     , Text
@@ -86,7 +85,6 @@ module Turtle (
 
 import Turtle.Format
 import Turtle.Pattern
-import Turtle.Protected
 import Turtle.Shell
 import Turtle.Prelude
 import Control.Applicative
@@ -136,6 +134,7 @@ import Filesystem.Path.CurrentOS
     , toText
     , fromText
     )
+import Control.Monad.Managed.Safe (Managed, managed, runManaged)
 import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
 import Data.Time (UTCTime)

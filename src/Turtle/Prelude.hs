@@ -123,7 +123,7 @@ module Turtle.Prelude (
     , exit
     , die
 
-    -- * Protected
+    -- * Managed
     , readonly
     , writeonly
     , appendonly
@@ -153,11 +153,12 @@ module Turtle.Prelude (
     ) where
 
 import Control.Applicative (Alternative(..))
-import Control.Concurrent.Async (Async, async, cancel, withAsync, wait)
+import Control.Concurrent.Async (Async, withAsync, wait)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (FoldM(..))
 import Control.Monad (msum)
+import Control.Monad.Managed (Managed, managed)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
@@ -183,7 +184,7 @@ import System.Directory (getPermissions, readable)
 import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle)
 import qualified System.IO as IO
-import System.IO.Temp (createTempDirectory, openTempFile)
+import System.IO.Temp (withTempDirectory, withTempFile)
 import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
 import qualified System.Win32 as Win32
@@ -193,7 +194,6 @@ import System.Posix (openDirStream, readDirStream, closeDirStream, touchFile)
 import Prelude hiding (FilePath)
 
 import Turtle.Pattern (Pattern, anyChar, match)
-import Turtle.Protected
 import Turtle.Shell
 
 {-| Run a shell command, retrieving the exit code
@@ -288,7 +288,7 @@ stream p s = do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    _ <- with (fork feedIn)
+    _ <- using (fork feedIn)
     handlein hOut
 
 -- | Print to @stdout@
@@ -511,13 +511,12 @@ mktempdir
     -- ^ Parent directory
     -> Text
     -- ^ Directory name template
-    -> Protected FilePath
-mktempdir parent prefix = Protect (do
-    dir' <- createTempDirectory
-        (Filesystem.encodeString parent)
-        (unpack prefix)
-    let dir = Filesystem.decodeString dir'
-    return (dir, rmtree dir) )
+    -> Managed FilePath
+mktempdir parent prefix = do
+    let parent' = Filesystem.encodeString parent
+    let prefix' = unpack prefix
+    dir' <- managed (withTempDirectory parent' prefix')
+    return (Filesystem.decodeString dir')
 
 {-| Create a temporary file underneath the given directory
 
@@ -528,19 +527,18 @@ mktemp
     -- ^ Parent directory
     -> Text
     -- ^ File name template
-    -> Protected (FilePath, Handle)
-mktemp parent prefix = Protect (do
-    (file', handle) <- openTempFile
-        (Filesystem.encodeString parent)
-        (unpack prefix)
+    -> Managed (FilePath, Handle)
+mktemp parent prefix = do
+    let parent' = Filesystem.encodeString parent
+    let prefix' = unpack prefix
+    (file', handle) <- managed (\k ->
+        withTempFile parent' prefix' (\file' handle -> k (file', handle)) )
     let file = Filesystem.decodeString file'
-    return ((file, handle), rm file) )
+    return (file, handle)
 
 -- | Fork a thread, acquiring an `Async` value
-fork :: IO a -> Protected (Async a)
-fork io = Protect (do
-    a <- async io
-    return (a, cancel a) )
+fork :: IO a -> Managed (Async a)
+fork io = managed (withAsync io)
 
 -- | Read lines of `Text` from a `Handle`
 handlein :: Handle -> Shell Text
@@ -575,40 +573,34 @@ stderr s = sh (do
 -- | Read lines of `Text` from a file
 input :: FilePath -> Shell Text
 input file = do
-    handle <- with (readonly file)
+    handle <- using (readonly file)
     handlein handle
 
 -- | Tee lines of `Text` to a file
 output :: FilePath -> Shell Text -> IO ()
 output file s = sh (do
-    handle <- with (writeonly file)
+    handle <- using (writeonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
 
 -- | Tee lines of `Text` to append to a file
 append :: FilePath -> Shell Text -> IO ()
 append file s = sh (do
-    handle <- with (appendonly file)
+    handle <- using (appendonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
 
--- | Acquire a `Protected` read-only `Handle` from a `FilePath`
-readonly :: FilePath -> Protected Handle
-readonly file = Protect (do
-    handle <- Filesystem.openFile file IO.ReadMode
-    return (handle, IO.hClose handle) )
+-- | Acquire a `Managed` read-only `Handle` from a `FilePath`
+readonly :: FilePath -> Managed Handle
+readonly file = managed (Filesystem.withFile file IO.ReadMode)
 
--- | Acquire a `Protected` write-only `Handle` from a `FilePath`
-writeonly :: FilePath -> Protected Handle
-writeonly file = Protect (do
-    handle <- Filesystem.openFile file IO.WriteMode
-    return (handle, IO.hClose handle) )
+-- | Acquire a `Managed` write-only `Handle` from a `FilePath`
+writeonly :: FilePath -> Managed Handle
+writeonly file = managed (Filesystem.withFile file IO.WriteMode)
 
--- | Acquire a `Protected` append-only `Handle` from a `FilePath`
-appendonly :: FilePath -> Protected Handle
-appendonly file = Protect (do
-    handle <- Filesystem.openFile file IO.AppendMode
-    return (handle, IO.hClose handle) )
+-- | Acquire a `Managed` append-only `Handle` from a `FilePath`
+appendonly :: FilePath -> Managed Handle
+appendonly file = managed (Filesystem.withFile file IO.AppendMode)
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a

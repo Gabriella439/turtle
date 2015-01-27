@@ -1082,36 +1082,30 @@ import Turtle
 -- $exceptions
 --
 -- Sometimes you may want to acquire resources and ensure they get released
--- correctly if there are any exceptions.  You can use `Protected` resources
--- to acquire things safely within a `Shell`.
+-- correctly if there are any exceptions.  You can use `Managed` resources to
+-- acquire things safely within a `Shell`.
 --
 -- For example, suppose that you wish to create a temporary directory and
 -- temporary file within that directory.  You also want to ensure that the
 -- temporary directory is deleted correctly, either when your program is done
 -- or you receive an exception.
 --
--- "Turtle.Prelude" provides two `Protected` utilities for creating temporary
+-- "Turtle.Prelude" provides two `Managed` utilities for creating temporary
 -- directories or files:
 --
 -- >mktempdir
--- >    :: FilePath
--- >    -- ^ Parent directory
--- >    -> Text
--- >    -- ^ Directory name template
--- >    -> Protected FilePath
--- >    -- ^Temporary directory
+-- >    :: FilePath          -- Parent directory
+-- >    -> Text              -- Directory name template
+-- >    -> Managed FilePath  -- Temporary directory
 --
 -- >mktemp
--- >    :: FilePath
--- >    -- ^ Parent directory
--- >    -> Text
--- >    -- ^ File name template
--- >    -> Protected (FilePath, Handle)
--- >    -- ^ Temporary file
+-- >    :: FilePath                    -- Parent directory
+-- >    -> Text                        -- File name template
+-- >    -> Managed (FilePath, Handle)  -- Temporary file
 --
--- You can acquire a `Protected` resource within a `Shell` by using `with`:
+-- You can acquire a `Managed` resource within a `Shell` with `using`:
 --
--- >with :: Protected a -> Shell a
+-- >using :: Managed a -> Shell a
 --
 -- ... and here is an example of creating a temporary directory and file within
 -- a `Shell`:
@@ -1123,8 +1117,8 @@ import Turtle
 -- >import Turtle
 -- >
 -- >main = sh (do
--- >    dir       <- with (mktempdir "/tmp" "turtle")
--- >    (file, _) <- with (mktemp dir "turtle")
+-- >    dir       <- using (mktempdir "/tmp" "turtle")
+-- >    (file, _) <- using (mktemp dir "turtle")
 -- >    liftIO (print file) )
 --
 -- When you run the above script it will print out the name of the temporary
@@ -1135,8 +1129,8 @@ import Turtle
 --
 -- ... and you can verify that they were deleted afterwards:
 --
--- Turtle Prelude> view (find (has "turtle") "/tmp")
--- Turtle Prelude> -- No results
+-- >Turtle Prelude> view (find (has "turtle") "/tmp")
+-- >Turtle Prelude> -- No results
 --
 -- As an exercise, try inserting an exception and verifying that the temporary:
 -- file and directory are still cleaned up correctly:
@@ -1148,7 +1142,7 @@ import Turtle
 -- >import Turtle
 -- >
 -- >main = sh (do
--- >    dir       <- with (mktempdir "/tmp" "turtle")
--- >    (file, _) <- with (mktemp dir "turtle")
+-- >    dir       <- using (mktempdir "/tmp" "turtle")
+-- >    (file, _) <- using (mktemp dir "turtle")
 -- >    liftIO (print file)
 -- >    liftIO (die "Urk!") )

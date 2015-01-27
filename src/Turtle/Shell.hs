@@ -1,21 +1,21 @@
 {-# LANGUAGE RankNTypes #-}
 
-{-| You can think of `Shell` as @[]@ + `IO` + `Protected`.  In fact, you can
-    embed all three of them within a `Shell`:
+{-| You can think of `Shell` as @[]@ + `IO` + `Managed`.  In fact, you can embed
+    all three of them within a `Shell`:
 
-> select :: [a]         -> Shell a
-> liftIO :: IO a        -> Shell a
-> with   :: Protected a -> Shell a
+> select :: [a]       -> Shell a
+> liftIO :: IO a      -> Shell a
+> using  :: Managed a -> Shell a
 
     Those three embeddings obey these laws:
 
 > do { x <- select m; select (f x) } = select (do { x <- m; f x })
 > do { x <- liftIO m; liftIO (f x) } = liftIO (do { x <- m; f x })
-> do { x <- with   m; with   (f x) } = with   (do { x <- m; f x })
+> do { x <- with   m; using  (f x) } = using  (do { x <- m; f x })
 >
 > select (return x) = return x
 > liftIO (return x) = return x
-> with   (return x) = return x
+> using  (return x) = return x
 
     ... and `select` obeys these additional laws:
 
@@ -33,7 +33,7 @@
 
     * `liftIO`, to embed an `IO` action within a `Shell`
 
-    * `with`, to acquire a `Protected` resource within a `Shell`
+    * `using`, to acquire a `Managed` resource within a `Shell`
     
     Then use these classes to combine those primitive `Shell`s into larger
     `Shell`s:
@@ -65,21 +65,19 @@ module Turtle.Shell (
     -- * Embeddings
     , select
     , liftIO
-    , with
+    , using
     ) where
 
 import Control.Applicative (Applicative(..), Alternative(..), liftA2)
-import Control.Exception (bracket)
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
+import Control.Monad.Managed (Managed, with)
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
 import Data.Monoid (Monoid(..))
 import Data.String (IsString(..))
 
-import Turtle.Protected
-
--- | A @(Shell a)@ is a `Protected` list of @a@'s with side effects
+-- | A @(Shell a)@ is a protected list of @a@'s with side effects
 newtype Shell a = Shell { foldIO :: forall r . FoldM IO a r -> IO r }
 
 -- | Feed the stream of @a@'s produced by a `Shell` to a `Fold`
@@ -194,9 +192,9 @@ select as = Shell (\(FoldM step begin done) -> do
             k $! x'
     foldr step' done as $! x0 )
 
--- | Acquire a `Protected` resource within a `Shell` in an exception-safe way
-with :: Protected a -> Shell a
-with resource = Shell (\(FoldM step begin done) -> do
+-- | Acquire a `Managed` resource within a `Shell` in an exception-safe way
+using :: Managed a -> Shell a
+using resource = Shell (\(FoldM step begin done) -> do
     x  <- begin
-    x' <- bracket (acquire resource) snd (\(a, _) -> step x a)
+    x' <- with resource (step x)
     done x' )
