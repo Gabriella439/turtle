@@ -16,6 +16,9 @@
     This tutorial introduces how to use the @turtle@ library to write Haskell
     scripts and assumes no prior knowledge of Haskell, but does assume prior
     knowledge of Bash or a similar shell scripting language.
+
+    If you are already proficient with Haskell, then you can get quickly up to
+    speed by reading the Quick Start guide at the top of "Turtle.Prelude".
 -}
 
 module Turtle.Tutorial (
@@ -60,6 +63,9 @@ module Turtle.Tutorial (
 
     -- * Exception Safety
     -- $exceptions
+
+    -- * Conclusion
+    -- $conclusion
     ) where
 
 import Turtle
@@ -1146,3 +1152,29 @@ import Turtle
 -- >    (file, _) <- using (mktemp dir "turtle")
 -- >    liftIO (print file)
 -- >    liftIO (die "Urk!") )
+--
+-- To learn more about `Managed` resources, read the documentation in
+-- "Control.Monad.Managed".
+
+-- $conclusion
+--
+-- By this point you should be able to write basic shell scripts in Haskell.  If
+-- you would like to learn more advanced tricks, take the time to read the
+-- documentation in these modules:
+--
+-- * "Turtle.Prelude"
+--
+-- * "Turtle.Format"
+--
+-- * "Turtle.Pattern"
+--
+-- * "Turtle.Shell"
+--
+-- * "Control.Foldl"
+--
+-- * "Control.Monad.Managed"
+--
+-- If you have more questions or need help learning the library, ask a question
+-- on Stack Overflow under the @haskell-turtle@ tag.  For bugs or feature
+-- requests, create an issue on Github at
+-- https://github.com/Gabriel439/Haskell-Turtle-Library/issues
