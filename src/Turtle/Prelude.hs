@@ -137,6 +137,7 @@ module Turtle.Prelude (
     , readShell
     , stdin
     , input
+    , inhandle
     , stdout
     , stderr
     , output
@@ -289,7 +290,7 @@ stream p s = do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
     _ <- using (fork feedIn)
-    handlein hOut
+    inhandle hOut
 
 -- | Print to @stdout@
 echo :: Text -> IO ()
@@ -540,9 +541,19 @@ mktemp parent prefix = do
 fork :: IO a -> Managed (Async a)
 fork io = managed (withAsync io)
 
+-- | Read lines of `Text` from standard input
+stdin :: Shell Text
+stdin = inhandle IO.stdin
+
+-- | Read lines of `Text` from a file
+input :: FilePath -> Shell Text
+input file = do
+    handle <- using (readonly file)
+    inhandle handle
+
 -- | Read lines of `Text` from a `Handle`
-handlein :: Handle -> Shell Text
-handlein handle = Shell (\(FoldM step begin done) -> do
+inhandle :: Handle -> Shell Text
+inhandle handle = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     let loop x = do
             eof <- IO.hIsEOF handle
@@ -553,10 +564,6 @@ handlein handle = Shell (\(FoldM step begin done) -> do
                     x'  <- step x txt
                     loop $! x'
     loop $! x0 )
-
--- | Read lines of `Text` from standard input
-stdin :: Shell Text
-stdin = handlein IO.stdin
 
 -- | Stream lines of `Text` to standard output
 stdout :: Shell Text -> IO ()
@@ -569,12 +576,6 @@ stderr :: Shell Text -> IO ()
 stderr s = sh (do
     txt <- s
     liftIO (err txt) )
-
--- | Read lines of `Text` from a file
-input :: FilePath -> Shell Text
-input file = do
-    handle <- using (readonly file)
-    handlein handle
 
 -- | Tee lines of `Text` to a file
 output :: FilePath -> Shell Text -> IO ()
