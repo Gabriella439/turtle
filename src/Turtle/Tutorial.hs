@@ -18,7 +18,7 @@
     large and unwieldy Bash scripts.
 
     This tutorial introduces how to use the @turtle@ library to write Haskell
-    scripts and assumes no prior knowledge of Haskell, but does assume prior
+    scripts.  This assumes no prior knowledge of Haskell, but does assume prior
     knowledge of Bash or a similar shell scripting language.
 
     If you are already proficient with Haskell, then you can get quickly up to
@@ -87,7 +87,7 @@ import Turtle
 -- >                                    --
 -- >main = echo "Hello, world!"         -- echo Hello, world!
 --
--- In Haskell you can use @--@ to comment out the rest of a line and the above
+-- In Haskell you can use @--@ to comment out the rest of a line.  The above
 -- example uses comments to show the equivalent Bash script side-by-side with
 -- the Haskell script.
 --
@@ -99,7 +99,8 @@ import Turtle
 -- >Hello, world!
 --
 -- If you delete the first line of the program, you can also compile the above
--- code to generate a native executable:
+-- code to generate a native executable which will have a much faster startup
+-- time and improved performance:
 --
 -- >$ ghc -O2 example.hs  # -O2 turns on all optimizations
 -- >$ ./example
