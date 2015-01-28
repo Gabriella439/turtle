@@ -62,8 +62,16 @@
 -- 456!
 -- ABC
 --
--- Note that they differ from their Unix counterparts in that they require
--- that the `Pattern` matches the entire string.
+-- Note that `grep`, `sed`, and `find` differ from their Unix counterparts by
+-- requiring that the `Pattern` matches the entire line by default.  However,
+-- you can optionally match the prefix, suffix, or interior of a line:
+--
+-- >>> stdout (grep (has    "2") (input "foo.txt"))
+-- 123
+-- >>> stdout (grep (prefix "1") (input "foo.txt"))
+-- 123
+-- >>> stdout (grep (suffix "3") (input "foo.txt"))
+-- 123
 --
 --  You can also build up more sophisticated `Shell` programs using `sh` in
 --  conjunction with @do@ notation:
@@ -80,8 +88,8 @@
 -- >
 -- >    -- Stream each file to standard output only if the file exists
 -- >    True <- liftIO (testfile file)
--- >    txt  <- input file
--- >    liftIO (echo txt)
+-- >    line <- input file
+-- >    liftIO (echo line)
 --
 -- See "Turtle.Tutorial" for an extended tutorial explaining how to use this
 -- library in greater detail.
@@ -412,11 +420,17 @@ lstree path = do
 mv :: FilePath -> FilePath -> IO ()
 mv = Filesystem.rename
 
--- | Create a directory
+{-| Create a directory
+
+    Fails if the directory is present
+-}
 mkdir :: FilePath -> IO ()
 mkdir = Filesystem.createDirectory False
 
--- | Create a directory tree (equivalent to @mkdir -p@)
+{-| Create a directory tree (equivalent to @mkdir -p@)
+
+    Does not fail if the directory is present
+-}
 mktree :: FilePath -> IO ()
 mktree = Filesystem.createTree
 
@@ -432,7 +446,10 @@ rm = Filesystem.removeFile
 rmdir :: FilePath -> IO ()
 rmdir = Filesystem.removeFile
 
--- | Remove a directory tree
+{-| Remove a directory tree (equivalent to @rm -r@)
+
+    Use at your own risk
+-}
 rmtree :: FilePath -> IO ()
 rmtree = Filesystem.removeTree
 
@@ -450,7 +467,7 @@ testdir = Filesystem.isDirectory
 
 {-| Touch a file, updating the access and modification times to the current time
 
-    Creates the file if it does not exist
+    Creates an empty file if it does not exist
 -}
 touch :: FilePath -> IO ()
 touch file = do
@@ -476,7 +493,7 @@ touch file = do
 
 {-| Time how long a command takes in monotonic wall clock time
 
-    Returns the duration in seconds alongside the return value
+    Returns the duration alongside the return value
 -}
 time :: IO a -> IO (a, NominalDiffTime)
 time io = do
