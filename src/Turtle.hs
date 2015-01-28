@@ -16,11 +16,11 @@
 --  "Turtle.Pattern" provides `Pattern`s, which are like more powerful regular
 --  expressions
 --
---  "Turtle.Shell" provides a streaming `Shell` abstraction for building
+--  "Turtle.Shell" provides a `Shell` abstraction for building streaming,
 --  exception-safe pipelines
 --
---  "Turtle.Prelude" provides many useful derived utilities to get you started
---  with basic shell-like programming within Haskell
+--  "Turtle.Prelude" provides a library of Unix-like utilities to get you
+--  started with basic shell-like programming within Haskell
 --
 --  "Control.Applicative" provides two classes:
 --
@@ -38,7 +38,7 @@
 --
 --  * `MonadIO`, which works with `Managed` and `Shell`
 --
---  "Data.Monoid" provides on class:
+--  "Data.Monoid" provides one class:
 --
 --  * `Monoid`, which works with `Fold`, `Pattern`, `Managed`, and `Shell`
 --
@@ -46,14 +46,12 @@
 --
 --  "Filesystem.Path.CurrentOS" provides `FilePath`-manipulation utilities
 --
---  "Control.Foldl" provides the `Fold` \/ `FoldM` types
---
 --  Additionally, you might also want to import the following modules qualified:
 --
 --  * "Options.Applicative" from @optparse-applicative@ for command-line option
 --     parsing
 --
---  * "Control.Foldl" (for folds)
+--  * "Control.Foldl" (for predefined folds)
 --
 --  * "Control.Foldl.Text" (for `Text`-specific folds)
 --
@@ -75,7 +73,8 @@ module Turtle (
     , module Data.Monoid
     , module Control.Monad.Managed.Safe
     , module Filesystem.Path.CurrentOS
-    , module Control.Foldl
+    , Fold(..)
+    , FoldM(..)
     , Text
     , UTCTime
     , Handle

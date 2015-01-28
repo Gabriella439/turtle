@@ -3,9 +3,6 @@
 {-| Minimalist implementation of type-safe formatted strings, borrowing heavily
     from the implementation of the @formatting@ package.
 
-    This module also provides `repr` for rendering values as `Text`, as a
-    short-hand for @(format w)@
-
     Example use of this module:
 
 >>> :set -XOverloadedStrings
@@ -16,8 +13,10 @@
     A `Format` string that takes no arguments has this type:
 
 > "I take 0 arguments" :: Format r r
+>
+> format "I take 0 arguments" :: Text
 
->>> format "I take 0 arguments" :: Text
+>>> format "I take 0 arguments"
 "I take 0 arguments"
 
     A `Format` string that takes one argument has this type:
@@ -26,7 +25,7 @@
 >
 > format ("I take "%d%" argument") :: Int -> Text
 
->>> format ("I take "%d%" argument") 1 :: Text
+>>> format ("I take "%d%" argument") 1
 "I take 1 argument"
 
     A `Format` string that takes two arguments has this type:
@@ -35,7 +34,7 @@
 >
 > format ("I "%s%" "%d%" arguments") :: Text -> Int -> Text
 
->>> format ("I "%s%" "%d%" arguments") "take" 2 :: Text
+>>> format ("I "%s%" "%d%" arguments") "take" 2
 "I take 2 arguments"
 -}
 
@@ -180,6 +179,8 @@ s :: Format r (Text -> r)
 s = makeFormat id
 
 {-| Convert a `Show`able value to `Text`
+
+    Short-hand for @(format w)@
 
 >>> repr (1,2)
 "(1,2)"

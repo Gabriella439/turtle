@@ -9,14 +9,15 @@ Author: Gabriel Gonzalez
 Maintainer: Gabriel439@gmail.com
 Bug-Reports: https://github.com/Gabriel439/Haskell-Turtle-Library/issues
 Synopsis: Shell programming, Haskell-style
-Description: @turtle@ is a Haskell reimplementation of the Unix command line
-    environment which lets you use Haskell as a scripting language
+Description: @turtle@ is a reimplementation of the Unix command line environment
+    in Haskell so that you can use Haskell as both a shell and a scripting
+    language
     .
     Features include:
     .
-    * Batteries included: Command a rich suite of predefined utilities
+    * Batteries included: Command an extended suite of predefined utilities
     .
-    * Interoperability: Easily integrate external shell commands
+    * Interoperability: You can still run external shell commands
     .
     * Portability: Works on Windows, OS X, and Linux
     .
@@ -26,7 +27,7 @@ Description: @turtle@ is a Haskell reimplementation of the Unix command line
     .
     * Patterns: Use typed regular expressions that can parse structured values
     .
-    * Formatting: Format text in a type-safe way
+    * Formatting: Type-safe @printf@-style text formatting
     .
     * Modern: Supports @text@ and @system-filepath@
     .
