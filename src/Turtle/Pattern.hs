@@ -2,23 +2,27 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-{-| A light-weight backtracking pattern
+{-| Use this module to either:
+
+    * match `Text` with light-weight backtracking patterns, or:
+
+    * parse structured values from `Text`.
 
     Example usage:
 
 >>> :set -XOverloadedStrings
->>> match ("dog" <|> "cat") "cat"
+>>> match ("can" <|> "cat") "cat"
 ["cat"]
->>> match ("cat" <> once anyChar) "cats"
-["cats"]
->>> match (prefix (count 3 anyChar)) "cat,dog"
-["cat"]
+>>> match ("can" <|> "cat") "dog"
+[]
+>>> match (decimal `sepBy` ",") "1,2,3"
+[[1,2,3]]
 
     This pattern has unlimited backtracking, and will return as many solutions
     as possible:
 
->>> match (prefix (plus anyChar)) "123"
-["123","12","1"]
+>>> match (prefix (star anyChar)) "123"
+["123","12","1",""]
 
     Use @do@ notation to structure more complex patterns:
 
@@ -100,7 +104,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as Text
 
--- | A backtracking pattern
+-- | A fully backtracking pattern that parses an @\'a\'@ from some `Text`
 newtype Pattern a = Pattern { runPattern :: StateT Text [] a }
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus)
 
@@ -151,7 +155,7 @@ instance Floating a => Floating (Pattern a) where
 instance (a ~ Text) => IsString (Pattern a) where
     fromString str = text (Text.pack str)
 
-{-| Match a `Pattern` against a `Text` input, returning all possible matches
+{-| Match a `Pattern` against a `Text` input, returning all possible solutions
 
     The `Pattern` must match the entire `Text`
 -}
@@ -413,7 +417,8 @@ decimal = do
   where
     step n d = n * 10 + fromIntegral (ord d - ord '0')
 
-{-| Parse a number with an optional leading @\'+\'@ or @\'-\'@ sign
+{-| Transform a numeric parser to accept an optional leading @\'+\'@ or @\'-\'@
+    sign
 
 >>> match (signed decimal) "+123"
 [123]
@@ -437,7 +442,7 @@ signed p = do
 once :: Pattern Char -> Pattern Text
 once p = fmap Text.singleton p
 
-{-| Skip any unmatched suffix characters
+{-| Use this to match the prefix of a string
 
 >>> match         "A"  "ABC"
 []
@@ -447,7 +452,7 @@ once p = fmap Text.singleton p
 prefix :: Pattern a -> Pattern a
 prefix p = p <* star anyChar
 
-{-| Skip any unmatched prefix characters
+{-| Use this to match the suffix of a string
 
 >>> match         "C"  "ABC"
 []
@@ -457,7 +462,7 @@ prefix p = p <* star anyChar
 suffix :: Pattern a -> Pattern a
 suffix p = star anyChar *> p
 
-{-| Skip any unmatched prefix or suffix characters
+{-| Use this to match the interior of a string
 
 >>> match      "B"  "ABC"
 []
@@ -491,6 +496,9 @@ plus p = fmap Text.pack (some p)
     try to match as many times as possible.  The `selfless` combinator makes a
     pattern match as few times as possible
 
+    This only changes the order in which solutions are returned, by prioritizing
+    less greedy solutions
+
 >>> match (prefix (selfless (some anyChar))) "123"
 ["1","12","123"]
 >>> match (prefix           (some anyChar) ) "123"
@@ -523,7 +531,7 @@ count = replicateM
 
 {-| Transform a parser to a succeed with an empty value instead of failing
 
-    See also `optional`
+    See also: `optional`
 
 >>> match (option "1" <> "2") "12"
 ["12"]
@@ -533,7 +541,8 @@ count = replicateM
 option :: Monoid a => Pattern a -> Pattern a
 option p = p <|> mempty
 
-{-| @between open close p@ matches @p@ in between @open@ and @close@
+{-| @(between open close p)@ matches @\'p\'@ in between @\'open\'@ and
+    @\'close\'@
 
 >>> match (between (char '(') (char ')') (star anyChar)) "(123)"
 ["123"]
@@ -596,9 +605,9 @@ p `sepBy` sep = (p `sepBy1` sep) <|> pure []
 
 {-| @p `sepBy1` sep@ matches one or more occurrences of @p@ separated by @sep@
 
->>> match (decimal `sepBy1` char ',') "1,2,3"
+>>> match (decimal `sepBy1` ",") "1,2,3"
 [[1,2,3]]
->>> match (decimal `sepBy1` char ',') ""
+>>> match (decimal `sepBy1` ",") ""
 []
 -}
 sepBy1 :: Pattern a -> Pattern b -> Pattern [a]
