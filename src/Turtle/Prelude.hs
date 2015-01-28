@@ -444,7 +444,7 @@ rm = Filesystem.removeFile
 
 -- | Remove a directory
 rmdir :: FilePath -> IO ()
-rmdir = Filesystem.removeFile
+rmdir = Filesystem.removeDirectory
 
 {-| Remove a directory tree (equivalent to @rm -r@)
 
