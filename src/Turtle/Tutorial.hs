@@ -3,15 +3,19 @@
 {-| Use @turtle@ if you want to write light-weight and maintainable shell
     scripts.
 
-    @turtle@ embeds shell scripting directly within Haskell for two main
+    @turtle@ embeds shell scripting directly within Haskell for three main
     reasons:
 
-    * Haskell code is easy to refactor and maintain because Haskell is
+    * Haskell code is easy to refactor and maintain because the language is
       statically typed
 
     * Haskell is syntactically lightweight, thanks to global type inference
 
-    These features make Haskell ideal for scripting.
+    * Haskell programs can be type-checked and interpreted very rapidly (< 1
+      second)
+
+    These features make Haskell ideal for scripting, particularly for replacing
+    large and unwieldy Bash scripts.
 
     This tutorial introduces how to use the @turtle@ library to write Haskell
     scripts and assumes no prior knowledge of Haskell, but does assume prior
@@ -105,10 +109,11 @@ import Turtle
 -- interactive REPL for Haskell.  You can either use @ghci@ by itself:
 --
 -- >$ ghci
--- >...
+-- ><ghci links in some libraries>
 -- >Prelude> :set -XOverloadedStrings
 -- >Prelude> import Turtle
 -- >Prelude Turtle> echo "Hello, world!"
+-- ><ghci links in some libraries>
 -- >Hello, world!
 -- >Prelude Turtle> :quit
 -- >$
@@ -117,13 +122,17 @@ import Turtle
 -- values from that program into scope:
 --
 -- >$ ghci example.hs
--- >...
+-- ><ghci links in some libraries>
 -- >[1 of 1] Compiling Main             ( example.hs, interpreted )
 -- >Ok, modules loaded: Main.
 -- >*Main> main
+-- ><ghci links in some libraries>
 -- >Hello, world!
 -- >*Main> :quit
 -- >$
+--
+-- From now on I'll omit @ghci@'s linker output in tutorial examples.  You can
+-- also silence this linker output by passing the @-v0@ flag to @ghci@.
 
 -- $compare
 -- You'll already notice a few differences between the Haskell code and Bash
@@ -305,19 +314,19 @@ import Turtle
 -- >           time <- datefile dir;
 -- >           echo time }
 --
--- The error points to the last line of our program.  If you study the error
--- message closely you'll see that the `echo` function expects a `Text` value,
--- but we passed it @\'time\'@, which was a `UTCTime` value.  Although the error
--- is at the end of our script, Haskell catches this error before even running
--- the script.  When we \"interpret\" a Haskell script the Haskell compiler
--- actually compiles the script without any optimizations to generate a
--- temporary executable and then runs the executable, much like Perl does for
--- Perl scripts.
+-- The error points to the last line of our program: @(example.hs:8:10)@ means
+-- line 8, column 10 of our program.  If you study the error message closely
+-- you'll see that the `echo` function expects a `Text` value, but we passed it
+-- @\'time\'@, which was a `UTCTime` value.  Although the error is at the end of
+-- our script, Haskell catches this error before even running the script.  When
+-- we \"interpret\" a Haskell script the Haskell compiler actually compiles the
+-- script without any optimizations to generate a temporary executable and then
+-- runs the executable, much like Perl does for Perl scripts.
 --
 -- You might wonder: \"where are the types?\"  None of the above programs had
 -- any type signatures or type annotations, yet the compiler still detected type
--- errors correctly.  This is because Haskell uses \"global type inference\" to,
--- detect errors, meaning that the compiler can infer the type of any expression
+-- errors correctly.  This is because Haskell uses \"global type inference\" to
+-- detect errors, meaning that the compiler can infer the types of expressions
 -- within the program without any assistance from the programmer.
 --
 -- You can even ask the compiler what the type of an expression is using @ghci@.
@@ -325,7 +334,6 @@ import Turtle
 -- and deduce why our program failed:
 --
 -- >$ ghci
--- >...
 -- >Prelude> import Turtle
 -- >Prelude Turtle>
 --
@@ -352,6 +360,8 @@ import Turtle
 -- result is a subroutine (`IO`) that returns a `UTCTime`.  Notice how the
 -- input argument of `datefile` (which is a `Turtle.FilePath`) is the same type
 -- as the return value of `pwd` (also a `Turtle.FilePath`).
+--
+-- Now let's study type of `echo` to see why we get the type error:
 --
 -- >Prelude Turtle> :type echo
 -- >echo :: Text -> IO ()
@@ -393,11 +403,9 @@ import Turtle
 -- @turtle@:
 --
 -- >$ ghci
--- >...
 -- >Prelude> :set -XOverloadedStrings
 -- >Prelude> import Turtle
 -- >Prelude Turtle> cd "/tmp"
--- >...
 -- >Prelude Turtle> pwd
 -- >FilePath "/tmp"
 -- >Prelude Turtle> mkdir "test"
@@ -416,10 +424,10 @@ import Turtle
 -- >:set -XOverloadedStrings
 -- >import Turtle
 --
--- The following @ghci@ examples will all assume that you run these commands
+-- The following @ghci@ examples will all assume that you run these two commands
 -- at the beginning of every session, either manually or automatically.  You can
--- even enable those two commands permanently by adding the above file to your
--- home directory.
+-- even enable those two commands permanently by adding the above @.ghci@ file
+-- to your home directory.
 --
 -- Within @ghci@ you can run a subroutine and @ghci@ will `print` the
 -- subroutine's value if it is not empty:
@@ -449,7 +457,8 @@ import Turtle
 --
 -- Haskell performs global type inference, meaning that the compiler never
 -- requires any type signatures.  When you add type signatures, they are purely
--- for the benefit of programmers and behave like machine-checked documentation.
+-- for the benefit of the programmer and behave like machine-checked
+-- documentation.
 --
 -- Let's illustrate this by adding types to our original script:
 --
@@ -553,9 +562,9 @@ import Turtle
 --
 -- Notice that there is nothing wrong with the program other than the type
 -- signature we added.  If we were to delete the type signature the program
--- would compile and run correctly.  The sole purpose of the type signature in
--- this example is for us to communicate our expectations to the compiler so
--- that the compiler can warn us if the code does not match our expectations.
+-- would compile and run correctly.  The sole purpose of this type signature is
+-- for us to communicate our expectations to the compiler so that the compiler
+-- can alert us if the code does not match our expectations.
 --
 -- Let's also try reversing the type error, providing a number where we expect
 -- a string:
@@ -652,8 +661,8 @@ import Turtle
 -- >example.hs: user error (false failed with exit code: 1)
 --
 -- Most of the commands in this library do not actually invoke an external
--- shell.  Instead, they indirectly wrap other Haskell libraries that provide
--- bindings to C code.
+-- shell.  Instead, they indirectly wrap other Haskell libraries that bind to C
+-- code.
 
 -- $format
 --
@@ -684,7 +693,8 @@ import Turtle
 -- $streams
 -- The @turtle@ library provides support for streaming computations, just like
 -- Bash.  The primitive @turtle@ streams are little more verbose than their
--- Bash counterparts, but the @turtle@ streams are easier to combine.
+-- Bash counterparts, but @turtle@ streams can be built and combined in more
+-- ways.
 --
 -- The key type for streams is the `Shell` type, which represents a stream of
 -- values.  For example, the `ls` function has a streaming result:
@@ -729,7 +739,7 @@ import Turtle
 --
 -- You can build your own `Shell` streams using a few primitive operations,
 --
--- The first primitive is `empty`, which is just an empty stream of values:
+-- The first primitive is `empty`, which represents an empty stream of values:
 --
 -- >Prelude Turtle> view empty  -- Outputs nothing
 -- >Prelude Turtle>
@@ -742,7 +752,7 @@ import Turtle
 --
 -- >empty :: Shell a
 -- 
--- The lower-case @\'a\'@ is \"polymorphic\" meaning that it will type check as
+-- The lower-case @\'a\'@ is \"polymorphic\", meaning that it will type check as
 -- any type.  That means that you can produce an `empty` stream of any type of
 -- value.
 --
@@ -764,8 +774,7 @@ import Turtle
 -- because `return` is overloaded and works with both `IO` and `Shell`.
 --
 -- You can also take any subroutine ('IO') and transform it into a singleton
--- `Shell` that runs the subroutine and emits the subroutine's return value
--- once:
+-- `Shell`:
 --
 -- >Prelude Turtle> view (liftIO readLine)
 -- >ABC<Enter>
@@ -878,8 +887,8 @@ import Turtle
 -- over its argument:
 --
 -- >view :: Show a => Shell a -> IO ()
--- >view shell = sh (do
--- >    x <- shell  -- `x` ranges over every output of `shell`
+-- >view s = sh (do
+-- >    x <- s -- `x` ranges over every output of `s`
 -- >    liftIO (print x) )
 --
 -- You can also loop over a stream in a one-liner, still using @do@ notation.
@@ -915,7 +924,7 @@ import Turtle
 -- >",FilePath "/tmp/pulse-PYi1hSlWgNj2",FilePath "/tmp/orbit-gabriel",FilePath 
 -- >"/tmp/ssh-vREYGbWGpiCa",FilePath "/tmp/.ICE-unix"]
 --
--- You can compute multiple things in a single pass over the stream, too:
+-- You can also compute multiple things in a single pass over the stream:
 --
 -- >Prelude Turtle> fold (select [1..10]) ((,) <$> Fold.minimum <*> Fold.maximum)
 -- >(Just 1,Just 10)
@@ -930,9 +939,9 @@ import Turtle
 -- For example, you can write to standard output using the `stdout` utility:
 --
 -- > stdout :: Shell Text -> IO ()
--- > stdout shell = sh (do
--- >     txt <- shell
--- >     liftIO (shell txt)
+-- > stdout s = sh (do
+-- >     txt <- s
+-- >     liftIO (echo txt)
 --
 -- `stdout` outputs each `Text` value on its own line:
 --
@@ -1023,15 +1032,14 @@ import Turtle
 -- >Prelude Turtle> -- grep '^[[:digit:]]\+$' file.txt
 -- >Prelude Turtle> stdout (grep (plus digit) (input "file.txt"))
 -- >42
--- >Prelude Turtle> -- grep '^[[:digit:]]\+\|Test$'
+-- >Prelude Turtle> -- grep '^[[:digit:]]\+\|Test$' file.txt
 -- >Prelude Turtle> stdout (grep (plus digit <|> "Test") (input "file.txt"))
 -- >Test
 -- >42
 --
 -- Note that @turtle@'s `grep` subtly differs from the traditional @grep@
 -- command.  The `Pattern` you provide must match the entire line.  If you
--- want to match the interior of a line, you can use the `has` combinator
--- to match the interior of a string:
+-- want to match the interior of a line, you can use the `has` utility:
 --
 -- >Prelude Turtle> -- grep B file.txt
 -- >Prelude Turtle> stdout (grep (has "B") (input "file.txt"))
@@ -1047,18 +1055,18 @@ import Turtle
 -- >Prelude Turtle> stdout (grep (suffix "C") (input "file.txt"))
 -- >ABC
 --
--- `sed` also uses `Pattern`s, too, and is more powerful than Unix @sed@:
+-- `sed` also uses `Pattern`s, too, and is more flexible than Unix @sed@:
 --
 -- >Prelude Turtle> -- sed 's/C/D/g' file.txt
 -- >Prelude Turtle> stdout (sed ("C" *> return "D") (input "file.txt"))
 -- >Test
 -- >ABD
 -- >42
--- >Prelude Turtle> -- sed 's/[[:digit:]]\+/!/g' file.txt
--- >Prelude Turtle> stdout (sed (plus digit *> return "!") (input "file.txt"))
+-- >Prelude Turtle> -- sed 's/[[:digit:]]/!/g' file.txt
+-- >Prelude Turtle> stdout (sed (digit *> return "!") (input "file.txt"))
 -- >Test
 -- >ABC
--- >!
+-- >!!
 -- >Prelude Turtle> import qualified Data.Text as Text
 -- >Prelude Turtle> -- rev file.txt
 -- >Prelude Turtle> stdout (sed (fmap Text.reverse (plus dot)) (input "file.txt"))
@@ -1091,10 +1099,10 @@ import Turtle
 -- correctly if there are any exceptions.  You can use `Managed` resources to
 -- acquire things safely within a `Shell`.
 --
--- For example, suppose that you wish to create a temporary directory and
--- temporary file within that directory.  You also want to ensure that the
--- temporary directory is deleted correctly, either when your program is done
--- or you receive an exception.
+-- You can think of a `Managed` resource as some resource that needs to be
+-- acquired and then released afterwards.  Example: you want to create a
+-- temporary file and then guarantee it's deleted afterwards, even if the
+-- program fails with an exception.
 --
 -- "Turtle.Prelude" provides two `Managed` utilities for creating temporary
 -- directories or files:
@@ -1177,4 +1185,13 @@ import Turtle
 -- If you have more questions or need help learning the library, ask a question
 -- on Stack Overflow under the @haskell-turtle@ tag.  For bugs or feature
 -- requests, create an issue on Github at
--- https://github.com/Gabriel439/Haskell-Turtle-Library/issues
+-- <https://github.com/Gabriel439/Haskell-Turtle-Library/issues>
+--
+-- This library provides an extended suite of Unix-like utilities, but would
+-- still benefit from adding more utilities for better parity with the Unix
+-- ecosystem.  Pull requests to add new utilities are highly welcome!
+--
+-- The @turtle@ library does not yet provide support for command line argument
+-- parsing, but I highly recommend the @optparse-applicative@ library for this
+-- purpose.  A future release of this library might include a simplified
+-- interface to @optparse-applicative@.
