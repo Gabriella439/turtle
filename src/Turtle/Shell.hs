@@ -3,9 +3,9 @@
 {-| You can think of `Shell` as @[]@ + `IO` + `Managed`.  In fact, you can embed
     all three of them within a `Shell`:
 
-> select :: [a]       -> Shell a
-> liftIO :: IO a      -> Shell a
-> using  :: Managed a -> Shell a
+> select ::        [a] -> Shell a
+> liftIO ::      IO a  -> Shell a
+> using  :: Managed a  -> Shell a
 
     Those three embeddings obey these laws:
 
@@ -77,10 +77,10 @@ import qualified Control.Foldl as Foldl
 import Data.Monoid (Monoid(..))
 import Data.String (IsString(..))
 
--- | A @(Shell a)@ is a protected list of @a@'s with side effects
+-- | A @(Shell a)@ is a protected stream of @a@'s with side effects
 newtype Shell a = Shell { foldIO :: forall r . FoldM IO a r -> IO r }
 
--- | Feed the stream of @a@'s produced by a `Shell` to a `Fold`
+-- | Use a `Fold` to reduce the stream of @a@'s produced by a `Shell`
 fold :: Shell a -> Fold a b -> IO b
 fold s f = foldIO s (Foldl.generalize f)
 
