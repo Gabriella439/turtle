@@ -62,8 +62,8 @@
 -- 456!
 -- ABC
 --
--- Note that `grep`, `sed`, and `find` differ from their Unix counterparts by
--- requiring that the `Pattern` matches the entire line by default.  However,
+-- Note that `grep` and `find` differ from their Unix counterparts by requiring
+-- that the `Pattern` matches the entire line or file name by default.  However,
 -- you can optionally match the prefix, suffix, or interior of a line:
 --
 -- >>> stdout (grep (has    "2") (input "foo.txt"))
@@ -365,7 +365,7 @@ reparsePoint :: Win32.FileAttributeOrFlag -> Bool
 reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
 #endif
 
-{-| List all immediate children of the given directory, excluding @\".\"@ and
+{-| Stream all immediate children of the given directory, excluding @\".\"@ and
     @\"..\"@
 -}
 ls :: FilePath -> Shell FilePath
@@ -407,7 +407,7 @@ ls path = Shell (\(FoldM step begin done) -> do
         else done x0 )
 #endif
 
--- | List all recursive descendents of the given directory
+-- | Stream all recursive descendents of the given directory
 lstree :: FilePath -> Shell FilePath
 lstree path = do
     child <- ls path
@@ -504,8 +504,12 @@ time io = do
           + fromIntegral (nanoseconds2 - nanoseconds1) / 10^(9::Int)
     return (a, fromRational t)
 
--- | Sleep for the given number of seconds
-sleep :: Double -> IO ()
+{-| Sleep for the given duration
+
+    A numeric literal argument is interpreted as seconds.  In other words,
+    @(sleep 2.0)@ will sleep for two seconds.
+-}
+sleep :: NominalDiffTime -> IO ()
 sleep n = threadDelay (truncate (n * 10^(6::Int)))
 
 {-| Exit with the given exit code
@@ -594,14 +598,14 @@ stderr s = sh (do
     txt <- s
     liftIO (err txt) )
 
--- | Tee lines of `Text` to a file
+-- | Stream lines of `Text` to a file
 output :: FilePath -> Shell Text -> IO ()
 output file s = sh (do
     handle <- using (writeonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
 
--- | Tee lines of `Text` to append to a file
+-- | Stream lines of `Text` to append to a file
 append :: FilePath -> Shell Text -> IO ()
 append file s = sh (do
     handle <- using (appendonly file)
@@ -624,7 +628,7 @@ appendonly file = managed (Filesystem.withFile file IO.AppendMode)
 cat :: [Shell a] -> Shell a
 cat = msum
 
--- | Keep all lines that match the given `Pattern` anywhere within the line
+-- | Keep all lines that match the given `Pattern`
 grep :: Pattern a -> Shell Text -> Shell Text
 grep pattern s = do
     txt <- s

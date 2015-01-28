@@ -77,6 +77,7 @@ module Turtle (
     , FoldM(..)
     , Text
     , UTCTime
+    , NominalDiffTime
     , Handle
     , ExitCode(..)
     , IsString(..)
@@ -136,7 +137,7 @@ import Filesystem.Path.CurrentOS
 import Control.Monad.Managed.Safe (Managed, managed, runManaged)
 import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
-import Data.Time (UTCTime)
+import Data.Time (NominalDiffTime, UTCTime)
 import System.IO (Handle)
 import System.Exit (ExitCode(..))
 import Prelude hiding (FilePath)
