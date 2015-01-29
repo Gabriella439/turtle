@@ -79,13 +79,15 @@ import Turtle
 -- more complex scripts.  Here is an example \"Hello, world!\" script written
 -- in both languages:
 --
--- >#!/usr/bin/env runhaskell
--- >                                    -- #!/bin/bash
--- >{-# LANGUAGE OverloadedStrings #-}  --
--- >                                    --
--- >import Turtle                       --
--- >                                    --
--- >main = echo "Hello, world!"         -- echo Hello, world!
+--@
+--#!\/usr\/bin\/env runhaskell
+--                                    -- #!\/bin\/bash
+--{-\# LANGUAGE OverloadedStrings \#-}  --
+--                                    --
+--import "Turtle"                       --
+--                                    --
+--main = `echo` \"Hello, world!\"         -- echo Hello, world!
+--@
 --
 -- In Haskell you can use @--@ to comment out the rest of a line.  The above
 -- example uses comments to show the equivalent Bash script side-by-side with
@@ -219,14 +221,16 @@ import Turtle
 -- creation time of the current working directory by storing two intermediate
 -- results:
 --
--- >#!/usr/bin/env runhaskell
--- >                           -- #!/bin/bash
--- >import Turtle              --
--- >                           --
--- >main = do                  --
--- >    dir  <- pwd            -- DIR=$(pwd)
--- >    time <- datefile dir   -- TIME=$(date -r $DIR)
--- >    print time             -- echo $TIME
+--@
+--#!\/usr\/bin\/env runhaskell
+--                           -- #!\/bin\/bash
+--import Turtle              --
+--                           --
+--main = do                  --
+--    dir  <- `pwd`            -- DIR=$(pwd)
+--    time <- `datefile` dir   -- TIME=$(date -r $DIR)
+--    `print` time             -- echo $TIME
+--@
 --
 -- >$ ./example.hs
 -- >2015-01-24 03:40:31 UTC
@@ -352,8 +356,10 @@ import Turtle
 -- You can interrogate the REPL for an expression's type using the @:type@
 -- command:
 --
--- >Prelude Turtle> :type pwd
--- >pwd :: IO Turtle.FilePath
+--@
+--Prelude Turtle> :type pwd
+--pwd :: `IO` Turtle.`Turtle.FilePath`
+--@
 --
 -- Whenever you see something of the form @(x :: t)@, that means that @\'x\'@
 -- is a value of type @\'t\'@.  The REPL says that `pwd` is a subroutine ('IO')
@@ -365,8 +371,10 @@ import Turtle
 --
 -- We can similarly ask for the type of `datefile`:
 --
--- >Prelude Turtle> :type datefile
--- >datefile :: Turtle.FilePath -> IO UTCTime
+--@
+--Prelude Turtle> :type datefile
+--datefile :: Turtle.`Turtle.FilePath` -> `IO` `UTCTime`
+--@
 --
 -- `datefile` is a function whose argument must be a `Turtle.FilePath` and whose
 -- result is a subroutine (`IO`) that returns a `UTCTime`.  Notice how the
@@ -375,8 +383,10 @@ import Turtle
 --
 -- Now let's study type of `echo` to see why we get the type error:
 --
--- >Prelude Turtle> :type echo
--- >echo :: Text -> IO ()
+--@
+--Prelude Turtle> :type echo
+--echo :: `Text` -> `IO` ()
+--@
 --
 -- The above type says that `echo` is a function whose argument is a value of
 -- type `Text` and whose result is a subroutine (`IO`) with an empty return
@@ -390,8 +400,10 @@ import Turtle
 -- The reason `print` worked is because `print` has a more general type than
 -- `echo`:
 --
--- >Prelude Turtle> :type print
--- >print :: Show a => a -> IO ()
+--@
+--Prelude Turtle> :type print
+--print :: `Show` a => a -> `IO` ()
+--@
 --
 -- This type signature says that `print` can display any value of type @\'a\'@
 -- so long as @\'a\'@ implements the `Show` interface.  In this case `UTCTime`
@@ -401,8 +413,10 @@ import Turtle
 -- This library provides a helper function that lets you convert any type that
 -- implements `Show` into a `Text` value:
 -- 
--- > -- This behaves like Python's `repr` function
--- > repr :: Show a => a -> Text
+--@
+--\-\- This behaves like Python's \`repr\` function
+--`repr` :: `Show` a => a -> `Text`
+--@
 --
 -- You could therefore implement `print` in terms of `echo` and `repr`:
 --
@@ -414,20 +428,22 @@ import Turtle
 -- general-purpose Haskell shell for your system when you extend it with
 -- @turtle@:
 --
--- >$ ghci
--- >Prelude> :set -XOverloadedStrings
--- >Prelude> import Turtle
--- >Prelude Turtle> cd "/tmp"
--- >Prelude Turtle> pwd
--- >FilePath "/tmp"
--- >Prelude Turtle> mkdir "test"
--- >Prelude Turtle> cd "test"
--- >Prelude Turtle> touch "file"
--- >Prelude Turtle> testfile "file"
--- >True
--- >Prelude Turtle> rm "file"
--- >Prelude Turtle> testfile "file"
--- >False
+--@
+--$ ghci
+--Prelude> :set -XOverloadedStrings
+--Prelude> import Turtle
+--Prelude Turtle> `cd` \"/tmp\"
+--Prelude Turtle> `pwd`
+--FilePath \"/tmp\"
+--Prelude Turtle> `mkdir` \"test\"
+--Prelude Turtle> `cd` \"test\"
+--Prelude Turtle> `touch` \"file\"
+--Prelude Turtle> `testfile` \"file\"
+--True
+--Prelude Turtle> `rm` \"file\"
+--Prelude Turtle> `testfile` \"file\"
+--False
+--@
 --
 -- You can also optionally configure @ghci@ to run the first two commands every
 -- time you launch @ghci@.  Just create a @.ghci@ within your current directory
@@ -444,18 +460,22 @@ import Turtle
 -- Within @ghci@ you can run a subroutine and @ghci@ will `print` the
 -- subroutine's value if it is not empty:
 --
--- >Prelude Turtle> shell "true" empty
--- >ExitSuccess
--- >Prelude Turtle> shell "false" empty
--- >ExitFailure 1
+--@
+--Prelude Turtle> `shell` \"true\" empty
+--ExitSuccess
+--Prelude Turtle> `shell` \"false\" empty
+--ExitFailure 1
+--@
 --
 -- You can also type in a pure expression and @ghci@ will evaluate that
 -- expression:
 --
--- >Prelude Turtle> 2 + 2
--- >4
--- >Prelude Turtle> "123" <> "456"  -- (<>) concatenates strings
--- >"123456"
+--@
+--Prelude Turtle> 2 + 2
+--4
+--Prelude Turtle> \"123\" `<>` \"456\"  -- (\<\>) concatenates strings
+--\"123456\"
+--@
 --
 -- This works because @ghci@ automatically wraps anything that's not a
 -- subroutine with `print`.  It's as if we had written:
@@ -615,15 +635,17 @@ import Turtle
 -- example, we can write a program that creates an empty directory and then
 -- uses a `shell` command to archive the directory:
 --
--- >#!/usr/bin/env runhaskell
--- >                                             -- #!/bin/bash
--- >{-# LANGUAGE OverloadedStrings #-}           --
--- >                                             --
--- >import Turtle                                --
--- >                                             --
--- >main = do                                    --
--- >    mkdir "test"                             -- mkdir test
--- >    shell "tar czf test.tar.gz test" empty   -- tar czf test.tar.gz test
+--@
+--#!\/usr\/bin\/env runhaskell
+--                                             -- #!\/bin\/bash
+--{-\# LANGUAGE OverloadedStrings \#-}           --
+--                                             --
+--import Turtle                                --
+--                                             --
+--main = do                                    --
+--    mkdir \"test\"                             -- mkdir test
+--    `shell` \"tar czf test.tar.gz test\" empty   -- tar czf test.tar.gz test
+--@
 --
 -- If you run this program, it will generate the @test.tar.gz@ archive:
 --
@@ -641,10 +663,12 @@ import Turtle
 -- documentation.  Click on the word `shell`, which will take you to
 -- documentation that looks like this:
 --
--- >shell
--- >    :: Text         -- Command line
--- >    -> Shell Text   -- Standard input (as lines of `Text`)
--- >    -> IO ExitCode  -- Exit code of the shell command
+--@
+--`shell`
+--    :: Text         -- Command line
+--    -> Shell Text   -- Standard input (as lines of \`Text\`)
+--    -> IO `ExitCode`  -- Exit code of the shell command
+--@
 --
 -- The first argument is a `Text` representation of the command to run.  The
 -- second argument lets you feed input to the command, and you can provide
@@ -654,18 +678,20 @@ import Turtle
 -- command completed successfully.  For example, we could print a more
 -- descriptive error message if an external command fails:
 --
--- >#!/usr/bin/env runhaskell
--- >
--- >{-# LANGUAGE OverloadedStrings #-}
--- >
--- >import Turtle
--- >
--- >main = do
--- >    let cmd = "false"
--- >    x <- shell cmd empty
--- >    case x of
--- >        ExitSuccess   -> return ()
--- >        ExitFailure n -> die (cmd <> " failed with exit code: " <> repr n)
+--@
+--#!\/usr\/bin\/env runhaskell
+--
+--{-\# LANGUAGE OverloadedStrings \#-}
+--
+--import Turtle
+--
+--main = do
+--    let cmd = \"false\"
+--    x <- shell cmd empty
+--    case x of
+--        ExitSuccess   -> return ()
+--        ExitFailure n -> `die` (cmd \<\> \" failed with exit code: \" \<\> repr n)
+--@
 --
 -- This prints an error message since the @false@ command always fails:
 --
@@ -711,8 +737,10 @@ import Turtle
 -- The key type for streams is the `Shell` type, which represents a stream of
 -- values.  For example, the `ls` function has a streaming result:
 --
--- >Prelude Turtle> :type ls
--- >ls :: Turtle.FilePath -> Shell Turtle.FilePath
+--@
+--Prelude Turtle> :type `ls`
+--`ls` :: Turtle.FilePath -> `Shell` Turtle.FilePath
+--@
 --
 -- That type says that `ls` takes a single `Turtle.FilePath` as its argument
 -- (the directory to list) and the result is a `Shell` stream of
@@ -733,7 +761,9 @@ import Turtle
 -- Instead, you must consume the stream as it is generated and the simplest way
 -- to consume a `Shell` stream is `view`:
 --
--- > view :: Show a => Shell a -> IO ()
+--@
+--`view` :: Show a => Shell a -> IO ()
+--@
 --
 -- `view` takes any `Shell` stream of values and `print`s them to standard
 -- output:
@@ -753,16 +783,22 @@ import Turtle
 --
 -- The first primitive is `empty`, which represents an empty stream of values:
 --
--- >Prelude Turtle> view empty  -- Outputs nothing
--- >Prelude Turtle>
+--@
+--Prelude Turtle> view `empty`  -- Outputs nothing
+--Prelude Turtle>
+--@
 --
 -- Another way to say that is:
 --
--- >view empty = return ()
+--@
+--view `empty` = return ()
+--@
 --
 -- The type of empty is:
 --
--- >empty :: Shell a
+--@
+--`empty` :: Shell a
+--@
 -- 
 -- The lower-case @\'a\'@ is \"polymorphic\", meaning that it will type check as
 -- any type.  That means that you can produce an `empty` stream of any type of
@@ -771,16 +807,22 @@ import Turtle
 -- The next simplest function is `return`, which lets you take any value and
 -- transform it into a singleton `Shell` that emits just that one value:
 --
--- >Prelude Turtle> view (return 1)
--- >1
+--@
+--Prelude Turtle> view (`return` 1)
+--1
+--@
 --
 -- Another way to say that is:
 --
--- >view (return x) = print x
+--@
+--view (`return` x) = print x
+--@
 --
 -- The type of `return` is:
 --
--- >return :: a -> Shell a
+--@
+--`return` :: a -> Shell a
+--@
 --
 -- Notice that this is the same `return` function we saw before.  This is
 -- because `return` is overloaded and works with both `IO` and `Shell`.
@@ -788,35 +830,47 @@ import Turtle
 -- You can also take any subroutine ('IO') and transform it into a singleton
 -- `Shell`:
 --
--- >Prelude Turtle> view (liftIO readLine)
--- >ABC<Enter>
--- >Just "ABC"
+--@
+--Prelude Turtle> view (`liftIO` readLine)
+--ABC\<Enter\>
+--Just \"ABC\"
+--@
 --
 -- Another way to say that is:
 --
--- >view (liftIO io) = do x <- io
--- >                      print x
+--@
+--view (`liftIO` io) = do x <- io
+--                      print x
+--@
 --
 -- The type of `liftIO` is:
 --
--- >liftIO :: IO a -> Shell a
+--@
+--`liftIO` :: IO a -> Shell a
+--@
 --
 -- Once you have those primitive `Shell` streams you can begin to combine them
 -- into larger `Shell` streams.  For example, you can concatenate two `Shell`
 -- streams using (`<|>`):
 --
--- >view (return 1 <|> return 2)
--- >1
--- >2
+--@
+--view (return 1 `<|>` return 2)
+--1
+--2
+--@
 --
 -- Another way to say that is:
 --
--- >view (xs <|> ys) = do view xs
--- >                      view ys
+--@
+--view (xs `<|>` ys) = do view xs
+--                      view ys
+--@
 --
 -- The type of (`<|>`) is:
 --
--- >(<|>) :: Shell a -> Shell a -> Shell a
+--@
+--(`<|>`) :: Shell a -> Shell a -> Shell a
+--@
 --
 -- In other words, you can concatenate two `Shell` streams of the same element
 -- type to get a new `Shell` stream, also of the same element type.
@@ -861,10 +915,12 @@ import Turtle
 -- This library also provides the `select` function for conveniently emitting a
 -- list of values:
 --
--- >Prelude Turtle> view (select [1, 2, 3])
--- >1
--- >2
--- >3
+--@
+--Prelude Turtle> view (`select` [1, 2, 3])
+--1
+--2
+--3
+--@
 --
 -- We can use `select` to implement loops within a `Shell`:
 --
@@ -892,7 +948,9 @@ import Turtle
 -- This uses the `sh` utility instead of `view`.  The only difference is that
 -- `sh` doesn't print any values (since `print` is doing that already):
 --
--- >sh :: Shell a -> IO ()
+--@
+--`sh` :: Shell a -> IO ()
+--@
 --
 -- This trick isn't limited to `select`.  You can loop over the output of any
 -- `Shell` by just binding its result.  For example, this is how `view` loops
@@ -923,18 +981,24 @@ import Turtle
 -- There are other ways you can consume a `Shell` stream.  For example, you can
 -- `fold` the stream using predefined `Fold`s from "Control.Foldl":
 --
--- >Prelude Turtle> import qualified Control.Foldl as Fold
--- >Prelude Turtle Fold> fold (ls "/tmp") Fold.length
--- >9
+--@
+--Prelude Turtle> import qualified "Control.Foldl" as Fold
+--Prelude Turtle Fold> `fold` (ls \"/tmp\") Fold.length
+--9
+--@
 --
--- >Prelude Turtle Fold> fold (ls "/tmp") Fold.head
--- >Just (FilePath "/tmp/.X11-unix")
+--@
+--Prelude Turtle Fold> `fold` (ls \"/tmp\") Fold.head
+--Just (FilePath \"\/tmp\/.X11-unix\")
+--@
 --
--- >Prelude Turtle Fold> fold (ls "/tmp") Fold.list
--- >[FilePath "/tmp/.X11-unix",FilePath "/tmp/.X0-lock",FilePath "/tmp/pulse-PKd
--- >htXMmr18n",FilePath "/tmp/pulse-xHYcZ3zmN3Fv",FilePath "/tmp/tracker-gabriel
--- >",FilePath "/tmp/pulse-PYi1hSlWgNj2",FilePath "/tmp/orbit-gabriel",FilePath 
--- >"/tmp/ssh-vREYGbWGpiCa",FilePath "/tmp/.ICE-unix"]
+--@
+--Prelude Turtle Fold> `fold` (ls \"\/tmp\") Fold.list
+--[FilePath \"\/tmp\/.X11-unix\",FilePath \"\/tmp\/.X0-lock\",FilePath \"\/tmp\/pulse-PKd
+--htXMmr18n\",FilePath \"\/tmp\/pulse-xHYcZ3zmN3Fv\",FilePath \"\/tmp\/tracker-gabriel
+--\",FilePath \"\/tmp\/pulse-PYi1hSlWgNj2\",FilePath \"\/tmp\/orbit-gabriel\",FilePath 
+--\"\/tmp\/ssh-vREYGbWGpiCa\",FilePath \"\/tmp\/.ICE-unix\"]
+--@
 --
 -- You can also compute multiple things in a single pass over the stream:
 --
@@ -950,10 +1014,12 @@ import Turtle
 --
 -- For example, you can write to standard output using the `stdout` utility:
 --
--- > stdout :: Shell Text -> IO ()
--- > stdout s = sh (do
--- >     txt <- s
--- >     liftIO (echo txt)
+--@
+--`stdout` :: Shell Text -> IO ()
+--`stdout` s = sh (do
+--    txt <- s
+--    liftIO (echo txt)
+--@
 --
 -- `stdout` outputs each `Text` value on its own line:
 --
@@ -966,7 +1032,9 @@ import Turtle
 -- Another useful stream is `stdin`, which emits one line of `Text` per line of
 -- standard input:
 --
--- >stdin :: Shell Text
+--@
+--`stdin` :: Shell Text
+--@
 --
 -- Let's combine `stdin` and `stdout` to forward all input from standard input
 -- to standard output:
@@ -995,27 +1063,33 @@ import Turtle
 -- You can also read and write to files using the `input` and `output`
 -- utilities:
 --
--- >Prelude Turtle> output "file.txt" ("Test" <|> "ABC" <|> "42")
--- >Prelude Turtle> stdout (input "file.txt")
--- >Test
--- >ABC
--- >42
+--@
+--Prelude Turtle> `output` \"file.txt\" (\"Test\" \<|\> \"ABC\" \<|\> \"42\")
+--Prelude Turtle> stdout (`input` \"file.txt\")
+--Test
+--ABC
+--42
+--@
 
 -- $patterns
 --
 -- You can transform streams using Unix-like utilities.  For example, you can
 -- filter a stream using `grep`.
 --
--- >Prelude Turtle> stdout (input "file.txt")
--- >Test
--- >ABC
--- >42
--- >Prelude Turtle> stdout (grep "ABC" (input "file.txt"))
--- >ABC
+--@
+--Prelude Turtle> stdout (input \"file.txt\")
+--Test
+--ABC
+--42
+--Prelude Turtle> stdout (`grep` \"ABC\" (input \"file.txt\"))
+--ABC
+--@
 --
 -- Let's look at the type of `grep`:
 --
--- > grep :: Pattern a -> Shell Text -> Shell Text
+--@
+--`grep` :: Pattern a -> Shell Text -> Shell Text
+--@
 --
 -- The first argument of `grep` is actually a `Pattern`, which implements
 -- `IsString`.  When we pass a string literal we just create a `Pattern` that
@@ -1024,20 +1098,22 @@ import Turtle
 -- `Pattern`s generalize regular expressions and you can use this table to
 -- roughly translate several regular expression idioms to `Pattern`s:
 --
--- > Regex      Pattern
--- > =========  =========
--- > "string"   "string"
--- > .          dot
--- > e1 e2      e1 <> e2
--- > e1 | e2    e1 <|> e2
--- > e*         star e
--- > e+         plus e
--- > e*?        selfless (star e)
--- > e+?        selfless (plus e)
--- > e{n}       count n e
--- > e?         optional e
--- > [xyz]      oneOf "xyz"
--- > [^xyz]     noneOf "xyz"
+--@
+-- Regex      Pattern
+-- =========  =========
+-- \"string\"   \"string\"
+-- .          `dot`
+-- e1 e2      e1 `<>` e2
+-- e1 | e2    e1 `<|>` e2
+-- e*         `star` e
+-- e+         `plus` e
+-- e*?        `selfless` (`star` e)
+-- e+?        `selfless` (`plus` e)
+-- e{n}       `count` n e
+-- e?         `optional` e
+-- [xyz]      `oneOf` \"xyz\"
+-- [^xyz]     `noneOf` \"xyz\"
+--@
 --
 -- Here are some examples:
 --
@@ -1053,54 +1129,62 @@ import Turtle
 -- command.  The `Pattern` you provide must match the entire line.  If you
 -- want to match the interior of a line, you can use the `has` utility:
 --
--- >Prelude Turtle> -- grep B file.txt
--- >Prelude Turtle> stdout (grep (has "B") (input "file.txt"))
--- >ABC
+--@
+--Prelude Turtle> -- grep B file.txt
+--Prelude Turtle> stdout (grep (`has` \"B\") (input \"file.txt\"))
+--ABC
+--@
 --
 -- You can also use `prefix` or `suffix` to match the beginning or end of a
 -- string, respectively:
 --
--- >Prelude Turtle> -- grep '^A' file.txt
--- >Prelude Turtle> stdout (grep (prefix "A") (input "file.txt"))
--- >ABC
--- >Prelude Turtle> -- grep 'C$' file.txt
--- >Prelude Turtle> stdout (grep (suffix "C") (input "file.txt"))
--- >ABC
+--@
+--Prelude Turtle> -- grep '^A' file.txt
+--Prelude Turtle> stdout (grep (`prefix` \"A\") (input \"file.txt\"))
+--ABC
+--Prelude Turtle> -- grep 'C$' file.txt
+--Prelude Turtle> stdout (grep (`suffix` \"C\") (input \"file.txt\"))
+--ABC
+--@
 --
 -- `sed` also uses `Pattern`s, too, and is more flexible than Unix @sed@:
 --
--- >Prelude Turtle> -- sed 's/C/D/g' file.txt
--- >Prelude Turtle> stdout (sed ("C" *> return "D") (input "file.txt"))
--- >Test
--- >ABD
--- >42
--- >Prelude Turtle> -- sed 's/[[:digit:]]/!/g' file.txt
--- >Prelude Turtle> stdout (sed (digit *> return "!") (input "file.txt"))
--- >Test
--- >ABC
--- >!!
--- >Prelude Turtle> import qualified Data.Text as Text
--- >Prelude Turtle> -- rev file.txt
--- >Prelude Turtle> stdout (sed (fmap Text.reverse (plus dot)) (input "file.txt"))
--- >tseT
--- >CBA
--- >24
--- >Prelude Turtle>
+--@
+--Prelude Turtle> -- sed 's/C/D/g' file.txt
+--Prelude Turtle> stdout (`sed` (\"C\" `*>` return \"D\") (input \"file.txt\"))
+--Test
+--ABD
+--42
+--Prelude Turtle> -- sed 's\/[[:digit:]]\/!\/g' file.txt
+--Prelude Turtle> stdout (`sed` (digit `*>` return \"!\") (input \"file.txt\"))
+--Test
+--ABC
+--!!
+--Prelude Turtle> import qualified Data.Text as Text
+--Prelude Turtle> -- rev file.txt
+--Prelude Turtle> stdout (`sed` (`fmap` Text.reverse (plus dot)) (input \"file.txt\"))
+--tseT
+--CBA
+--24
+--Prelude Turtle>
+--@
 --
 -- You can also use `Pattern`s by themselves to parse arbitrary text into more
 -- structured values:
 --
--- >Prelude Turtle> let pair = do x <- decimal; " "; y <- decimal; return (x, y)
--- >Prelude Turtle> :type pair
--- >pair :: Pattern (Integer, Integer)
--- >Prelude Turtle> match pair "123 456"
--- >[(123,456)]
--- >Prelude Turtle> data Pet = Cat | Dog deriving (Show)
--- >Prelude Turtle> let pet = ("cat" *> return Cat) <|> ("dog" *> return Dog) :: Pattern Pet
--- >Prelude Turtle> match pet "dog"
--- >[Dog]
--- >Prelude Turtle> match (pet `sepBy` ",") "cat,dog,cat"
--- >[[Cat,Dog,Cat]]
+--@
+--Prelude Turtle> let pair = do x <- `decimal`; \" \"; y <- `decimal`; return (x, y)
+--Prelude Turtle> :type pair
+--pair :: `Pattern` (Integer, Integer)
+--Prelude Turtle> `match` pair \"123 456\"
+--[(123,456)]
+--Prelude Turtle> data Pet = Cat | Dog deriving (Show)
+--Prelude Turtle> let pet = (\"cat\" *> return Cat) \<|\> (\"dog\" *> return Dog) :: `Pattern` Pet
+--Prelude Turtle> `match` pet \"dog\"
+--[Dog]
+--Prelude Turtle> `match` (pet \``sepBy`\` \",\") \"cat,dog,cat\"
+--[[Cat,Dog,Cat]]
+--@
 --
 -- See the "Turtle.Pattern" module for more details if you are interested in
 -- writing more complex `Pattern`s.
@@ -1119,19 +1203,25 @@ import Turtle
 -- "Turtle.Prelude" provides two `Managed` utilities for creating temporary
 -- directories or files:
 --
--- >mktempdir
--- >    :: FilePath          -- Parent directory
--- >    -> Text              -- Directory name template
--- >    -> Managed FilePath  -- Temporary directory
+--@
+--`mktempdir`
+--    :: FilePath          -- Parent directory
+--    -> Text              -- Directory name template
+--    -> `Managed` FilePath  -- Temporary directory
+--@
 --
--- >mktemp
--- >    :: FilePath                    -- Parent directory
--- >    -> Text                        -- File name template
--- >    -> Managed (FilePath, Handle)  -- Temporary file
+--@
+--`mktemp`
+--    :: FilePath                    -- Parent directory
+--    -> Text                        -- File name template
+--    -> `Managed` (FilePath, Handle)  -- Temporary file
+--@
 --
 -- You can acquire a `Managed` resource within a `Shell` with `using`:
 --
--- >using :: Managed a -> Shell a
+--@
+--`using` :: Managed a -> Shell a
+--@
 --
 -- ... and here is an example of creating a temporary directory and file within
 -- a `Shell`:
