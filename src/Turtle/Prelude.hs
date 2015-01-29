@@ -141,8 +141,8 @@ module Turtle.Prelude (
     , wait
 
     -- * Shell
-    , readProc
-    , readShell
+    , inproc
+    , inshell
     , stdin
     , input
     , inhandle
@@ -256,7 +256,7 @@ system p s = do
 
     The command inherits @stderr@ for the current process
 -}
-readProc
+inproc
     :: Text
     -- ^ Command
     -> [Text]
@@ -265,20 +265,20 @@ readProc
     -- ^ Lines of standard input
     -> Shell Text
     -- ^ Lines of standard output
-readProc cmd args = stream (Process.proc (unpack cmd) (map unpack args))
+inproc cmd args = stream (Process.proc (unpack cmd) (map unpack args))
 
 {-| Run a command line, streaming @stdout@ as lines of `Text`
 
     The command inherits @stderr@ for the current process
 -}
-readShell
+inshell
     :: Text
     -- ^ Command line
     -> Shell Text
     -- ^ Lines of standard input
     -> Shell Text
     -- ^ Lines of standard output
-readShell cmd = stream (Process.shell (unpack cmd))
+inshell cmd = stream (Process.shell (unpack cmd))
 
 stream
     :: Process.CreateProcess
