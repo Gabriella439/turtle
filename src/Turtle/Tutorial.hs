@@ -23,6 +23,14 @@
 
     If you are already proficient with Haskell, then you can get quickly up to
     speed by reading the Quick Start guide at the top of "Turtle.Prelude".
+
+    To follow along with the examples, install the Haskell Platform:
+
+    <http://www.haskell.org/platform/>
+
+    ... and then install the @turtle@ library by running:
+
+> $ cabal install turtle
 -}
 
 module Turtle.Tutorial (
