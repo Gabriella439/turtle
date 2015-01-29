@@ -210,6 +210,10 @@ import Turtle
 -- >Line 1
 -- >Line 2
 --
+-- @do@ blocks can use either use the indentation level to control their
+-- duration or they can use curly braces and semicolons.  To see the full rules
+-- for @do@ syntax, read: <http://en.wikibooks.org/wiki/Haskell/Indentation>.
+--
 -- Some commands can return a value, and you can store the result of a command
 -- using the @<-@ symbol.  For example, the following program prints the
 -- creation time of the current working directory by storing two intermediate
@@ -226,6 +230,14 @@ import Turtle
 --
 -- >$ ./example.hs
 -- >2015-01-24 03:40:31 UTC
+--
+-- The main difference between @=@ and @<-@ is that:
+--
+-- * The @<-@ symbol is overloaded and its meaning is context-dependent; in this
+--   context it just means \"store the current result\"
+--
+-- * The @=@ symbol is not overloaded and always means that the two sides of the
+--   equality are interchangeable
 --
 -- @do@ notation lets you combine smaller subroutines into larger subroutines.
 -- For example, we could refactor the above code to split the first two commands
@@ -271,9 +283,8 @@ import Turtle
 -- >-- Same as:
 -- >command expr         -- command EXPR
 --
--- In fact, Haskell lets you use the @=@ sign for this common case where you
--- just want to create a new name for an expression.  This more closely mirrors
--- the equivalent Bash syntax:
+-- In fact, the first line is equivalent to @let x = expr@, which more closely
+-- mirrors the equivalent Bash syntax:
 --
 -- >do let x = expr      -- X=EXPR
 -- >   command x         -- command $X
