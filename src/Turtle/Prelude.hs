@@ -100,7 +100,7 @@ module Turtle.Prelude (
     , shell
     , echo
     , err
-    , readLine
+    , readline
 #if MIN_VERSION_base(4,7,0)
     , export
     , unset
@@ -312,8 +312,8 @@ err = Text.hPutStrLn IO.stderr
 
     Returns `Nothing` if at end of input
 -}
-readLine :: IO (Maybe Text)
-readLine = do
+readline :: IO (Maybe Text)
+readline = do
     eof <- IO.isEOF
     if eof
         then return Nothing

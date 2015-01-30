@@ -840,7 +840,7 @@ import Turtle
 -- `Shell`:
 --
 -- @
--- Prelude Turtle> view (`liftIO` readLine)
+-- Prelude Turtle> view (`liftIO` readline)
 -- ABC\<Enter\>
 -- Just \"ABC\"
 -- @
