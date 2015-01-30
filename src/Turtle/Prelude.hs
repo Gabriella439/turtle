@@ -205,7 +205,7 @@ import Prelude hiding (FilePath)
 import Turtle.Pattern (Pattern, anyChar, match)
 import Turtle.Shell
 
-{-| Run a shell command, retrieving the exit code
+{-| Run a command using @execvp@, retrieving the exit code
 
     The command inherits @stdout@ and @stderr@ for the current process
 -}
@@ -220,7 +220,10 @@ proc
     -- ^ Exit code
 proc cmd args = system (Process.proc (unpack cmd) (map unpack args))
 
-{-| Run a command line, retrieving the exit code
+{-| Run a command line using the shell, retrieving the exit code
+
+    This command is more powerful than `proc`, but highly vulnerable to code
+    injection if you template the command line with untrusted input
 
     The command inherits @stdout@ and @stderr@ for the current process
 -}
@@ -252,7 +255,7 @@ system p s = do
             liftIO (Text.hPutStrLn hIn txt) )
     withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) )
 
-{-| Run a command, streaming @stdout@ as lines of `Text`
+{-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
 
     The command inherits @stderr@ for the current process
 -}
@@ -267,7 +270,10 @@ inproc
     -- ^ Lines of standard output
 inproc cmd args = stream (Process.proc (unpack cmd) (map unpack args))
 
-{-| Run a command line, streaming @stdout@ as lines of `Text`
+{-| Run a command line using the shell, streaming @stdout@ as lines of `Text`
+
+    This command is more powerful than `inproc`, but highly vulnerable to code
+    injection if you template the command line with untrusted input
 
     The command inherits @stderr@ for the current process
 -}
