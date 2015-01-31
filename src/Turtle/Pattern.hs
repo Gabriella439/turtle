@@ -27,7 +27,7 @@
     Use @do@ notation to structure more complex patterns:
 
 >>> :{
-let bit = ("0" *> pure False) <|> ("1" *> pure True);
+let bit = ("0" *> pure False) <|> ("1" *> pure True) :: Pattern Bool;
     portableBitMap = do
         { "P1"
         ; width  <- spaces1 *> decimal
