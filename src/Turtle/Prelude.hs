@@ -527,7 +527,7 @@ exit 0 = exitWith  ExitSuccess
 exit n = exitWith (ExitFailure n)
 
 -- | Throw an exception using the provided `Text` message
-die :: Text -> IO ()
+die :: Text -> IO a
 die txt = throwIO (userError (unpack txt))
 
 {-| Create a temporary directory underneath the given directory
