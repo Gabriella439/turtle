@@ -11,7 +11,7 @@ Bug-Reports: https://github.com/Gabriel439/Haskell-Turtle-Library/issues
 Synopsis: Shell programming, Haskell-style
 Description: @turtle@ is a reimplementation of the Unix command line environment
     in Haskell so that you can use Haskell as both a shell and a scripting
-    language
+    language.
     .
     Features include:
     .
@@ -33,6 +33,11 @@ Description: @turtle@ is a reimplementation of the Unix command line environment
     .
     Read "Turtle.Tutorial" for a detailed tutorial or "Turtle.Prelude" for a
     quick-start guide
+    .
+    @turtle@ is designed to be beginner-friendly, but as a result lacks certain
+    features, like tracing commands.  If you feel comfortable using @turtle@
+    then you should also check out the @Shelly@ library which provides similar
+    functionality.
 Category: System
 Source-Repository head
     Type: git
