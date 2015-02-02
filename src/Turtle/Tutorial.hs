@@ -156,7 +156,7 @@ import Turtle
 --
 -- Second, the Haskell `echo` explicitly quotes its string argument whereas the
 -- Bash @echo@ does not.  In Bash every token is a string by default and you
--- distinguish variables by prepending a dollar sign to them.  In Haskell the
+-- distinguish variables by prepending a dollar sign to them.  In Haskell
 -- the situation is reversed: every token is a variable by default and you
 -- distinguish strings by quoting them.  The following example highlights the
 -- difference:
