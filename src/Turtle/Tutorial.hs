@@ -64,6 +64,9 @@ module Turtle.Tutorial (
     -- * Loops
     -- $loops
 
+    -- * External commands
+    -- $external
+
     -- * Folds
     -- $folds
 
@@ -707,9 +710,21 @@ import Turtle
 -- > $ ./example.hs
 -- > example.hs: user error (false failed with exit code: 1)
 --
+-- You should also check out the `proc` command, which is less powerful but
+-- safer since it decreases the likelihood of code injection or malformed
+-- commands:
+--
+-- @
+-- `proc`
+--     :: Text         -- Program
+--     :: [Text]       -- Arguments
+--     -> Shell Text   -- Standard input (as lines of \`Text\`)
+--     -> IO ExitCode  -- Exit code of the shell command
+-- @
+--
 -- Most of the commands in this library do not actually invoke an external
--- shell.  Instead, they indirectly wrap other Haskell libraries that bind to C
--- code.
+-- shell or program.  Instead, they indirectly wrap other Haskell libraries that
+-- bind to C code.
 
 -- $format
 --
@@ -984,6 +999,56 @@ import Turtle
 -- > FilePath "/tmp/orbit-gabriel"
 -- > FilePath "/tmp/ssh-vREYGbWGpiCa"
 -- > FilePath "/tmp/.ICE-unix"
+
+-- $external
+--
+-- You can embed external shell commands as streams within your Haskell program.
+--
+-- For example, suppose that we want to use the system's built in @ls@ command.
+-- We can just run:
+--
+-- > Prelude Turtle> stdout (inshell "ls" empty)
+-- > .X11-unix
+-- > .X0-lock
+-- > pulse-PKdhtXMmr18n
+-- > pulse-xHYcZ3zmN3Fv
+-- > tracker-gabriel
+-- > pulse-PYi1hSlWgNj2
+-- > orbit-gabriel
+-- > ssh-vREYGbWGpiCa
+-- > .ICE-unix
+--
+-- This works because type of `inshell` is:
+--
+-- @
+-- `inshell`
+--     :: Text    -- Command line
+--     -> Shell Text  -- Standard input to feed to program
+--     -> Shell Text  -- Standard output produced by program
+-- @
+--
+-- This means you can use `inshell` to embed arbitrary external utilities as
+-- first class streams within your Haskell program:
+--
+-- > Turtle Prelude> stdout (inshell "awk '{ print $1 }'" "123 456")
+-- > 123
+--
+-- You should also check out the `inproc` command, which is less powerful but
+-- safer since it decreases the likelihood of code injection or malformed
+-- commands:
+--
+-- @
+-- `inproc`
+--     :: Text        -- Program
+--     -> [Text]      -- Arguments
+--     -> Shell Text  -- Standard input to feed to program
+--     -> Shell Text  -- Standard output produced by program
+-- @
+--
+-- Using `inproc`, you would write:
+--
+-- > Turtle Prelude> stdout (inproc "awk" ["{ print $1 }"] "123 456")
+-- > 123
 
 -- $folds
 --
