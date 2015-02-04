@@ -1092,7 +1092,7 @@ import Turtle
 -- `stdout` :: Shell Text -> IO ()
 -- `stdout` s = sh (do
 --     txt <- s
---     liftIO (echo txt)
+--     liftIO (echo txt) )
 -- @
 --
 -- `stdout` outputs each `Text` value on its own line:
