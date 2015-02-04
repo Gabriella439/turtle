@@ -45,7 +45,6 @@ module Turtle.Format (
       Format
     , (%)
     , format
-    , fp
     , makeFormat
 
     -- * Parameters
@@ -58,6 +57,7 @@ module Turtle.Format (
     , e
     , g
     , s
+    , fp
 
     -- * Utilities
     , repr
