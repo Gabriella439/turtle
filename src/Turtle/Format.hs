@@ -57,6 +57,7 @@ module Turtle.Format (
     , e
     , g
     , s
+    , fp
 
     -- * Utilities
     , repr
@@ -67,6 +68,7 @@ import Data.Monoid ((<>))
 import Data.String (IsString(..))
 import Data.Text (Text, pack)
 import Data.Word (Word)
+import Filesystem.Path.CurrentOS (FilePath, toText)
 import Numeric (showEFloat, showFFloat, showGFloat, showHex, showOct)
 import Prelude hiding ((.), id, FilePath)
 
@@ -185,5 +187,11 @@ s = makeFormat id
 >>> repr (1,2)
 "(1,2)"
 -}
+
+{-| `Format` a `Filesystem.Path.CurrentOS` into `Text`
+-}
+fp :: Format r (FilePath -> r)
+fp = makeFormat (\fpath -> either id id (toText fpath))
+
 repr :: Show a => a -> Text
 repr = format w
