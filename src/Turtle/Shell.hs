@@ -47,7 +47,7 @@
 
 > -- For every shell `s`:
 > foldIO s (FoldM step begin done) = do
->     x  <- step
+>     x  <- begin
 >     x' <- foldIO s (FoldM step (return x) return)
 >     done x'
 
