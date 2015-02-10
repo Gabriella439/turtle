@@ -116,7 +116,9 @@ import Turtle
 -- code to generate a native executable which will have a much faster startup
 -- time and improved performance:
 --
--- > $ ghc -O2 example.hs  # -O2 turns on all optimizations
+-- > $ # `-O2` turns on all optimizations
+-- > $ # `-threaded` helps with piping shell output in and out of Haskell
+-- > $ ghc -O2 -threaded example.hs
 -- > $ ./example
 -- > Hello, world!
 --
