@@ -64,14 +64,14 @@ module Turtle.Tutorial (
     -- * Loops
     -- $loops
 
-    -- * External commands
-    -- $external
-
     -- * Folds
     -- $folds
 
     -- * Input and output
     -- $io
+
+    -- * External commands
+    -- $external
 
     -- * Patterns
     -- $patterns
@@ -1002,56 +1002,6 @@ import Turtle
 -- > FilePath "/tmp/ssh-vREYGbWGpiCa"
 -- > FilePath "/tmp/.ICE-unix"
 
--- $external
---
--- You can embed external shell commands as streams within your Haskell program.
---
--- For example, suppose that we want to use the system's built in @ls@ command.
--- We can just run:
---
--- > Prelude Turtle> stdout (inshell "ls" empty)
--- > .X11-unix
--- > .X0-lock
--- > pulse-PKdhtXMmr18n
--- > pulse-xHYcZ3zmN3Fv
--- > tracker-gabriel
--- > pulse-PYi1hSlWgNj2
--- > orbit-gabriel
--- > ssh-vREYGbWGpiCa
--- > .ICE-unix
---
--- This works because type of `inshell` is:
---
--- @
--- `inshell`
---     :: Text    -- Command line
---     -> Shell Text  -- Standard input to feed to program
---     -> Shell Text  -- Standard output produced by program
--- @
---
--- This means you can use `inshell` to embed arbitrary external utilities as
--- first class streams within your Haskell program:
---
--- > Turtle Prelude> stdout (inshell "awk '{ print $1 }'" "123 456")
--- > 123
---
--- You should also check out the `inproc` command, which is less powerful but
--- safer since it decreases the likelihood of code injection or malformed
--- commands:
---
--- @
--- `inproc`
---     :: Text        -- Program
---     -> [Text]      -- Arguments
---     -> Shell Text  -- Standard input to feed to program
---     -> Shell Text  -- Standard output produced by program
--- @
---
--- Using `inproc`, you would write:
---
--- > Turtle Prelude> stdout (inproc "awk" ["{ print $1 }"] "123 456")
--- > 123
-
 -- $folds
 --
 -- There are other ways you can consume a `Shell` stream.  For example, you can
@@ -1146,6 +1096,56 @@ import Turtle
 -- ABC
 -- 42
 -- @
+
+-- $external
+--
+-- You can embed external shell commands as streams within your Haskell program.
+--
+-- For example, suppose that we want to use the system's built in @ls@ command.
+-- We can just run:
+--
+-- > Prelude Turtle> stdout (inshell "ls" empty)
+-- > .X11-unix
+-- > .X0-lock
+-- > pulse-PKdhtXMmr18n
+-- > pulse-xHYcZ3zmN3Fv
+-- > tracker-gabriel
+-- > pulse-PYi1hSlWgNj2
+-- > orbit-gabriel
+-- > ssh-vREYGbWGpiCa
+-- > .ICE-unix
+--
+-- This works because type of `inshell` is:
+--
+-- @
+-- `inshell`
+--     :: Text    -- Command line
+--     -> Shell Text  -- Standard input to feed to program
+--     -> Shell Text  -- Standard output produced by program
+-- @
+--
+-- This means you can use `inshell` to embed arbitrary external utilities as
+-- first class streams within your Haskell program:
+--
+-- > Turtle Prelude> stdout (inshell "awk '{ print $1 }'" "123 456")
+-- > 123
+--
+-- You should also check out the `inproc` command, which is less powerful but
+-- safer since it decreases the likelihood of code injection or malformed
+-- commands:
+--
+-- @
+-- `inproc`
+--     :: Text        -- Program
+--     -> [Text]      -- Arguments
+--     -> Shell Text  -- Standard input to feed to program
+--     -> Shell Text  -- Standard output produced by program
+-- @
+--
+-- Using `inproc`, you would write:
+--
+-- > Turtle Prelude> stdout (inproc "awk" ["{ print $1 }"] "123 456")
+-- > 123
 
 -- $patterns
 --
