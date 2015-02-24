@@ -92,6 +92,10 @@ module Turtle.Pattern (
     , fixed
     , sepBy
     , sepBy1
+
+    -- * High-efficiency primitives
+    , chars
+    , chars1
     ) where
 
 import Control.Applicative
@@ -450,7 +454,7 @@ once p = fmap Text.singleton p
 ["A"]
 -}
 prefix :: Pattern a -> Pattern a
-prefix p = p <* star anyChar
+prefix p = p <* chars
 
 {-| Use this to match the suffix of a string
 
@@ -460,7 +464,7 @@ prefix p = p <* star anyChar
 ["C"]
 -}
 suffix :: Pattern a -> Pattern a
-suffix p = star anyChar *> p
+suffix p = chars *> p
 
 {-| Use this to match the interior of a string
 
@@ -470,7 +474,7 @@ suffix p = star anyChar *> p
 ["B"]
 -}
 has :: Pattern a -> Pattern a
-has p = star anyChar *> p <* star anyChar
+has p = chars *> p <* chars
 
 {-| Parse 0 or more occurrences of the given character
 
@@ -478,6 +482,8 @@ has p = star anyChar *> p <* star anyChar
 ["123"]
 >>> match (star anyChar) ""
 [""]
+
+    See also: `chars`
 -}
 star :: Pattern Char -> Pattern Text
 star p = fmap Text.pack (many p)
@@ -488,6 +494,8 @@ star p = fmap Text.pack (many p)
 ["123"]
 >>> match (plus anyChar) ""
 []
+
+    See also: `chars1`
 -}
 plus :: Pattern Char -> Pattern Text
 plus p = fmap Text.pack (some p)
@@ -612,3 +620,12 @@ p `sepBy` sep = (p `sepBy1` sep) <|> pure []
 -}
 sepBy1 :: Pattern a -> Pattern b -> Pattern [a]
 p `sepBy1` sep = (:) <$> p <*> many (sep *> p) 
+
+-- | Like @star dot@ or @star anyChar@, except more efficient
+chars :: Pattern Text
+chars = Pattern (StateT (\txt ->
+    reverse (zip (Text.inits txt) (Text.tails txt)) ))
+
+-- | Like @plus dot@ or @plus anyChar@, except more efficient
+chars1 :: Pattern Text
+chars1 = Text.cons <$> dot <*> chars
