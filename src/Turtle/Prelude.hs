@@ -377,7 +377,7 @@ reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
 ls :: FilePath -> Shell FilePath
 ls path = Shell (\(FoldM step begin done) -> do
     x0 <- begin
-    let path' = Filesystem.encodeString path
+    let path' = deslash (Filesystem.encodeString path)
     canRead <- fmap readable (getPermissions path')
 #ifdef mingw32_HOST_OS
     reparse <- fmap reparsePoint (Win32.getFileAttributes path')
@@ -412,6 +412,14 @@ ls path = Shell (\(FoldM step begin done) -> do
             loop $! x0 )
         else done x0 )
 #endif
+
+{-| This is used to remove the trailing slash from a path, because
+    `getDirectoryPermissions` will fail if a path ends with a trailing slash
+-}
+deslash :: String -> String
+deslash []     = []
+deslash ['\\'] = []
+deslash (c:cs) = c:deslash cs
 
 -- | Stream all recursive descendents of the given directory
 lstree :: FilePath -> Shell FilePath
