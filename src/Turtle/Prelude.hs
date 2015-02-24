@@ -377,8 +377,8 @@ reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
 ls :: FilePath -> Shell FilePath
 ls path = Shell (\(FoldM step begin done) -> do
     x0 <- begin
-    let path' = deslash (Filesystem.encodeString path)
-    canRead <- fmap readable (getPermissions path')
+    let path' = Filesystem.encodeString path
+    canRead <- fmap readable (getPermissions (deslash path'))
 #ifdef mingw32_HOST_OS
     reparse <- fmap reparsePoint (Win32.getFileAttributes path')
     if (canRead && not reparse)
@@ -418,8 +418,11 @@ ls path = Shell (\(FoldM step begin done) -> do
 -}
 deslash :: String -> String
 deslash []     = []
-deslash ['\\'] = []
-deslash (c:cs) = c:deslash cs
+deslash (c:cs) = c:go cs
+  where
+    go []     = []
+    go ['\\'] = []
+    go (c:cs) = c:go cs
 
 -- | Stream all recursive descendents of the given directory
 lstree :: FilePath -> Shell FilePath
