@@ -180,6 +180,11 @@ g = makeFormat (\n -> pack (showGFloat (Just 6) n ""))
 s :: Format r (Text -> r)
 s = makeFormat id
 
+{-| `Format` a `Filesystem.Path.CurrentOS` into `Text`
+-}
+fp :: Format r (FilePath -> r)
+fp = makeFormat (\fpath -> either id id (toText fpath))
+
 {-| Convert a `Show`able value to `Text`
 
     Short-hand for @(format w)@
@@ -187,11 +192,5 @@ s = makeFormat id
 >>> repr (1,2)
 "(1,2)"
 -}
-
-{-| `Format` a `Filesystem.Path.CurrentOS` into `Text`
--}
-fp :: Format r (FilePath -> r)
-fp = makeFormat (\fpath -> either id id (toText fpath))
-
 repr :: Show a => a -> Text
 repr = format w
