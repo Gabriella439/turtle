@@ -180,7 +180,7 @@ g = makeFormat (\n -> pack (showGFloat (Just 6) n ""))
 s :: Format r (Text -> r)
 s = makeFormat id
 
-{-| `Format` a `Filesystem.Path.CurrentOS` into `Text`
+{-| `Format` a `Filesystem.Path.CurrentOS.FilePath` into `Text`
 -}
 fp :: Format r (FilePath -> r)
 fp = makeFormat (\fpath -> either id id (toText fpath))
