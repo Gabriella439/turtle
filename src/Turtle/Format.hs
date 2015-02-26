@@ -181,6 +181,10 @@ s :: Format r (Text -> r)
 s = makeFormat id
 
 {-| `Format` a `Filesystem.Path.CurrentOS.FilePath` into `Text`
+
+>>> import Filesystem.Path.CurrentOS((</>))
+>>> format fp ("usr" </> "lib")
+"usr/lib"
 -}
 fp :: Format r (FilePath -> r)
 fp = makeFormat (\fpath -> either id id (toText fpath))
