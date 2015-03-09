@@ -418,7 +418,7 @@ ls path = Shell (\(FoldM step begin done) -> do
 -}
 deslash :: String -> String
 deslash []     = []
-deslash (c:cs) = c:go cs
+deslash (c0:cs0) = c0:go cs0
   where
     go []     = []
     go ['\\'] = []
