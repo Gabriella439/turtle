@@ -533,7 +533,7 @@ sleep n = threadDelay (truncate (n * 10^(6::Int)))
 
     An exit code of @0@ indicates success
 -}
-exit :: Int -> IO ()
+exit :: Int -> IO a
 exit 0 = exitWith  ExitSuccess
 exit n = exitWith (ExitFailure n)
 
