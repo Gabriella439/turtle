@@ -631,15 +631,15 @@ append file s = sh (do
 
 -- | Acquire a `Managed` read-only `Handle` from a `FilePath`
 readonly :: FilePath -> Managed Handle
-readonly file = managed (Filesystem.withFile file IO.ReadMode)
+readonly file = managed (Filesystem.withTextFile file IO.ReadMode)
 
 -- | Acquire a `Managed` write-only `Handle` from a `FilePath`
 writeonly :: FilePath -> Managed Handle
-writeonly file = managed (Filesystem.withFile file IO.WriteMode)
+writeonly file = managed (Filesystem.withTextFile file IO.WriteMode)
 
 -- | Acquire a `Managed` append-only `Handle` from a `FilePath`
 appendonly :: FilePath -> Managed Handle
-appendonly file = managed (Filesystem.withFile file IO.AppendMode)
+appendonly file = managed (Filesystem.withTextFile file IO.AppendMode)
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
