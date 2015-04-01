@@ -55,6 +55,7 @@ module Turtle.Pattern (
     , char
     , notChar
     , text
+    , asciiCI
     , oneOf
     , noneOf
     , space
@@ -246,6 +247,25 @@ text before' = Pattern (do
     guard (before == before')
     put after
     return before)
+
+{-| Match a specific string in a case-insensitive way
+
+    This only handles ASCII strings
+
+>>> match (asciiCI "abc") "ABC"
+["ABC"]
+-}
+asciiCI :: Text -> Pattern Text
+asciiCI before' = Pattern (do
+    txt <- get
+    let (before, after) = Text.splitAt (Text.length before') txt
+    guard (lowerChars before == lowerChars before')
+    put after
+    return before )
+  where
+    lowerChars = Text.map lowerChar
+    lowerChar c | 'A' <= c && c <= 'Z' = chr (ord c + ord 'a' - ord 'A')
+                | otherwise            = c
 
 {-| Match any one of the given characters
 

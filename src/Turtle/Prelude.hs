@@ -418,7 +418,7 @@ ls path = Shell (\(FoldM step begin done) -> do
 -}
 deslash :: String -> String
 deslash []     = []
-deslash (c:cs) = c:go cs
+deslash (c0:cs0) = c0:go cs0
   where
     go []     = []
     go ['\\'] = []
@@ -533,7 +533,7 @@ sleep n = threadDelay (truncate (n * 10^(6::Int)))
 
     An exit code of @0@ indicates success
 -}
-exit :: Int -> IO ()
+exit :: Int -> IO a
 exit 0 = exitWith  ExitSuccess
 exit n = exitWith (ExitFailure n)
 

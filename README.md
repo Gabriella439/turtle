@@ -44,7 +44,7 @@ FilePath "/usr/lib/libgif.so.4.1"
 ...
 ```
 
-To learn more, read the [turtle tutorial](http://hackage.haskell.org/package/turtle-1.0.0/docs/Turtle-Tutorial.html).
+To learn more, read the [turtle tutorial](http://hackage.haskell.org/package/turtle-1.0.2/docs/Turtle-Tutorial.html).
 
 ## Goals
 
