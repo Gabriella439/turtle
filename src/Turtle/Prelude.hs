@@ -150,6 +150,7 @@ module Turtle.Prelude (
     , stderr
     , output
     , append
+    , strict
     , ls
     , lstree
     , cat
@@ -165,7 +166,7 @@ import Control.Applicative (Alternative(..))
 import Control.Concurrent.Async (Async, withAsync, wait)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
-import Control.Foldl (FoldM(..))
+import Control.Foldl (FoldM(..), list)
 import Control.Monad (msum)
 import Control.Monad.Managed (Managed, managed)
 #ifdef mingw32_HOST_OS
@@ -628,6 +629,10 @@ append file s = sh (do
     handle <- using (appendonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
+
+-- | Read in a stream's contents strictly
+strict :: Shell Text -> IO Text
+strict s = fmap Text.unlines (fold s list)
 
 -- | Acquire a `Managed` read-only `Handle` from a `FilePath`
 readonly :: FilePath -> Managed Handle
