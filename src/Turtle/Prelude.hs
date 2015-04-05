@@ -130,6 +130,8 @@ module Turtle.Prelude (
     , sleep
     , exit
     , die
+    , (.&&.)
+    , (.||.)
 
     -- * Managed
     , readonly
@@ -541,6 +543,30 @@ exit n = exitWith (ExitFailure n)
 -- | Throw an exception using the provided `Text` message
 die :: Text -> IO a
 die txt = throwIO (userError (unpack txt))
+
+infixr 2 .&&., .||.
+
+{-| Analogous to `&&` in Bash
+
+    Runs the second command only if the first one returns `ExitSuccess`
+-}
+(.&&.) :: IO ExitCode -> IO ExitCode -> IO ExitCode
+cmd1 .&&. cmd2 = do
+    r <- cmd1
+    case r of
+        ExitSuccess -> cmd2
+        _           -> return r
+
+{-| Analogous to `||` in Bash
+
+    Run the second command only if the first one returns `ExitFailure`
+-}
+(.||.) :: IO ExitCode -> IO ExitCode -> IO ExitCode
+cmd1 .||. cmd2 = do
+    r <- cmd1
+    case r of
+        ExitFailure _ -> cmd2
+        _             -> return r
 
 {-| Create a temporary directory underneath the given directory
 
