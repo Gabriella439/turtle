@@ -74,7 +74,7 @@ import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, with)
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
-import Data.Monoid (Monoid(..))
+import Data.Monoid (Monoid(..), (<>))
 import Data.String (IsString(..))
 
 -- | A @(Shell a)@ is a protected stream of @a@'s with side effects
@@ -140,45 +140,11 @@ instance Monoid a => Monoid (Shell a) where
     mempty  = pure mempty
     mappend = liftA2 mappend
 
-instance Num a => Num (Shell a) where
-    fromInteger n = pure (fromInteger n)
+instance Monoid a => Num (Shell a) where
+    fromInteger n = select (replicate (fromInteger n) mempty)
 
-    (+) = liftA2 (+)
-    (*) = liftA2 (*)
-    (-) = liftA2 (-)
-
-    abs    = fmap abs
-    signum = fmap signum
-    negate = fmap negate
-
-instance Fractional a => Fractional (Shell a) where
-    fromRational n = pure (fromRational n)
-
-    recip = fmap recip
-
-    (/) = liftA2 (/)
-
-instance Floating a => Floating (Shell a) where
-    pi = pure pi
-
-    exp   = fmap exp
-    sqrt  = fmap sqrt
-    log   = fmap log
-    sin   = fmap sin
-    tan   = fmap tan
-    cos   = fmap cos
-    asin  = fmap sin
-    atan  = fmap atan
-    acos  = fmap acos
-    sinh  = fmap sinh
-    tanh  = fmap tanh
-    cosh  = fmap cosh
-    asinh = fmap asinh
-    atanh = fmap atanh
-    acosh = fmap acosh
-
-    (**)    = liftA2 (**)
-    logBase = liftA2 logBase
+    (+) = (<|>)
+    (*) = (<>)
 
 instance IsString a => IsString (Shell a) where
     fromString str = pure (fromString str)

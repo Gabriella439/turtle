@@ -101,6 +101,7 @@ module Turtle.Pattern (
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
 import Data.Char
 import Data.List (foldl')
@@ -117,45 +118,10 @@ instance Monoid a => Monoid (Pattern a) where
     mempty  = pure mempty
     mappend = liftA2 mappend
 
-instance Num a => Num (Pattern a) where
-    fromInteger n = pure (fromInteger n)
-
-    (+) = liftA2 (+)
-    (*) = liftA2 (*)
-    (-) = liftA2 (-)
-
-    abs    = fmap abs
-    signum = fmap signum
-    negate = fmap negate
-
-instance Fractional a => Fractional (Pattern a) where
-    fromRational n = pure (fromRational n)
-
-    recip = fmap recip
-
-    (/) = liftA2 (/)
-
-instance Floating a => Floating (Pattern a) where
-    pi = pure pi
-
-    exp   = fmap exp
-    sqrt  = fmap sqrt
-    log   = fmap log
-    sin   = fmap sin
-    tan   = fmap tan
-    cos   = fmap cos
-    asin  = fmap sin
-    atan  = fmap atan
-    acos  = fmap acos
-    sinh  = fmap sinh
-    tanh  = fmap tanh
-    cosh  = fmap cosh
-    asinh = fmap asinh
-    atanh = fmap atanh
-    acosh = fmap acosh
-
-    (**)    = liftA2 (**)
-    logBase = liftA2 logBase
+instance Monoid a => Num (Pattern a) where
+    fromInteger n = Pattern (lift (replicate (fromInteger n) mempty))
+    (+) = (<|>)
+    (*) = (<>)
 
 instance (a ~ Text) => IsString (Pattern a) where
     fromString str = text (Text.pack str)
