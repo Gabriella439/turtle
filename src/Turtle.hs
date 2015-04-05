@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- | See "Turtle.Tutorial" to learn how to use this library or "Turtle.Prelude"
 --  for a quick-start guide.
 --
@@ -81,6 +83,7 @@ module Turtle (
     , Handle
     , ExitCode(..)
     , IsString(..)
+    , (&)
     ) where
 
 import Turtle.Format
@@ -141,3 +144,15 @@ import Data.Time (NominalDiffTime, UTCTime)
 import System.IO (Handle)
 import System.Exit (ExitCode(..))
 import Prelude hiding (FilePath)
+
+#if MIN_VERSION_base(4,8,0)
+import Data.Function ((&))
+#else
+infixl 1 &
+
+-- | '&' is a reverse application operator.  This provides notational
+-- convenience.  Its precedence is one higher than that of the forward
+-- application operator '$', which allows '&' to be nested in '$'.
+(&) :: a -> (a -> b) -> b
+x & f = f x
+#endif
