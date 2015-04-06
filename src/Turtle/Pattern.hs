@@ -476,9 +476,9 @@ star p = fmap Text.pack (many p)
 
 {-| Parse 1 or more occurrences of the given character
 
->>> match (plus anyChar) "123"
+>>> match (plus digit) "123"
 ["123"]
->>> match (plus anyChar) ""
+>>> match (plus digit) ""
 []
 
     See also: `chars1`
