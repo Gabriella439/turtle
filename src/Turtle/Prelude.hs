@@ -98,6 +98,8 @@ module Turtle.Prelude (
     -- * IO
       proc
     , shell
+    , procCollect
+    , shellCollect
     , echo
     , err
     , readline
@@ -165,7 +167,7 @@ module Turtle.Prelude (
     ) where
 
 import Control.Applicative (Alternative(..))
-import Control.Concurrent.Async (Async, withAsync, wait)
+import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (FoldM(..), list)
@@ -239,6 +241,40 @@ shell
     -- ^ Exit code
 shell cmdLine = system (Process.shell (unpack cmdLine))
 
+{-| Run a command using @execvp@, retrieving the exit code and stdout as a
+    non-lazy blob of Text
+
+    The command inherits @stderr@ for the current process
+-}
+procCollect
+    :: Text
+    -- ^ Command
+    -> [Text]
+    -- ^ Arguments
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> IO (ExitCode, Text)
+    -- ^ Exit code and stdout
+procCollect cmd args =
+    systemCollect (Process.proc (Text.unpack cmd) (map Text.unpack args))
+
+{-| Run a command line using the shell, retrieving the exit code and stdout as a
+    non-lazy blob of Text
+
+    This command is more powerful than `proc`, but highly vulnerable to code
+    injection if you template the command line with untrusted input
+
+    The command inherits @stderr@ for the current process
+-}
+shellCollect
+    :: Text
+    -- ^ Command line
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> IO (ExitCode, Text)
+    -- ^ Exit code and stdout
+shellCollect cmdLine = systemCollect (Process.shell (Text.unpack cmdLine))
+
 system
     :: Process.CreateProcess
     -- ^ Command
@@ -257,6 +293,27 @@ system p s = do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
     withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) )
+
+systemCollect
+    :: Process.CreateProcess
+    -- ^ Command
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> IO (ExitCode, Text)
+    -- ^ Exit code and stdout
+systemCollect p s = do
+    let p' = p
+            { Process.std_in  = Process.CreatePipe
+            , Process.std_out = Process.CreatePipe
+            , Process.std_err = Process.Inherit
+            }
+    (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
+    let feedIn = sh (do
+            txt <- s
+            liftIO (Text.hPutStrLn hIn txt) )
+    concurrently
+        (withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) ))
+        (Text.hGetContents hOut)
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
 
