@@ -98,8 +98,8 @@ module Turtle.Prelude (
     -- * IO
       proc
     , shell
-    , procCollect
-    , shellCollect
+    , procStrict
+    , shellStrict
     , echo
     , err
     , readline
@@ -246,7 +246,7 @@ shell cmdLine = system (Process.shell (unpack cmdLine))
 
     The command inherits @stderr@ for the current process
 -}
-procCollect
+procStrict
     :: Text
     -- ^ Command
     -> [Text]
@@ -255,8 +255,8 @@ procCollect
     -- ^ Lines of standard input
     -> IO (ExitCode, Text)
     -- ^ Exit code and stdout
-procCollect cmd args =
-    systemCollect (Process.proc (Text.unpack cmd) (map Text.unpack args))
+procStrict cmd args =
+    systemStrict (Process.proc (Text.unpack cmd) (map Text.unpack args))
 
 {-| Run a command line using the shell, retrieving the exit code and stdout as a
     non-lazy blob of Text
@@ -266,14 +266,14 @@ procCollect cmd args =
 
     The command inherits @stderr@ for the current process
 -}
-shellCollect
+shellStrict
     :: Text
     -- ^ Command line
     -> Shell Text
     -- ^ Lines of standard input
     -> IO (ExitCode, Text)
     -- ^ Exit code and stdout
-shellCollect cmdLine = systemCollect (Process.shell (Text.unpack cmdLine))
+shellStrict cmdLine = systemStrict (Process.shell (Text.unpack cmdLine))
 
 system
     :: Process.CreateProcess
@@ -294,14 +294,14 @@ system p s = do
             liftIO (Text.hPutStrLn hIn txt) )
     withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) )
 
-systemCollect
+systemStrict
     :: Process.CreateProcess
     -- ^ Command
     -> Shell Text
     -- ^ Lines of standard input
     -> IO (ExitCode, Text)
     -- ^ Exit code and stdout
-systemCollect p s = do
+systemStrict p s = do
     let p' = p
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.CreatePipe
