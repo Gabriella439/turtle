@@ -105,7 +105,7 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
 import Data.Char
 import Data.List (foldl')
-import Data.Monoid ((<>))
+import Data.Monoid (Monoid(..), (<>))
 import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as Text

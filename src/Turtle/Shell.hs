@@ -68,13 +68,13 @@ module Turtle.Shell (
     , using
     ) where
 
-import Control.Applicative (Alternative(..), liftA2)
+import Control.Applicative (Applicative(..), Alternative(..), liftA2)
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, with)
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
-import Data.Monoid ((<>))
+import Data.Monoid (Monoid(..), (<>))
 import Data.String (IsString(..))
 
 -- | A @(Shell a)@ is a protected stream of @a@'s with side effects
