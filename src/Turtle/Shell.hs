@@ -140,6 +140,7 @@ instance Monoid a => Monoid (Shell a) where
     mempty  = pure mempty
     mappend = liftA2 mappend
 
+-- | Shell forms a semigring, this is the closest approximation
 instance Monoid a => Num (Shell a) where
     fromInteger n = select (replicate (fromInteger n) mempty)
 
