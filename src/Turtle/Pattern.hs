@@ -118,6 +118,7 @@ instance Monoid a => Monoid (Pattern a) where
     mempty  = pure mempty
     mappend = liftA2 mappend
 
+-- | Pattern forms a semiring, this is the closest approximation
 instance Monoid a => Num (Pattern a) where
     fromInteger n = Pattern (lift (replicate (fromInteger n) mempty))
     (+) = (<|>)
