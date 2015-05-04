@@ -1,0 +1,12 @@
+#!/usr/bin/env runhaskell
+
+{-# LANGUAGE OverloadedStrings #-}
+
+import Turtle
+
+main = do
+    -- Add the `--self-contained` flag for slower but relocatable builds
+    proc "pandoc" ["-t", "slidy", "-s", "slides.md", "-o", "slides.html"] empty
+
+    -- This is for Firefox on OSX, replace this with your favorite browser
+    proc "open" ["/Applications/Firefox.app", "slides.html"] empty
