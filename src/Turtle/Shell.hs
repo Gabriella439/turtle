@@ -46,9 +46,9 @@
     `Shell` you build must satisfy this law:
 
 > -- For every shell `s`:
-> foldIO s (FoldM step begin done) = do
+> _foldIO s (FoldM step begin done) = do
 >     x  <- begin
->     x' <- foldIO s (FoldM step (return x) return)
+>     x' <- _foldIO s (FoldM step (return x) return)
 >     done x'
 
     ... which is a fancy way of saying that your `Shell` must call @\'begin\'@
@@ -58,6 +58,7 @@
 module Turtle.Shell (
     -- * Shell
       Shell(..)
+    , foldIO
     , fold
     , sh
     , view
@@ -78,18 +79,22 @@ import Data.Monoid (Monoid(..), (<>))
 import Data.String (IsString(..))
 
 -- | A @(Shell a)@ is a protected stream of @a@'s with side effects
-newtype Shell a = Shell { foldIO :: forall r . FoldM IO a r -> IO r }
+newtype Shell a = Shell { _foldIO :: forall r . FoldM IO a r -> IO r }
+
+-- | Use a `FoldM IO` to reduce the stream of @a@'s produced by a `Shell`
+foldIO :: MonadIO io => Shell a -> FoldM IO a r -> io r
+foldIO s f = liftIO (_foldIO s f)
 
 -- | Use a `Fold` to reduce the stream of @a@'s produced by a `Shell`
-fold :: Shell a -> Fold a b -> IO b
+fold :: MonadIO io => Shell a -> Fold a b -> io b
 fold s f = foldIO s (Foldl.generalize f)
 
 -- | Run a `Shell` to completion, discarding any unused values
-sh :: Shell a -> IO ()
+sh :: MonadIO io => Shell a -> io ()
 sh s = fold s (pure ())
 
 -- | Run a `Shell` to completion, `print`ing any unused values
-view :: Show a => Shell a -> IO ()
+view :: (MonadIO io, Show a) => Shell a -> io ()
 view s = sh (do
     x <- s
     liftIO (print x) )
@@ -97,7 +102,7 @@ view s = sh (do
 instance Functor Shell where
     fmap f s = Shell (\(FoldM step begin done) ->
         let step' x a = step x (f a)
-        in  foldIO s (FoldM step' begin done) )
+        in  _foldIO s (FoldM step' begin done) )
 
 instance Applicative Shell where
     pure  = return
@@ -110,8 +115,8 @@ instance Monad Shell where
        done x' )
 
     m >>= f = Shell (\(FoldM step0 begin0 done0) -> do
-        let step1 x a = foldIO (f a) (FoldM step0 (return x) return)
-        foldIO m (FoldM step1 begin0 done0) )
+        let step1 x a = _foldIO (f a) (FoldM step0 (return x) return)
+        _foldIO m (FoldM step1 begin0 done0) )
 
     fail _ = mzero
 
@@ -121,8 +126,8 @@ instance Alternative Shell where
         done x )
 
     s1 <|> s2 = Shell (\(FoldM step begin done) -> do
-        x <- foldIO s1 (FoldM step begin return)
-        foldIO s2 (FoldM step (return x) done) )
+        x <- _foldIO s1 (FoldM step begin return)
+        _foldIO s2 (FoldM step (return x) done) )
 
 instance MonadPlus Shell where
     mzero = empty

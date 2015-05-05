@@ -172,6 +172,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (FoldM(..), list)
 import Control.Monad (msum)
+import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, managed)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
@@ -215,13 +216,14 @@ import Turtle.Shell
     The command inherits @stdout@ and @stderr@ for the current process
 -}
 proc
-    :: Text
+    :: MonadIO io
+    => Text
     -- ^ Command
     -> [Text]
     -- ^ Arguments
     -> Shell Text
     -- ^ Lines of standard input
-    -> IO ExitCode
+    -> io ExitCode
     -- ^ Exit code
 proc cmd args = system (Process.proc (unpack cmd) (map unpack args))
 
@@ -233,11 +235,12 @@ proc cmd args = system (Process.proc (unpack cmd) (map unpack args))
     The command inherits @stdout@ and @stderr@ for the current process
 -}
 shell
-    :: Text
+    :: MonadIO io
+    => Text
     -- ^ Command line
     -> Shell Text
     -- ^ Lines of standard input
-    -> IO ExitCode
+    -> io ExitCode
     -- ^ Exit code
 shell cmdLine = system (Process.shell (unpack cmdLine))
 
@@ -247,13 +250,14 @@ shell cmdLine = system (Process.shell (unpack cmdLine))
     The command inherits @stderr@ for the current process
 -}
 procStrict
-    :: Text
+    :: MonadIO io
+    => Text
     -- ^ Command
     -> [Text]
     -- ^ Arguments
     -> Shell Text
     -- ^ Lines of standard input
-    -> IO (ExitCode, Text)
+    -> io (ExitCode, Text)
     -- ^ Exit code and stdout
 procStrict cmd args =
     systemStrict (Process.proc (Text.unpack cmd) (map Text.unpack args))
@@ -267,22 +271,24 @@ procStrict cmd args =
     The command inherits @stderr@ for the current process
 -}
 shellStrict
-    :: Text
+    :: MonadIO io
+    => Text
     -- ^ Command line
     -> Shell Text
     -- ^ Lines of standard input
-    -> IO (ExitCode, Text)
+    -> io (ExitCode, Text)
     -- ^ Exit code and stdout
 shellStrict cmdLine = systemStrict (Process.shell (Text.unpack cmdLine))
 
 system
-    :: Process.CreateProcess
+    :: MonadIO io
+    => Process.CreateProcess
     -- ^ Command
     -> Shell Text
     -- ^ Lines of standard input
-    -> IO ExitCode
+    -> io ExitCode
     -- ^ Exit code
-system p s = do
+system p s = liftIO (do
     let p' = p
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.Inherit
@@ -292,16 +298,17 @@ system p s = do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) )
+    withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) ) )
 
 systemStrict
-    :: Process.CreateProcess
+    :: MonadIO io
+    => Process.CreateProcess
     -- ^ Command
     -> Shell Text
     -- ^ Lines of standard input
-    -> IO (ExitCode, Text)
+    -> io (ExitCode, Text)
     -- ^ Exit code and stdout
-systemStrict p s = do
+systemStrict p s = liftIO (do
     let p' = p
             { Process.std_in  = Process.CreatePipe
             , Process.std_out = Process.CreatePipe
@@ -313,7 +320,7 @@ systemStrict p s = do
             liftIO (Text.hPutStrLn hIn txt) )
     concurrently
         (withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) ))
-        (Text.hGetContents hOut)
+        (Text.hGetContents hOut) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
 
@@ -367,61 +374,61 @@ stream p s = do
     inhandle hOut
 
 -- | Print to @stdout@
-echo :: Text -> IO ()
-echo = Text.putStrLn
+echo :: MonadIO io => Text -> io ()
+echo t = liftIO (Text.putStrLn t)
 
 -- | Print to @stderr@
-err :: Text -> IO ()
-err = Text.hPutStrLn IO.stderr
+err :: MonadIO io => Text -> io ()
+err t = liftIO (Text.hPutStrLn IO.stderr t)
 
 {-| Read in a line from @stdin@
 
     Returns `Nothing` if at end of input
 -}
-readline :: IO (Maybe Text)
-readline = do
+readline :: MonadIO io => io (Maybe Text)
+readline = liftIO (do
     eof <- IO.isEOF
     if eof
         then return Nothing
-        else fmap (Just . pack) getLine
+        else fmap (Just . pack) getLine )
 
 #if MIN_VERSION_base(4,7,0)
 -- | Set or modify an environment variable
-export :: Text -> Text -> IO ()
-export key val = setEnv (unpack key) (unpack val)
+export :: MonadIO io => Text -> Text -> io ()
+export key val = liftIO (setEnv (unpack key) (unpack val))
 
 -- | Delete an environment variable
-unset :: Text -> IO ()
-unset key = unsetEnv (unpack key)
+unset :: MonadIO io => Text -> io ()
+unset key = liftIO (unsetEnv (unpack key))
 #endif
 
 #if MIN_VERSION_base(4,6,0)
 -- | Look up an environment variable
-need :: Text -> IO (Maybe Text)
-need key = fmap (fmap pack) (lookupEnv (unpack key))
+need :: MonadIO io => Text -> io (Maybe Text)
+need key = liftIO (fmap (fmap pack) (lookupEnv (unpack key)))
 #endif
 
 -- | Retrieve all environment variables
-env :: IO [(Text, Text)]
-env = fmap (fmap toTexts) getEnvironment
+env :: MonadIO io => io [(Text, Text)]
+env = liftIO (fmap (fmap toTexts) getEnvironment)
   where
     toTexts (key, val) = (pack key, pack val)
 
 -- | Change the current directory
-cd :: FilePath -> IO ()
-cd = Filesystem.setWorkingDirectory
+cd :: MonadIO io => FilePath -> io ()
+cd path = liftIO (Filesystem.setWorkingDirectory path)
 
 -- | Get the current directory
-pwd :: IO FilePath
-pwd = Filesystem.getWorkingDirectory
+pwd :: MonadIO io => io FilePath
+pwd = liftIO Filesystem.getWorkingDirectory
 
 -- | Get the home directory
-home :: IO FilePath
-home = Filesystem.getHomeDirectory
+home :: MonadIO io => io FilePath
+home = liftIO Filesystem.getHomeDirectory
 
 -- | Canonicalize a path
-realpath :: FilePath -> IO FilePath
-realpath = Filesystem.canonicalizePath
+realpath :: MonadIO io => FilePath -> io FilePath
+realpath path = liftIO (Filesystem.canonicalizePath path)
 
 #ifdef mingw32_HOST_OS
 fILE_ATTRIBUTE_REPARSE_POINT :: Win32.FileAttributeOrFlag
@@ -494,62 +501,62 @@ lstree path = do
         else return child
 
 -- | Move a file or directory
-mv :: FilePath -> FilePath -> IO ()
-mv = Filesystem.rename
+mv :: MonadIO io => FilePath -> FilePath -> io ()
+mv oldPath newPath = liftIO (Filesystem.rename oldPath newPath)
 
 {-| Create a directory
 
     Fails if the directory is present
 -}
-mkdir :: FilePath -> IO ()
-mkdir = Filesystem.createDirectory False
+mkdir :: MonadIO io => FilePath -> io ()
+mkdir path = liftIO (Filesystem.createDirectory False path)
 
 {-| Create a directory tree (equivalent to @mkdir -p@)
 
     Does not fail if the directory is present
 -}
-mktree :: FilePath -> IO ()
-mktree = Filesystem.createTree
+mktree :: MonadIO io => FilePath -> io ()
+mktree path = liftIO (Filesystem.createTree path)
 
 -- | Copy a file
-cp :: FilePath -> FilePath -> IO ()
-cp = Filesystem.copyFile
+cp :: MonadIO io => FilePath -> FilePath -> io ()
+cp oldPath newPath = liftIO (Filesystem.copyFile oldPath newPath)
 
 -- | Remove a file
-rm :: FilePath -> IO ()
-rm = Filesystem.removeFile
+rm :: MonadIO io => FilePath -> io ()
+rm path = liftIO (Filesystem.removeFile path)
 
 -- | Remove a directory
-rmdir :: FilePath -> IO ()
-rmdir = Filesystem.removeDirectory
+rmdir :: MonadIO io => FilePath -> io ()
+rmdir path = liftIO (Filesystem.removeDirectory path)
 
 {-| Remove a directory tree (equivalent to @rm -r@)
 
     Use at your own risk
 -}
-rmtree :: FilePath -> IO ()
-rmtree = Filesystem.removeTree
+rmtree :: MonadIO io => FilePath -> io ()
+rmtree path = liftIO (Filesystem.removeTree path)
 
 -- | Get a file or directory's size
-du :: FilePath -> IO Integer
-du = Filesystem.getSize
+du :: MonadIO io => FilePath -> io Integer
+du path = liftIO (Filesystem.getSize path)
 
 -- | Check if a file exists
-testfile :: FilePath -> IO Bool
-testfile = Filesystem.isFile
+testfile :: MonadIO io => FilePath -> io Bool
+testfile path = liftIO (Filesystem.isFile path)
 
 -- | Check if a directory exists
-testdir :: FilePath -> IO Bool
-testdir = Filesystem.isDirectory
+testdir :: MonadIO io => FilePath -> io Bool
+testdir path = liftIO (Filesystem.isDirectory path)
 
 {-| Touch a file, updating the access and modification times to the current time
 
     Creates an empty file if it does not exist
 -}
-touch :: FilePath -> IO ()
+touch :: MonadIO io => FilePath -> io ()
 touch file = do
     exists <- testfile file
-    if exists
+    liftIO (if exists
 #ifdef mingw32_HOST_OS
         then do
             handle <- Win32.createFile
@@ -566,17 +573,17 @@ touch file = do
 #else
         then touchFile (Filesystem.encodeString file)
 #endif
-        else output file empty
+        else output file empty )
 
 {-| Time how long a command takes in monotonic wall clock time
 
     Returns the duration alongside the return value
 -}
-time :: IO a -> IO (a, NominalDiffTime)
+time :: MonadIO io => io a -> io (a, NominalDiffTime)
 time io = do
-    TimeSpec seconds1 nanoseconds1 <- getTime Monotonic
+    TimeSpec seconds1 nanoseconds1 <- liftIO (getTime Monotonic)
     a <- io
-    TimeSpec seconds2 nanoseconds2 <- getTime Monotonic
+    TimeSpec seconds2 nanoseconds2 <- liftIO (getTime Monotonic)
     let t = fromIntegral (    seconds2 -     seconds1)
           + fromIntegral (nanoseconds2 - nanoseconds1) / 10^(9::Int)
     return (a, fromRational t)
@@ -586,19 +593,19 @@ time io = do
     A numeric literal argument is interpreted as seconds.  In other words,
     @(sleep 2.0)@ will sleep for two seconds.
 -}
-sleep :: NominalDiffTime -> IO ()
-sleep n = threadDelay (truncate (n * 10^(6::Int)))
+sleep :: MonadIO io => NominalDiffTime -> io ()
+sleep n = liftIO (threadDelay (truncate (n * 10^(6::Int))))
 
 {-| Exit with the given exit code
 
     An exit code of @0@ indicates success
 -}
-exit :: ExitCode -> IO a
-exit = exitWith
+exit :: MonadIO io => ExitCode -> io a
+exit code = liftIO (exitWith code)
 
 -- | Throw an exception using the provided `Text` message
-die :: Text -> IO a
-die txt = throwIO (userError (unpack txt))
+die :: MonadIO io => Text -> io a
+die txt = liftIO (throwIO (userError (unpack txt)))
 
 infixr 2 .&&., .||.
 
@@ -687,33 +694,33 @@ inhandle handle = Shell (\(FoldM step begin done) -> do
     loop $! x0 )
 
 -- | Stream lines of `Text` to standard output
-stdout :: Shell Text -> IO ()
+stdout :: MonadIO io => Shell Text -> io ()
 stdout s = sh (do
     txt <- s
     liftIO (echo txt) )
 
 -- | Stream lines of `Text` to standard error
-stderr :: Shell Text -> IO ()
+stderr :: MonadIO io => Shell Text -> io ()
 stderr s = sh (do
     txt <- s
     liftIO (err txt) )
 
 -- | Stream lines of `Text` to a file
-output :: FilePath -> Shell Text -> IO ()
+output :: MonadIO io => FilePath -> Shell Text -> io ()
 output file s = sh (do
     handle <- using (writeonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
 
 -- | Stream lines of `Text` to append to a file
-append :: FilePath -> Shell Text -> IO ()
+append :: MonadIO io => FilePath -> Shell Text -> io ()
 append file s = sh (do
     handle <- using (appendonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
 
 -- | Read in a stream's contents strictly
-strict :: Shell Text -> IO Text
+strict :: (MonadIO io, Functor io) => Shell Text -> io Text
 strict s = fmap Text.unlines (fold s list)
 
 -- | Acquire a `Managed` read-only `Handle` from a `FilePath`
@@ -795,9 +802,9 @@ limitWhile predicate s = Shell (\(FoldM step begin done) -> do
     foldIO s (FoldM step' begin done) )
 
 -- | Get the current time
-date :: IO UTCTime
-date = getCurrentTime
+date :: MonadIO io => io UTCTime
+date = liftIO getCurrentTime
 
 -- | Get the time a file was last modified
-datefile :: FilePath -> IO UTCTime
-datefile = Filesystem.getModified
+datefile :: MonadIO io => FilePath -> io UTCTime
+datefile path = liftIO (Filesystem.getModified path)
