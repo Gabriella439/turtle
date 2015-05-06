@@ -171,7 +171,7 @@ import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (FoldM(..), list)
-import Control.Monad (msum)
+import Control.Monad (liftM, msum)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, managed)
 #ifdef mingw32_HOST_OS
@@ -720,8 +720,8 @@ append file s = sh (do
     liftIO (Text.hPutStrLn handle txt) )
 
 -- | Read in a stream's contents strictly
-strict :: (MonadIO io, Functor io) => Shell Text -> io Text
-strict s = fmap Text.unlines (fold s list)
+strict :: MonadIO io => Shell Text -> io Text
+strict s = liftM Text.unlines (fold s list)
 
 -- | Acquire a `Managed` read-only `Handle` from a `FilePath`
 readonly :: FilePath -> Managed Handle
