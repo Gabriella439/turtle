@@ -375,11 +375,11 @@ stream p s = do
 
 -- | Print to @stdout@
 echo :: MonadIO io => Text -> io ()
-echo t = liftIO (Text.putStrLn t)
+echo txt = liftIO (Text.putStrLn txt)
 
 -- | Print to @stderr@
 err :: MonadIO io => Text -> io ()
-err t = liftIO (Text.hPutStrLn IO.stderr t)
+err txt = liftIO (Text.hPutStrLn IO.stderr txt)
 
 {-| Read in a line from @stdin@
 
