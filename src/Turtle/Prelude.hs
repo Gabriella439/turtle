@@ -136,13 +136,13 @@ module Turtle.Prelude (
     , (.||.)
 
     -- * Permissions
-    , Directory.Permissions
+    , Permissions
     , chmod
     , readable, nonreadable
     , writable, nonwritable
     , executable, nonexecutable
     , searchable, nonsearchable
-    , ooo, roo, owo, oox, oos, rwo, rox, ros, owx, rwx, rws
+    , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
 
     -- * Managed
     , readonly
@@ -204,6 +204,7 @@ import System.Environment (
     lookupEnv,
 #endif
     getEnvironment )
+import System.Directory (Permissions)
 import qualified System.Directory as Directory
 import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle)
@@ -592,34 +593,29 @@ touch file = do
 > chmod executable "foo.txt"  -- chmod u+x foo.txt
 > chmod nonwritable "foo.txt" -- chmod u-x foo.txt
 -}
-chmod
-    :: MonadIO io
-    => (Directory.Permissions -> Directory.Permissions)
-    -> FilePath
-    -> io ()
+chmod :: MonadIO io => (Permissions -> Permissions) -> FilePath -> io ()
 chmod modifyPermissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
     permissions <- Directory.getPermissions path'
     Directory.setPermissions path' (modifyPermissions permissions) )
 
-readable, nonreadable :: Directory.Permissions -> Directory.Permissions
+readable, nonreadable :: Permissions -> Permissions
 readable = Directory.setOwnerReadable True
 nonreadable = Directory.setOwnerReadable False
 
-writable, nonwritable :: Directory.Permissions -> Directory.Permissions
+writable, nonwritable :: Permissions -> Permissions
 writable = Directory.setOwnerWritable True
 nonwritable = Directory.setOwnerWritable False
 
-executable, nonexecutable :: Directory.Permissions -> Directory.Permissions
+executable, nonexecutable :: Permissions -> Permissions
 executable = Directory.setOwnerExecutable True
 nonexecutable = Directory.setOwnerExecutable False
 
-searchable, nonsearchable :: Directory.Permissions -> Directory.Permissions
+searchable, nonsearchable :: Permissions -> Permissions
 searchable = Directory.setOwnerSearchable True
 nonsearchable = Directory.setOwnerSearchable False
 
-ooo, roo, owo, oox, oos, rwo, rox, ros, owx, rwx, rws
-    :: Directory.Permissions -> Directory.Permissions
+ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws :: Permissions -> Permissions
 ooo = const Directory.emptyPermissions
 roo = readable . ooo
 owo = writable . ooo
