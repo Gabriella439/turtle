@@ -128,6 +128,14 @@ module Turtle.Prelude (
     , date
     , datefile
     , touch
+    , time
+    , sleep
+    , exit
+    , die
+    , (.&&.)
+    , (.||.)
+
+    -- * Permissions
     , chmod
     , Permissions
     , readable, nonreadable
@@ -135,12 +143,6 @@ module Turtle.Prelude (
     , executable, nonexecutable
     , searchable, nonsearchable
     , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
-    , time
-    , sleep
-    , exit
-    , die
-    , (.&&.)
-    , (.||.)
 
     -- * Managed
     , readonly
@@ -590,7 +592,12 @@ touch file = do
 
 type Permissions = Filesystem.Permissions -> Filesystem.Permissions
 
--- | Update a file or directory's permissions
+{-| Update a file or directory's permissions
+
+> chmod rwo        "foo.txt"  -- chmod u=rw foo.txt
+> chmod executable "foo.txt"  -- chmod u+x foo.txt
+> chmod nonwritable "foo.txt" -- chmod u-x foo.txt
+-}
 chmod :: MonadIO io => Permissions -> FilePath -> io ()
 chmod modifyPermissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
