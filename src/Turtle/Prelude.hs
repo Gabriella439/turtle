@@ -136,13 +136,13 @@ module Turtle.Prelude (
     , (.||.)
 
     -- * Permissions
+    , Directory.Permissions
     , chmod
-    , Permissions
     , readable, nonreadable
     , writable, nonwritable
     , executable, nonexecutable
     , searchable, nonsearchable
-    , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
+    , ooo, roo, owo, oox, oos, rwo, rox, ros, owx, rwx, rws
 
     -- * Managed
     , readonly
@@ -204,11 +204,7 @@ import System.Environment (
     lookupEnv,
 #endif
     getEnvironment )
-import qualified System.Directory as Filesystem
-    ( Permissions, getPermissions, setPermissions, emptyPermissions
-    , setOwnerReadable, setOwnerWritable
-    , setOwnerExecutable, setOwnerSearchable
-    , readable )
+import qualified System.Directory as Directory
 import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle)
 import qualified System.IO as IO
@@ -459,8 +455,8 @@ ls path = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     let path' = Filesystem.encodeString path
     canRead <- fmap
-         Filesystem.readable
-        (Filesystem.getPermissions (deslash path'))
+         Directory.readable
+        (Directory.getPermissions (deslash path'))
 #ifdef mingw32_HOST_OS
     reparse <- fmap reparsePoint (Win32.getFileAttributes path')
     if (canRead && not reparse)
@@ -590,38 +586,41 @@ touch file = do
 #endif
         else output file empty )
 
-type Permissions = Filesystem.Permissions -> Filesystem.Permissions
-
 {-| Update a file or directory's permissions
 
 > chmod rwo        "foo.txt"  -- chmod u=rw foo.txt
 > chmod executable "foo.txt"  -- chmod u+x foo.txt
 > chmod nonwritable "foo.txt" -- chmod u-x foo.txt
 -}
-chmod :: MonadIO io => Permissions -> FilePath -> io ()
+chmod
+    :: MonadIO io
+    => (Directory.Permissions -> Directory.Permissions)
+    -> FilePath
+    -> io ()
 chmod modifyPermissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
-    permissions <- Filesystem.getPermissions path'
-    Filesystem.setPermissions path' (modifyPermissions permissions) )
+    permissions <- Directory.getPermissions path'
+    Directory.setPermissions path' (modifyPermissions permissions) )
 
-readable, nonreadable :: Permissions
-readable = Filesystem.setOwnerReadable True
-nonreadable = Filesystem.setOwnerReadable False
+readable, nonreadable :: Directory.Permissions -> Directory.Permissions
+readable = Directory.setOwnerReadable True
+nonreadable = Directory.setOwnerReadable False
 
-writable, nonwritable :: Permissions
-writable = Filesystem.setOwnerWritable True
-nonwritable = Filesystem.setOwnerWritable False
+writable, nonwritable :: Directory.Permissions -> Directory.Permissions
+writable = Directory.setOwnerWritable True
+nonwritable = Directory.setOwnerWritable False
 
-executable, nonexecutable :: Permissions
-executable = Filesystem.setOwnerExecutable True
-nonexecutable = Filesystem.setOwnerExecutable False
+executable, nonexecutable :: Directory.Permissions -> Directory.Permissions
+executable = Directory.setOwnerExecutable True
+nonexecutable = Directory.setOwnerExecutable False
 
-searchable, nonsearchable :: Permissions
-searchable = Filesystem.setOwnerSearchable True
-nonsearchable = Filesystem.setOwnerSearchable False
+searchable, nonsearchable :: Directory.Permissions -> Directory.Permissions
+searchable = Directory.setOwnerSearchable True
+nonsearchable = Directory.setOwnerSearchable False
 
-ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws :: Permissions
-ooo = const Filesystem.emptyPermissions
+ooo, roo, owo, oox, oos, rwo, rox, ros, owx, rwx, rws
+    :: Directory.Permissions -> Directory.Permissions
+ooo = const Directory.emptyPermissions
 roo = readable . ooo
 owo = writable . ooo
 oox = executable . ooo
