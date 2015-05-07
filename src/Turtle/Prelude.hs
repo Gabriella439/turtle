@@ -128,6 +128,13 @@ module Turtle.Prelude (
     , date
     , datefile
     , touch
+    , chmod
+    , Permissions
+    , readable, nonreadable
+    , writable, nonwritable
+    , executable, nonexecutable
+    , searchable, nonsearchable
+    , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
     , time
     , sleep
     , exit
@@ -195,7 +202,11 @@ import System.Environment (
     lookupEnv,
 #endif
     getEnvironment )
-import System.Directory (getPermissions, readable)
+import qualified System.Directory as Filesystem
+    ( Permissions, getPermissions, setPermissions, emptyPermissions
+    , setOwnerReadable, setOwnerWritable
+    , setOwnerExecutable, setOwnerSearchable
+    , readable )
 import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle)
 import qualified System.IO as IO
@@ -445,7 +456,9 @@ ls :: FilePath -> Shell FilePath
 ls path = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     let path' = Filesystem.encodeString path
-    canRead <- fmap readable (getPermissions (deslash path'))
+    canRead <- fmap
+         Filesystem.readable
+        (Filesystem.getPermissions (deslash path'))
 #ifdef mingw32_HOST_OS
     reparse <- fmap reparsePoint (Win32.getFileAttributes path')
     if (canRead && not reparse)
@@ -481,7 +494,7 @@ ls path = Shell (\(FoldM step begin done) -> do
 #endif
 
 {-| This is used to remove the trailing slash from a path, because
-    `getDirectoryPermissions` will fail if a path ends with a trailing slash
+    `getPermissions` will fail if a path ends with a trailing slash
 -}
 deslash :: String -> String
 deslash []     = []
@@ -574,6 +587,44 @@ touch file = do
         then touchFile (Filesystem.encodeString file)
 #endif
         else output file empty )
+
+type Permissions = Filesystem.Permissions -> Filesystem.Permissions
+
+-- | Update a file or directory's permissions
+chmod :: MonadIO io => Permissions -> FilePath -> io ()
+chmod modifyPermissions path = liftIO (do
+    let path' = deslash (Filesystem.encodeString path)
+    permissions <- Filesystem.getPermissions path'
+    Filesystem.setPermissions path' (modifyPermissions permissions) )
+
+readable, nonreadable :: Permissions
+readable = Filesystem.setOwnerReadable True
+nonreadable = Filesystem.setOwnerReadable False
+
+writable, nonwritable :: Permissions
+writable = Filesystem.setOwnerWritable True
+nonwritable = Filesystem.setOwnerWritable False
+
+executable, nonexecutable :: Permissions
+executable = Filesystem.setOwnerExecutable True
+nonexecutable = Filesystem.setOwnerExecutable False
+
+searchable, nonsearchable :: Permissions
+searchable = Filesystem.setOwnerSearchable True
+nonsearchable = Filesystem.setOwnerSearchable False
+
+ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws :: Permissions
+ooo = const Filesystem.emptyPermissions
+roo = readable . ooo
+owo = writable . ooo
+oox = executable . ooo
+oos = searchable . ooo
+rwo = readable . writable . ooo
+rox = readable . executable . ooo
+ros = readable . searchable . ooo
+owx = writable . executable . ooo
+rwx = readable . writable . executable . ooo
+rws = readable . writable . searchable . ooo
 
 {-| Time how long a command takes in monotonic wall clock time
 
