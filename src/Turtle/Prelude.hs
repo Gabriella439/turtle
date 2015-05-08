@@ -180,7 +180,7 @@ import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (FoldM(..), list)
-import Control.Monad (liftM, msum)
+import Control.Monad (liftM, msum, when)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, managed)
 #ifdef mingw32_HOST_OS
@@ -593,11 +593,21 @@ touch file = do
 > chmod executable "foo.txt"  -- chmod u+x foo.txt
 > chmod nonwritable "foo.txt" -- chmod u-x foo.txt
 -}
-chmod :: MonadIO io => (Permissions -> Permissions) -> FilePath -> io ()
+chmod
+    :: MonadIO io
+    => (Permissions -> Permissions)
+    -- ^ Permissions update function
+    -> FilePath
+    -- ^ Path
+    -> io (Bool, Permissions)
+    -- ^ Updated permissions
 chmod modifyPermissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
     permissions <- Directory.getPermissions path'
-    Directory.setPermissions path' (modifyPermissions permissions) )
+    let permissions' = modifyPermissions permissions
+        changed = permissions /= permissions'
+    when changed (Directory.setPermissions path' permissions')
+    return (changed, permissions') )
 
 readable, nonreadable :: Permissions -> Permissions
 readable = Directory.setOwnerReadable True
