@@ -135,6 +135,15 @@ module Turtle.Prelude (
     , (.&&.)
     , (.||.)
 
+    -- * Permissions
+    , Permissions
+    , chmod
+    , readable, nonreadable
+    , writable, nonwritable
+    , executable, nonexecutable
+    , searchable, nonsearchable
+    , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
+
     -- * Managed
     , readonly
     , writeonly
@@ -171,7 +180,7 @@ import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (FoldM(..), list)
-import Control.Monad (liftM, msum)
+import Control.Monad (liftM, msum, when)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, managed)
 #ifdef mingw32_HOST_OS
@@ -195,7 +204,8 @@ import System.Environment (
     lookupEnv,
 #endif
     getEnvironment )
-import System.Directory (getPermissions, readable)
+import System.Directory (Permissions)
+import qualified System.Directory as Directory
 import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle)
 import qualified System.IO as IO
@@ -445,7 +455,9 @@ ls :: FilePath -> Shell FilePath
 ls path = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     let path' = Filesystem.encodeString path
-    canRead <- fmap readable (getPermissions (deslash path'))
+    canRead <- fmap
+         Directory.readable
+        (Directory.getPermissions (deslash path'))
 #ifdef mingw32_HOST_OS
     reparse <- fmap reparsePoint (Win32.getFileAttributes path')
     if (canRead && not reparse)
@@ -481,7 +493,7 @@ ls path = Shell (\(FoldM step begin done) -> do
 #endif
 
 {-| This is used to remove the trailing slash from a path, because
-    `getDirectoryPermissions` will fail if a path ends with a trailing slash
+    `getPermissions` will fail if a path ends with a trailing slash
 -}
 deslash :: String -> String
 deslash []     = []
@@ -574,6 +586,57 @@ touch file = do
         then touchFile (Filesystem.encodeString file)
 #endif
         else output file empty )
+
+{-| Update a file or directory's permissions
+
+> chmod rwo        "foo.txt"  -- chmod u=rw foo.txt
+> chmod executable "foo.txt"  -- chmod u+x foo.txt
+> chmod nonwritable "foo.txt" -- chmod u-x foo.txt
+-}
+chmod
+    :: MonadIO io
+    => (Permissions -> Permissions)
+    -- ^ Permissions update function
+    -> FilePath
+    -- ^ Path
+    -> io (Bool, Permissions)
+    -- ^ Updated permissions
+chmod modifyPermissions path = liftIO (do
+    let path' = deslash (Filesystem.encodeString path)
+    permissions <- Directory.getPermissions path'
+    let permissions' = modifyPermissions permissions
+        changed = permissions /= permissions'
+    when changed (Directory.setPermissions path' permissions')
+    return (changed, permissions') )
+
+readable, nonreadable :: Permissions -> Permissions
+readable = Directory.setOwnerReadable True
+nonreadable = Directory.setOwnerReadable False
+
+writable, nonwritable :: Permissions -> Permissions
+writable = Directory.setOwnerWritable True
+nonwritable = Directory.setOwnerWritable False
+
+executable, nonexecutable :: Permissions -> Permissions
+executable = Directory.setOwnerExecutable True
+nonexecutable = Directory.setOwnerExecutable False
+
+searchable, nonsearchable :: Permissions -> Permissions
+searchable = Directory.setOwnerSearchable True
+nonsearchable = Directory.setOwnerSearchable False
+
+ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws :: Permissions -> Permissions
+ooo = const Directory.emptyPermissions
+roo = readable . ooo
+owo = writable . ooo
+oox = executable . ooo
+oos = searchable . ooo
+rwo = readable . writable . ooo
+rox = readable . executable . ooo
+ros = readable . searchable . ooo
+owx = writable . executable . ooo
+rwx = readable . writable . executable . ooo
+rws = readable . writable . searchable . ooo
 
 {-| Time how long a command takes in monotonic wall clock time
 
