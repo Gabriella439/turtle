@@ -103,6 +103,7 @@ module Turtle.Prelude (
     , echo
     , err
     , readline
+    , arguments
 #if MIN_VERSION_base(4,7,0)
     , export
     , unset
@@ -196,6 +197,7 @@ import Filesystem.Path.CurrentOS (FilePath, (</>))
 import qualified Filesystem.Path.CurrentOS as Filesystem
 import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Environment (
+    getArgs,
 #if MIN_VERSION_base(4,7,0)
     setEnv,
     unsetEnv,
@@ -401,6 +403,10 @@ readline = liftIO (do
     if eof
         then return Nothing
         else fmap (Just . pack) getLine )
+
+-- | Get command line arguments in a list
+arguments :: MonadIO io => io [Text]
+arguments = liftIO (fmap (map pack) getArgs)
 
 #if MIN_VERSION_base(4,7,0)
 -- | Set or modify an environment variable
