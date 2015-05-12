@@ -1186,6 +1186,8 @@ import Turtle
 -- e*?        `selfless` (`star` e)
 -- e+?        `selfless` (`plus` e)
 -- e{n}       `count` n e
+-- e{m,n}     `bounded` m n e
+-- e{0,n}     `upperBounded` n e
 -- e?         `optional` e
 -- [xyz]      `oneOf` \"xyz\"
 -- [^xyz]     `noneOf` \"xyz\"
