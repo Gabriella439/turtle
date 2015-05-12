@@ -86,6 +86,8 @@ module Turtle.Pattern (
     , selfless
     , choice
     , count
+    , upperBounded
+    , bounded
     , option
     , between
     , skip
@@ -523,6 +525,47 @@ choice = msum
 -}
 count :: Int -> Pattern a -> Pattern [a]
 count = replicateM
+
+{-| Apply the given pattern 0 or more times, up to a given bound,
+    colleting the results
+
+>>> match (upperBounded 5 dot) "123"
+["123"]
+>>> match (upperBounded 2 dot) "123"
+[]
+>>> match ((,) <$> upperBounded 2 dot <*> chars) "123"
+[("12","3"),("1","23")]
+-}
+
+upperBounded :: Int -> Pattern a -> Pattern [a]
+upperBounded n p
+    | n <= 0 = mempty
+    | n == 1 = fmap pure p
+    | otherwise = (:) <$> p <*> option (upperBounded (n - 1) p)
+
+{-| Apply the given pattern a number of times restricted by given
+    lower and upper bounds, collecting the results
+
+>>> match (bounded 2 5 "cat") "catcatcat"
+[["cat","cat","cat"]]
+>>> match (bounded 2 5 "cat") "cat"
+[]
+>>> match (bounded 2 5 "cat") "catcatcatcatcatcat"
+[]
+
+`bounded` could be implemented naively as follows:
+
+> bounded m n p = do
+>   x <- choice (map pure [m..n])
+>   count x p
+
+-}
+
+bounded :: Int -> Int -> Pattern a -> Pattern [a]
+bounded m n p
+    | m == n = count m p
+    | m  < n = (++) <$> count m p <*> option (upperBounded (n - m) p)
+    | otherwise = mzero
 
 {-| Transform a parser to a succeed with an empty value instead of failing
 
