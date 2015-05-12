@@ -527,7 +527,7 @@ count :: Int -> Pattern a -> Pattern [a]
 count = replicateM
 
 {-| Apply the given pattern 0 or more times, up to a given bound,
-    colleting the results
+    collecting the results
 
 >>> match (upperBounded 5 dot) "123"
 ["123"]
