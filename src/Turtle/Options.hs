@@ -12,6 +12,8 @@ module Turtle.Options
     , helpmsg
     , shortname
     , longname
+    , header
+    , footer
     ) where
 
 import Data.Text (Text)
@@ -42,13 +44,19 @@ flag :: a -> a -> Opts.Mod Opts.FlagFields a -> Opts.Parser a
 flag = Opts.flag
 
 metavar :: Opts.HasMetavar f => Text -> Opts.Mod f a
-metavar str = Opts.metavar (Text.unpack str)
+metavar t = Opts.metavar (Text.unpack t)
 
 helpmsg :: Text -> Opts.Mod f a
-helpmsg str = Opts.help (Text.unpack str)
+helpmsg t = Opts.help (Text.unpack t)
 
 shortname :: Opts.HasName f => Char -> Opts.Mod f a
 shortname = Opts.short
 
 longname :: Opts.HasName f => Text -> Opts.Mod f a
 longname str = Opts.long (Text.unpack str)
+
+header :: Text -> Opts.InfoMod a
+header t = Opts.header (Text.unpack t)
+
+footer :: Text -> Opts.InfoMod a
+footer t = Opts.footer (Text.unpack t)
