@@ -40,6 +40,14 @@ instance Option Text where
     type OptionFields Text = Opts.ArgumentFields
     opt = Opts.argument (fmap Text.pack Opts.readerAsk)
 
+instance Option Int where
+    type OptionFields Int = Opts.ArgumentFields
+    opt = Opts.argument Opts.auto
+
+instance Option Integer where
+    type OptionFields Integer = Opts.ArgumentFields
+    opt = Opts.argument Opts.auto
+
 flag :: a -> a -> Opts.Mod Opts.FlagFields a -> Opts.Parser a
 flag = Opts.flag
 
