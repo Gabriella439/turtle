@@ -28,8 +28,6 @@ $ cabal update
 $ cabal install turtle-1.1.0
 ```
 
-Finally: [go/checkin](go.twitter.biz/checking)
-
 # Outline
 
 * **Haskell overview**
