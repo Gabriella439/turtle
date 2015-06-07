@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -fno-warn-missing-methods #-}
 
 {-| You can think of `Shell` as @[]@ + `IO` + `Managed`.  In fact, you can embed
     all three of them within a `Shell`:
