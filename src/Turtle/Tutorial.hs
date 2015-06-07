@@ -79,6 +79,9 @@ module Turtle.Tutorial (
     -- * Exception Safety
     -- $exceptions
 
+    -- * MonadIO
+    -- $monadio
+
     -- * Conclusion
     -- $conclusion
     ) where
@@ -372,8 +375,18 @@ import Turtle
 --
 -- @
 -- Prelude Turtle> :type pwd
+-- pwd :: `MonadIO` io => io Turtle.`Turtle.FilePath`
+-- @
+--
+-- For right now, ignore all occurrences of `MonadIO` and just read the type
+-- as:
+--
+-- @
+-- Prelude Turtle> :type pwd
 -- pwd :: `IO` Turtle.`Turtle.FilePath`
 -- @
+--
+-- We will cover `MonadIO` later on.
 --
 -- Whenever you see something of the form @(x :: t)@, that means that @\'x\'@
 -- is a value of type @\'t\'@.  The REPL says that `pwd` is a subroutine ('IO')
@@ -1343,6 +1356,43 @@ import Turtle
 --
 -- To learn more about `Managed` resources, read the documentation in
 -- "Control.Monad.Managed".
+
+-- $monadio
+--
+-- If you are sick of having type `liftIO` everywhere, you can omit it.  This
+-- is because all subroutines in @turtle@ are overloaded using the `MonadIO`
+-- type class, like our original `pwd` command where we first encountered the
+-- the `MonadIO` type:
+--
+-- @
+-- Prelude Turtle> :type pwd
+-- pwd :: `MonadIO` io => io Turtle.`Turtle.FilePath`
+-- @
+--
+-- This means you can this command is overloaded to run in any context that
+-- implements the `MonadIO` interface, including:
+--
+-- * `IO` (obviously)
+--
+-- * `Shell`
+--
+-- * `Managed`
+--
+-- You can tell if a type constructor like `Shell` implements `MonadIO` by
+-- clicking the link to the type constructor and looking for the instance list.
+-- There you will see a list of instances like:
+--
+-- > Monad Shell
+-- > Functor Shell
+-- > MonadPlus Shell
+-- > Applicative Shell
+-- > Alternative Shell
+-- > MonadIO Shell
+-- > ...
+-- 
+-- These instances represent the overloaded functions associated with `Shell`
+-- and we can see from the list that `Shell` implements `MonadIO` so we can
+-- use `pwd` (or any other subroutine in this library) within a `Shell`.
 
 -- $conclusion
 --
