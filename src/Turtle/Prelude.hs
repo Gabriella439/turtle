@@ -169,6 +169,8 @@ module Turtle.Prelude (
     -- * Permissions
     , Permissions
     , chmod
+    , getmod
+    , setmod
     , readable, nonreadable
     , writable, nonwritable
     , executable, nonexecutable
@@ -605,15 +607,27 @@ chmod
     -- ^ Permissions update function
     -> FilePath
     -- ^ Path
-    -> io (Bool, Permissions)
-    -- ^ (Changed?, Updated permissions)
+    -> io Permissions
+    -- ^ Updated permissions
 chmod modifyPermissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
     permissions <- Directory.getPermissions path'
     let permissions' = modifyPermissions permissions
         changed = permissions /= permissions'
     when changed (Directory.setPermissions path' permissions')
-    return (changed, permissions') )
+    return permissions' )
+
+-- | Get a file or directory's user permissions
+getmod :: MonadIO io => FilePath -> io Permissions
+getmod path = liftIO (do
+    let path' = deslash (Filesystem.encodeString path)
+    Directory.getPermissions path' )
+
+-- | Set a file or directory's user permissions
+setmod :: MonadIO io => Permissions -> FilePath -> io ()
+setmod permissions path = liftIO (do
+    let path' = deslash (Filesystem.encodeString path)
+    Directory.setPermissions path' permissions )
 
 -- | @+r@
 readable :: Permissions -> Permissions
