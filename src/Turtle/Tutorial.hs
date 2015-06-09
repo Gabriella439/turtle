@@ -1393,6 +1393,10 @@ import Turtle
 -- These instances represent the overloaded functions associated with `Shell`
 -- and we can see from the list that `Shell` implements `MonadIO` so we can
 -- use `pwd` (or any other subroutine in this library) within a `Shell`.
+--
+-- However, not all subroutines in the Haskell ecosystem are overloaded in this
+-- way (such as `print`), so you will still occasionally need to wrap
+-- subroutines in `liftIO`.
 
 -- $conclusion
 --
