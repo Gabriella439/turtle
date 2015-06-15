@@ -178,7 +178,7 @@ module Turtle.Prelude (
     , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
     ) where
 
-import Control.Applicative (Alternative(..))
+import Control.Applicative (Alternative(..), (<*), (*>))
 import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
@@ -312,7 +312,7 @@ system p s = liftIO (do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) ) )
+    withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) )
 
 systemStrict
     :: MonadIO io
@@ -333,7 +333,7 @@ systemStrict p s = liftIO (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
     concurrently
-        (withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) ))
+        (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
         (Text.hGetContents hOut) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
@@ -384,8 +384,8 @@ stream p s = do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    _ <- using (fork feedIn)
-    inhandle hOut
+    a <- using (fork feedIn)
+    inhandle hOut <|> (liftIO (wait a) *> empty)
 
 -- | Print to @stdout@
 echo :: MonadIO io => Text -> io ()
