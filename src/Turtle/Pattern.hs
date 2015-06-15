@@ -81,6 +81,7 @@ module Turtle.Pattern (
     , prefix
     , suffix
     , has
+    , invert
     , once
     , star
     , plus
@@ -425,6 +426,18 @@ signed :: Num a => Pattern a -> Pattern a
 signed p = do
     sign <- (char '+' *> pure id) <|> (char '-' *> pure negate) <|> (pure id)
     fmap sign p
+
+{-| @(`invert` p)@ succeeds if @p@ fails and fails if @p@ succeeds
+
+>>> match (invert "A") "A"
+[]
+>>> match (invert "A") "B"
+[()]
+-}
+invert :: Pattern a -> Pattern ()
+invert p = Pattern (StateT (\str -> case runStateT (runPattern p) str of
+    [] -> [((), "")]
+    _  -> [] ))
 
 {-| Match a `Char`, but return `Text`
 
