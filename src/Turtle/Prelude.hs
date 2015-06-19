@@ -557,7 +557,7 @@ rmdir path = liftIO (Filesystem.removeDirectory path)
 rmtree :: MonadIO io => FilePath -> io ()
 rmtree path = liftIO (Filesystem.removeTree path)
 
--- | Get a file or directory's size
+-- | Get the size of a file or a directory in kilobytes
 du :: MonadIO io => FilePath -> io Integer
 du path = liftIO (Filesystem.getSize path)
 
