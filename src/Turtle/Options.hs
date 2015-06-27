@@ -15,6 +15,8 @@ module Turtle.Options
     , parameter
     , pAuto
     , pText
+    , pInteger
+    , pDouble
     ) where
 
 import Data.Monoid
@@ -22,6 +24,7 @@ import Data.String (IsString)
 import Text.Read (readMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
+import Data.Optional
 import Control.Applicative
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Reader
@@ -45,30 +48,30 @@ newtype ShortName = ShortName { getShortName :: Char }
 newtype HelpMessage = HelpMessage { getHelpMessage :: Text }
     deriving (IsString)
 
+optionalOr :: Monoid m  => (a -> m) -> Optional a -> m
+optionalOr _ Default = mempty
+optionalOr f (Specific a) = f a
+
 switch
     :: LongName
-    -> ShortName
-    -> HelpMessage
+    -> Optional ShortName
+    -> Optional HelpMessage
     -> Parser Bool
 switch longName shortName helpMessage
    = Opts.switch
-   $ Opts.long (Text.unpack (getLongName longName))
-  <> Opts.short (getShortName shortName)
-  <> Opts.help (Text.unpack (getHelpMessage helpMessage))
+   $ (Opts.long . Text.unpack . getLongName) longName
+  <> optionalOr (Opts.short . getShortName) shortName
+  <> optionalOr (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 parameter
     :: ParameterRead a
     -> ParameterName
-    -> LongName
-    -> ShortName
-    -> HelpMessage
+    -> Optional HelpMessage
     -> Parser a
-parameter paramRead paramName longName shortName helpMessage
+parameter paramRead paramName helpMessage
    = Opts.option (parameterReadToReadM paramRead)
    $ Opts.metavar (Text.unpack (getParameterName paramName))
-  <> Opts.long (Text.unpack (getLongName longName))
-  <> Opts.short (getShortName shortName)
-  <> Opts.help (Text.unpack (getHelpMessage helpMessage))
+  <> optionalOr (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 newtype ParameterRead a = ParameterRead (ReaderT String Maybe a)
     deriving (Functor, Applicative, Monad)
@@ -81,6 +84,15 @@ pAuto = ParameterRead (ReaderT readMaybe)
 
 pText :: ParameterRead Text
 pText = ParameterRead (ReaderT $ \s -> Just (Text.pack s))
+
+pInteger :: ParameterRead Integer
+pInteger = pAuto
+
+pInt :: ParameterRead Int
+pInt = pAuto
+
+pDouble :: ParameterRead Double
+pDouble = pAuto
 
 parameterReadToReadM :: ParameterRead a -> Opts.ReadM a
 parameterReadToReadM (ParameterRead f) = do
