@@ -67,7 +67,7 @@ parameter
     -> Optional HelpMessage
     -> Parser a
 parameter paramRead paramName helpMessage
-   = Opts.option (parameterReadToReadM paramRead)
+   = Opts.argument (parameterReadToReadM paramRead)
    $ Opts.metavar (Text.unpack (getParameterName paramName))
   <> optionalOr (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
@@ -78,10 +78,10 @@ parameterRead :: (Text -> Maybe a) -> ParameterRead a
 parameterRead f = ParameterRead (ReaderT (f . Text.pack))
 
 pAuto :: Read a => ParameterRead a
-pAuto = ParameterRead (ReaderT readMaybe)
+pAuto = parameterRead (readMaybe . Text.unpack)
 
 pText :: ParameterRead Text
-pText = ParameterRead (ReaderT $ \s -> Just (Text.pack s))
+pText = parameterRead Just
 
 pInteger :: ParameterRead Integer
 pInteger = pAuto
