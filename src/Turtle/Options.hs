@@ -1,70 +1,90 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- TODO: documentation
 
 module Turtle.Options
-    ( Opts.Parser
-    , Opts.InfoMod
+    ( Parser
+    , ParameterRead
+    , parameterRead
+    , ParameterName(..)
+    , LongName(..)
+    , ShortName(..)
+    , HelpMessage(..)
     , options
-    , opt
-    , flag
-    , metavar
-    , helpmsg
-    , shortname
-    , longname
-    , header
-    , footer
+    , switch
+    , parameter
+    , pAuto
+    , pText
     ) where
 
+import Data.Monoid
+import Data.String (IsString)
+import Text.Read (readMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Control.Applicative
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Reader
+import Options.Applicative (Parser)
 import qualified Options.Applicative as Opts
 import qualified Options.Applicative.Types as Opts
-import qualified Options.Applicative.Builder.Internal as Opts
 
-options :: MonadIO io => Opts.Parser a -> Opts.InfoMod a -> io a
-options parser info = liftIO
-    (Opts.execParser (Opts.info (Opts.helper <*> parser) info))
+options :: MonadIO io => Text -> Parser a -> io a
+options header parser = liftIO
+    $ Opts.execParser
+    $ Opts.info (Opts.helper <*> parser) (Opts.header (Text.unpack header))
 
-class Option opt where
-    type OptionFields opt :: * -> *
-    opt :: Opts.Mod (OptionFields opt) opt -> Opts.Parser opt
+newtype ParameterName = ParameterName { getParameterName :: Text }
+    deriving (IsString)
 
-instance Option Bool where
-    type OptionFields Bool = Opts.FlagFields
-    opt = Opts.switch
+newtype LongName = LongName { getLongName :: Text }
+    deriving (IsString)
 
-instance Option Text where
-    type OptionFields Text = Opts.ArgumentFields
-    opt = Opts.argument (fmap Text.pack Opts.readerAsk)
+newtype ShortName = ShortName { getShortName :: Char }
 
-instance Option Int where
-    type OptionFields Int = Opts.ArgumentFields
-    opt = Opts.argument Opts.auto
+newtype HelpMessage = HelpMessage { getHelpMessage :: Text }
+    deriving (IsString)
 
-instance Option Integer where
-    type OptionFields Integer = Opts.ArgumentFields
-    opt = Opts.argument Opts.auto
+switch
+    :: LongName
+    -> ShortName
+    -> HelpMessage
+    -> Parser Bool
+switch longName shortName helpMessage
+   = Opts.switch
+   $ Opts.long (Text.unpack (getLongName longName))
+  <> Opts.short (getShortName shortName)
+  <> Opts.help (Text.unpack (getHelpMessage helpMessage))
 
-flag :: a -> a -> Opts.Mod Opts.FlagFields a -> Opts.Parser a
-flag = Opts.flag
+parameter
+    :: ParameterRead a
+    -> ParameterName
+    -> LongName
+    -> ShortName
+    -> HelpMessage
+    -> Parser a
+parameter paramRead paramName longName shortName helpMessage
+   = Opts.option (parameterReadToReadM paramRead)
+   $ Opts.metavar (Text.unpack (getParameterName paramName))
+  <> Opts.long (Text.unpack (getLongName longName))
+  <> Opts.short (getShortName shortName)
+  <> Opts.help (Text.unpack (getHelpMessage helpMessage))
 
-metavar :: Opts.HasMetavar f => Text -> Opts.Mod f a
-metavar t = Opts.metavar (Text.unpack t)
+newtype ParameterRead a = ParameterRead (ReaderT String Maybe a)
+    deriving (Functor, Applicative, Monad)
 
-helpmsg :: Text -> Opts.Mod f a
-helpmsg t = Opts.help (Text.unpack t)
+parameterRead :: (Text -> Maybe a) -> ParameterRead a
+parameterRead f = ParameterRead (ReaderT (f . Text.pack))
 
-shortname :: Opts.HasName f => Char -> Opts.Mod f a
-shortname = Opts.short
+pAuto :: Read a => ParameterRead a
+pAuto = ParameterRead (ReaderT readMaybe)
 
-longname :: Opts.HasName f => Text -> Opts.Mod f a
-longname str = Opts.long (Text.unpack str)
+pText :: ParameterRead Text
+pText = ParameterRead (ReaderT $ \s -> Just (Text.pack s))
 
-header :: Text -> Opts.InfoMod a
-header t = Opts.header (Text.unpack t)
-
-footer :: Text -> Opts.InfoMod a
-footer t = Opts.footer (Text.unpack t)
+parameterReadToReadM :: ParameterRead a -> Opts.ReadM a
+parameterReadToReadM (ParameterRead f) = do
+    s <- Opts.readerAsk
+    case runReaderT f s of
+        Just a -> return a
+        Nothing -> Opts.readerAbort Opts.ShowHelpText
