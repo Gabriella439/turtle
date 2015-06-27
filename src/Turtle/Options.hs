@@ -8,7 +8,6 @@ module Turtle.Options
     , parameterRead
     , ParameterName(..)
     , LongName(..)
-    , ShortName(..)
     , HelpMessage(..)
     , options
     , switch
@@ -54,13 +53,12 @@ optionalOr f (Specific a) = f a
 
 switch
     :: LongName
-    -> Optional ShortName
     -> Optional HelpMessage
     -> Parser Bool
-switch longName shortName helpMessage
+switch longName helpMessage
    = Opts.switch
    $ (Opts.long . Text.unpack . getLongName) longName
-  <> optionalOr (Opts.short . getShortName) shortName
+  <> maybe mempty (Opts.short . fst) (Text.uncons (getLongName longName))
   <> optionalOr (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 parameter
