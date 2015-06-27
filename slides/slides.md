@@ -28,8 +28,6 @@ $ cabal update
 $ cabal install turtle-1.1.0
 ```
 
-Finally: [go/checkin](go.twitter.biz/checking)
-
 # Outline
 
 * **Haskell overview**
@@ -1394,7 +1392,7 @@ Turtle Prelude> stdout (input "awk.txt")
 # `inshell` (Left-to-right)
 
 ```haskell
-Turtle Prelude> "123 456" & inshell "awk" '{ print $1 }' & output "awk.txt"
+Turtle Prelude> "123 456" & inshell "awk '{ print $1 }'" & output "awk.txt"
 Turtle Prelude> input "awk.txt" & stdout
 123
 ```

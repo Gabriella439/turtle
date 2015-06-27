@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 -- | See "Turtle.Tutorial" to learn how to use this library or "Turtle.Prelude"
 --  for a quick-start guide.

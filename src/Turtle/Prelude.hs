@@ -136,15 +136,6 @@ module Turtle.Prelude (
     , (.&&.)
     , (.||.)
 
-    -- * Permissions
-    , Permissions
-    , chmod
-    , readable, nonreadable
-    , writable, nonwritable
-    , executable, nonexecutable
-    , searchable, nonsearchable
-    , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
-
     -- * Managed
     , readonly
     , writeonly
@@ -174,9 +165,20 @@ module Turtle.Prelude (
     , yes
     , limit
     , limitWhile
+
+    -- * Permissions
+    , Permissions
+    , chmod
+    , getmod
+    , setmod
+    , readable, nonreadable
+    , writable, nonwritable
+    , executable, nonexecutable
+    , searchable, nonsearchable
+    , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
     ) where
 
-import Control.Applicative (Alternative(..))
+import Control.Applicative (Alternative(..), (<*), (*>))
 import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
@@ -310,7 +312,7 @@ system p s = liftIO (do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) ) )
+    withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) )
 
 systemStrict
     :: MonadIO io
@@ -331,7 +333,7 @@ systemStrict p s = liftIO (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
     concurrently
-        (withAsync feedIn (\_ -> liftIO (Process.waitForProcess ph) ))
+        (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
         (Text.hGetContents hOut) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
@@ -382,8 +384,8 @@ stream p s = do
     let feedIn = sh (do
             txt <- s
             liftIO (Text.hPutStrLn hIn txt) )
-    _ <- using (fork feedIn)
-    inhandle hOut
+    a <- using (fork feedIn)
+    inhandle hOut <|> (liftIO (wait a) *> empty)
 
 -- | Print to @stdout@
 echo :: MonadIO io => Text -> io ()
@@ -555,7 +557,7 @@ rmdir path = liftIO (Filesystem.removeDirectory path)
 rmtree :: MonadIO io => FilePath -> io ()
 rmtree path = liftIO (Filesystem.removeTree path)
 
--- | Get a file or directory's size
+-- | Get the size of a file or a directory in kilobytes
 du :: MonadIO io => FilePath -> io Integer
 du path = liftIO (Filesystem.getSize path)
 
@@ -593,7 +595,7 @@ touch file = do
 #endif
         else output file empty )
 
-{-| Update a file or directory's permissions
+{-| Update a file or directory's user permissions
 
 > chmod rwo        "foo.txt"  -- chmod u=rw foo.txt
 > chmod executable "foo.txt"  -- chmod u+x foo.txt
@@ -605,7 +607,7 @@ chmod
     -- ^ Permissions update function
     -> FilePath
     -- ^ Path
-    -> io (Bool, Permissions)
+    -> io Permissions
     -- ^ Updated permissions
 chmod modifyPermissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
@@ -613,35 +615,93 @@ chmod modifyPermissions path = liftIO (do
     let permissions' = modifyPermissions permissions
         changed = permissions /= permissions'
     when changed (Directory.setPermissions path' permissions')
-    return (changed, permissions') )
+    return permissions' )
 
-readable, nonreadable :: Permissions -> Permissions
+-- | Get a file or directory's user permissions
+getmod :: MonadIO io => FilePath -> io Permissions
+getmod path = liftIO (do
+    let path' = deslash (Filesystem.encodeString path)
+    Directory.getPermissions path' )
+
+-- | Set a file or directory's user permissions
+setmod :: MonadIO io => Permissions -> FilePath -> io ()
+setmod permissions path = liftIO (do
+    let path' = deslash (Filesystem.encodeString path)
+    Directory.setPermissions path' permissions )
+
+-- | @+r@
+readable :: Permissions -> Permissions
 readable = Directory.setOwnerReadable True
+
+-- | @-r@
+nonreadable :: Permissions -> Permissions
 nonreadable = Directory.setOwnerReadable False
 
-writable, nonwritable :: Permissions -> Permissions
+-- | @+w@
+writable :: Permissions -> Permissions
 writable = Directory.setOwnerWritable True
+
+-- | @-w@
+nonwritable :: Permissions -> Permissions
 nonwritable = Directory.setOwnerWritable False
 
-executable, nonexecutable :: Permissions -> Permissions
+-- | @+x@
+executable :: Permissions -> Permissions
 executable = Directory.setOwnerExecutable True
+
+-- | @-x@
+nonexecutable :: Permissions -> Permissions
 nonexecutable = Directory.setOwnerExecutable False
 
-searchable, nonsearchable :: Permissions -> Permissions
+-- | @+s@
+searchable :: Permissions -> Permissions
 searchable = Directory.setOwnerSearchable True
+
+-- | @-s@
+nonsearchable :: Permissions -> Permissions
 nonsearchable = Directory.setOwnerSearchable False
 
-ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws :: Permissions -> Permissions
+-- | @-r -w -x@
+ooo :: Permissions -> Permissions
 ooo = const Directory.emptyPermissions
+
+-- | @+r -w -x@
+roo :: Permissions -> Permissions
 roo = readable . ooo
+
+-- | @-r +w -x@
+owo :: Permissions -> Permissions
 owo = writable . ooo
+
+-- | @-r -w +x@
+oox :: Permissions -> Permissions
 oox = executable . ooo
+
+-- | @-r -w +s@
+oos :: Permissions -> Permissions
 oos = searchable . ooo
+
+-- | @+r +w -x@
+rwo :: Permissions -> Permissions
 rwo = readable . writable . ooo
+
+-- | @+r -w +x@
+rox :: Permissions -> Permissions
 rox = readable . executable . ooo
+
+-- | @+r -w +s@
+ros :: Permissions -> Permissions
 ros = readable . searchable . ooo
+
+-- | @-r +w +x@
+owx :: Permissions -> Permissions
 owx = writable . executable . ooo
+
+-- | @+r +w +x@
+rwx :: Permissions -> Permissions
 rwx = readable . writable . executable . ooo
+
+rws :: Permissions -> Permissions
 rws = readable . writable . searchable . ooo
 
 {-| Time how long a command takes in monotonic wall clock time

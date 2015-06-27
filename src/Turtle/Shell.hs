@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -fno-warn-missing-methods #-}
 
 {-| You can think of `Shell` as @[]@ + `IO` + `Managed`.  In fact, you can embed
     all three of them within a `Shell`:
@@ -81,7 +82,7 @@ import Data.String (IsString(..))
 -- | A @(Shell a)@ is a protected stream of @a@'s with side effects
 newtype Shell a = Shell { _foldIO :: forall r . FoldM IO a r -> IO r }
 
--- | Use a `FoldM IO` to reduce the stream of @a@'s produced by a `Shell`
+-- | Use a @`FoldM` `IO`@ to reduce the stream of @a@'s produced by a `Shell`
 foldIO :: MonadIO io => Shell a -> FoldM IO a r -> io r
 foldIO s f = liftIO (_foldIO s f)
 
