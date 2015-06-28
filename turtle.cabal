@@ -58,7 +58,9 @@ Library
         temporary                     < 1.3,
         text                          < 1.3,
         time                          < 1.6,
-        transformers    >= 0.2.0.0 && < 0.5
+        transformers    >= 0.2.0.0 && < 0.5,
+        optparse-applicative >= 0.11 && < 0.12,
+        optional-args   >= 1.0     && < 2.0
     if os(windows)
         Build-Depends: Win32 >= 2.2.0.1 && < 2.4
     else
@@ -68,6 +70,7 @@ Library
         Turtle.Format,
         Turtle.Pattern,
         Turtle.Shell,
+        Turtle.Options,
         Turtle.Prelude,
         Turtle.Tutorial
     GHC-Options: -O2 -Wall

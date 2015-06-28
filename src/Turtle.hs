@@ -68,6 +68,7 @@ module Turtle (
     -- * Modules
       module Turtle.Format
     , module Turtle.Pattern
+    , module Turtle.Options
     , module Turtle.Shell
     , module Turtle.Prelude
     , module Control.Applicative
@@ -89,6 +90,7 @@ module Turtle (
 
 import Turtle.Format
 import Turtle.Pattern
+import Turtle.Options
 import Turtle.Shell
 import Turtle.Prelude
 import Control.Applicative
