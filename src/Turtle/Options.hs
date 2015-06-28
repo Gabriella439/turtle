@@ -19,6 +19,7 @@ module Turtle.Options
     ) where
 
 import Data.Monoid
+import Data.Foldable
 import Data.String (IsString)
 import Text.Read (readMaybe)
 import Data.Text (Text)
@@ -42,14 +43,8 @@ newtype ParameterName = ParameterName { getParameterName :: Text }
 newtype LongName = LongName { getLongName :: Text }
     deriving (IsString)
 
-newtype ShortName = ShortName { getShortName :: Char }
-
 newtype HelpMessage = HelpMessage { getHelpMessage :: Text }
     deriving (IsString)
-
-optionalOr :: Monoid m  => (a -> m) -> Optional a -> m
-optionalOr _ Default = mempty
-optionalOr f (Specific a) = f a
 
 switch
     :: LongName
@@ -58,8 +53,8 @@ switch
 switch longName helpMessage
    = Opts.switch
    $ (Opts.long . Text.unpack . getLongName) longName
-  <> maybe mempty (Opts.short . fst) (Text.uncons (getLongName longName))
-  <> optionalOr (Opts.help . Text.unpack . getHelpMessage) helpMessage
+  <> foldMap (Opts.short . fst) (Text.uncons (getLongName longName))
+  <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 parameter
     :: ParameterRead a
@@ -69,7 +64,7 @@ parameter
 parameter paramRead paramName helpMessage
    = Opts.argument (parameterReadToReadM paramRead)
    $ Opts.metavar (Text.unpack (getParameterName paramName))
-  <> optionalOr (Opts.help . Text.unpack . getHelpMessage) helpMessage
+  <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 newtype ParameterRead a = ParameterRead (ReaderT String Maybe a)
     deriving (Functor, Applicative, Monad)
