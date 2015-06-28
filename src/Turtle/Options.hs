@@ -4,18 +4,17 @@
 
 module Turtle.Options
     ( Parser
-    , ParameterRead
-    , parameterRead
     , ParameterName(..)
     , LongName(..)
     , HelpMessage(..)
     , options
     , switch
     , parameter
-    , pAuto
-    , pText
-    , pInteger
-    , pDouble
+    , parameterAuto
+    , parameterText
+    , parameterInteger
+    , parameterInt
+    , parameterDouble
     ) where
 
 import Data.Monoid
@@ -27,7 +26,6 @@ import qualified Data.Text as Text
 import Data.Optional
 import Control.Applicative
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Reader
 import Options.Applicative (Parser)
 import qualified Options.Applicative as Opts
 import qualified Options.Applicative.Types as Opts
@@ -57,7 +55,7 @@ switch longName helpMessage
   <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 parameter
-    :: ParameterRead a
+    :: (Text -> Maybe a)
     -> ParameterName
     -> Optional HelpMessage
     -> Parser a
@@ -66,30 +64,24 @@ parameter paramRead paramName helpMessage
    $ Opts.metavar (Text.unpack (getParameterName paramName))
   <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
-newtype ParameterRead a = ParameterRead (ReaderT String Maybe a)
-    deriving (Functor, Applicative, Monad)
+parameterAuto :: Read a => ParameterName -> Optional HelpMessage -> Parser a
+parameterAuto = parameter (readMaybe . Text.unpack)
 
-parameterRead :: (Text -> Maybe a) -> ParameterRead a
-parameterRead f = ParameterRead (ReaderT (f . Text.pack))
+parameterText :: ParameterName -> Optional HelpMessage -> Parser Text
+parameterText = parameter Just
 
-pAuto :: Read a => ParameterRead a
-pAuto = parameterRead (readMaybe . Text.unpack)
+parameterInteger :: ParameterName -> Optional HelpMessage -> Parser Integer
+parameterInteger = parameterAuto
 
-pText :: ParameterRead Text
-pText = parameterRead Just
+parameterInt :: ParameterName -> Optional HelpMessage -> Parser Int
+parameterInt = parameterAuto
 
-pInteger :: ParameterRead Integer
-pInteger = pAuto
+parameterDouble :: ParameterName -> Optional HelpMessage -> Parser Double
+parameterDouble = parameterAuto
 
-pInt :: ParameterRead Int
-pInt = pAuto
-
-pDouble :: ParameterRead Double
-pDouble = pAuto
-
-parameterReadToReadM :: ParameterRead a -> Opts.ReadM a
-parameterReadToReadM (ParameterRead f) = do
+parameterReadToReadM :: (Text -> Maybe a) -> Opts.ReadM a
+parameterReadToReadM f = do
     s <- Opts.readerAsk
-    case runReaderT f s of
+    case f (Text.pack s) of
         Just a -> return a
         Nothing -> Opts.readerAbort Opts.ShowHelpText
