@@ -11,6 +11,7 @@ module Turtle.Options
     , switch
     , arg
     , argRead
+    , argIntegral
     , argText
     , argInteger
     , argInt
@@ -65,6 +66,9 @@ arg argParse argName helpMessage
 
 argRead :: Read a => ArgName -> Optional HelpMessage -> Parser a
 argRead = arg (readMaybe . Text.unpack)
+
+argIntegral :: Integral a => ArgName -> Optional HelpMessage -> Parser a
+argIntegral argName helpMessage = fmap fromInteger (argRead argName helpMessage)
 
 argText :: ArgName -> Optional HelpMessage -> Parser Text
 argText = arg Just
