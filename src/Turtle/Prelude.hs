@@ -123,7 +123,7 @@ module Turtle.Prelude (
     , rm
     , rmdir
     , rmtree
-    , du
+    , size
     , testfile
     , testdir
     , date
@@ -557,9 +557,9 @@ rmdir path = liftIO (Filesystem.removeDirectory path)
 rmtree :: MonadIO io => FilePath -> io ()
 rmtree path = liftIO (Filesystem.removeTree path)
 
--- | Get the size of a file or a directory in kilobytes
-du :: MonadIO io => FilePath -> io Integer
-du path = liftIO (Filesystem.getSize path)
+-- | Get the size of a file or a directory in bytes
+size :: MonadIO io => FilePath -> io Integer
+size path = liftIO (Filesystem.getSize path)
 
 -- | Check if a file exists
 testfile :: MonadIO io => FilePath -> io Bool
