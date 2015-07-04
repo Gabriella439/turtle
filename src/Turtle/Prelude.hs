@@ -153,9 +153,10 @@ module Turtle.Prelude (
     , input
     , inhandle
     , stdout
-    , stderr
     , output
+    , outhandle
     , append
+    , stderr
     , strict
     , ls
     , lstree
@@ -834,17 +835,17 @@ stdout s = sh (do
     txt <- s
     liftIO (echo txt) )
 
--- | Stream lines of `Text` to standard error
-stderr :: MonadIO io => Shell Text -> io ()
-stderr s = sh (do
-    txt <- s
-    liftIO (err txt) )
-
 -- | Stream lines of `Text` to a file
 output :: MonadIO io => FilePath -> Shell Text -> io ()
 output file s = sh (do
     handle <- using (writeonly file)
     txt    <- s
+    liftIO (Text.hPutStrLn handle txt) )
+
+-- | Stream lines of `Text` to a `Handle`
+outhandle :: MonadIO io => Handle -> Shell Text -> io ()
+outhandle handle s = sh (do
+    txt <- s
     liftIO (Text.hPutStrLn handle txt) )
 
 -- | Stream lines of `Text` to append to a file
@@ -853,6 +854,12 @@ append file s = sh (do
     handle <- using (appendonly file)
     txt    <- s
     liftIO (Text.hPutStrLn handle txt) )
+
+-- | Stream lines of `Text` to standard error
+stderr :: MonadIO io => Shell Text -> io ()
+stderr s = sh (do
+    txt <- s
+    liftIO (err txt) )
 
 -- | Read in a stream's contents strictly
 strict :: MonadIO io => Shell Text -> io Text
