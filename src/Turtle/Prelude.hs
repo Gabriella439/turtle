@@ -167,6 +167,7 @@ module Turtle.Prelude (
     , yes
     , limit
     , limitWhile
+    , cache
 
     -- * Permissions
     , Permissions
@@ -227,6 +228,7 @@ import Prelude hiding (FilePath)
 
 import Turtle.Pattern (Pattern, anyChar, match)
 import Turtle.Shell
+import Turtle.Format (format, w, (%))
 
 {-| Run a command using @execvp@, retrieving the exit code
 
@@ -942,6 +944,39 @@ limitWhile predicate s = Shell (\(FoldM step begin done) -> do
             writeIORef ref b'
             if b' then step x a else return x
     foldIO s (FoldM step' begin done) )
+
+{-| Cache a `Shell`'s output so that repeated runs of the script will reuse the
+    result of previous runs.  You must supply a `FilePath` where the cached
+    result will be stored.
+
+    The stored result is only reused if the `Shell` successfully ran to
+    completion without any exceptions.  Note: on some platforms Ctrl-C will
+    flush standard input and signal end of file before killing the program,
+    which may trick the program into \"successfully\" completing.
+-}
+cache :: (Read a, Show a) => FilePath -> Shell a -> Shell a
+cache file s = do
+    let cached = do
+            txt <- input file
+            case reads (Text.unpack txt) of
+                [(ma, "")] -> return ma
+                _          ->
+                    die (format ("cache: Invalid data stored in "%w) file)
+    exists <- testfile file
+    mas    <- fold (if exists then cached else empty) list
+    case [ () | Nothing <- mas ] of
+        _:_ -> select [ a | Just a <- mas ]
+        _   -> do
+            handle <- using (writeonly file)
+            let justs = do
+                    a      <- s
+                    liftIO (Text.hPutStrLn handle (Text.pack (show (Just a))))
+                    return a
+            let nothing = do
+                    let n = Nothing :: Maybe ()
+                    liftIO (Text.hPutStrLn handle (Text.pack (show n)))
+                    empty
+            justs <|> nothing
 
 -- | Get the current time
 date :: MonadIO io => io UTCTime
