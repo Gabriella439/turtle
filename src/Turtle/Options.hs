@@ -35,6 +35,7 @@ module Turtle.Options
     ( -- * Types
       Parser
     , ArgName
+    , ShortName
     , Description
     , HelpMessage
 
@@ -82,12 +83,15 @@ options desc parser = liftIO
 
 {-| The name of a command-line argument
 
-    This is used to infer the long name, short name, and metavariable for the
-    command line flag.  For example, an `ArgName` of @\"name\"@ will create a
-    @--name@ flag with a @NAME@ metavariable and a short name of @-n@
+    This is used to infer the long name and metavariable for the command line
+    flag.  For example, an `ArgName` of @\"name\"@ will create a @--name@ flag
+    with a @NAME@ metavariable
 -}
 newtype ArgName = ArgName { getArgName :: Text }
     deriving (IsString)
+
+-- | The short one-character abbreviation for a flag (i.e. @-n@)
+type ShortName = Char
 
 {-| A brief description of what your program does
 
@@ -108,7 +112,7 @@ newtype HelpMessage = HelpMessage { getHelpMessage :: Text }
 -}
 switch
     :: ArgName
-    -> Char
+    -> ShortName
     -> Optional HelpMessage
     -> Parser Bool
 switch argName c helpMessage
@@ -122,7 +126,7 @@ switch argName c helpMessage
 -}
 opt :: (Text -> Maybe a)
     -> ArgName
-    -> Char
+    -> ShortName
     -> Optional HelpMessage
     -> Parser a
 opt argParse argName c helpMessage
@@ -133,23 +137,23 @@ opt argParse argName c helpMessage
   <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 -- | Parse any type that implements `Read`
-optRead :: Read a => ArgName -> Char -> Optional HelpMessage -> Parser a
+optRead :: Read a => ArgName -> ShortName -> Optional HelpMessage -> Parser a
 optRead = opt (readMaybe . Text.unpack)
 
 -- | Parse an `Int` as a flag-based option
-optInt :: ArgName -> Char -> Optional HelpMessage -> Parser Int
+optInt :: ArgName -> ShortName -> Optional HelpMessage -> Parser Int
 optInt = optRead
 
 -- | Parse an `Integer` as a flag-based option
-optInteger :: ArgName -> Char -> Optional HelpMessage -> Parser Integer
+optInteger :: ArgName -> ShortName -> Optional HelpMessage -> Parser Integer
 optInteger = optRead
 
 -- | Parse a `Double` as a flag-based option
-optDouble :: ArgName -> Char -> Optional HelpMessage -> Parser Double
+optDouble :: ArgName -> ShortName -> Optional HelpMessage -> Parser Double
 optDouble = optRead
 
 -- | Parse a `Text` value as a flag-based option
-optText :: ArgName -> Char -> Optional HelpMessage -> Parser Text
+optText :: ArgName -> ShortName -> Optional HelpMessage -> Parser Text
 optText = opt Just
 
 {- | Build a positional argument parser for any type by providing a
