@@ -1,5 +1,6 @@
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
@@ -123,7 +124,6 @@ module Turtle.Prelude (
     , rm
     , rmdir
     , rmtree
-    , du
     , testfile
     , testdir
     , date
@@ -169,6 +169,11 @@ module Turtle.Prelude (
     , limitWhile
     , cache
 
+    -- * Folds
+    , countChars
+    , countWords
+    , countLines
+
     -- * Permissions
     , Permissions
     , chmod
@@ -179,13 +184,27 @@ module Turtle.Prelude (
     , executable, nonexecutable
     , searchable, nonsearchable
     , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
+
+    -- * File size
+    , du
+    , Size
+    , bytes
+    , kilobytes
+    , megabytes
+    , gigabytes
+    , terabytes
+    , kibibytes
+    , mebibytes
+    , gibibytes
+    , tebibytes
     ) where
 
 import Control.Applicative (Alternative(..), (<*), (*>))
 import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
-import Control.Foldl (FoldM(..), list)
+import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
+import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, managed)
@@ -195,6 +214,7 @@ import Data.Bits ((.&.))
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
+import Data.Traversable (traverse)
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 import qualified Filesystem
@@ -561,10 +581,6 @@ rmdir path = liftIO (Filesystem.removeDirectory path)
 -}
 rmtree :: MonadIO io => FilePath -> io ()
 rmtree path = liftIO (Filesystem.removeTree path)
-
--- | Get the size of a file or a directory in kilobytes
-du :: MonadIO io => FilePath -> io Integer
-du path = liftIO (Filesystem.getSize path)
 
 -- | Check if a file exists
 testfile :: MonadIO io => FilePath -> io Bool
@@ -985,3 +1001,81 @@ date = liftIO getCurrentTime
 -- | Get the time a file was last modified
 datefile :: MonadIO io => FilePath -> io UTCTime
 datefile path = liftIO (Filesystem.getModified path)
+
+-- | Get the size of a file or a directory
+du :: MonadIO io => FilePath -> io Size
+du path = liftIO (fmap Size (Filesystem.getSize path))
+
+{-| An abstract file size
+
+    Specify the units you want by using an accessor like `kilobytes`
+
+    The `Num` instance for `Size` interprets numeric literals as bytes
+-}
+newtype Size = Size { _bytes :: Integer } deriving (Num)
+
+instance Show Size where
+    show = show . _bytes
+
+-- | Extract a size in bytes
+bytes :: Integral n => Size -> n
+bytes = fromInteger . _bytes
+
+-- | @1 kilobyte = 1000 bytes@
+kilobytes :: Integral n => Size -> n
+kilobytes = (`div` 1000) . bytes
+
+-- | @1 megabyte = 1000 kilobytes@
+megabytes :: Integral n => Size -> n
+megabytes = (`div` 1000) . kilobytes
+
+-- | @1 gigabyte = 1000 megabytes@
+gigabytes :: Integral n => Size -> n
+gigabytes = (`div` 1000) . megabytes
+
+-- | @1 terabyte = 1000 gigabytes@
+terabytes :: Integral n => Size -> n
+terabytes = (`div` 1000) . gigabytes
+
+-- | @1 kibibyte = 1024 bytes@
+kibibytes :: Integral n => Size -> n
+kibibytes = (`div` 1024) . bytes
+
+-- | @1 mebibyte = 1024 kibibytes@
+mebibytes :: Integral n => Size -> n
+mebibytes = (`div` 1024) . kibibytes
+
+-- | @1 gibibyte = 1024 mebibytes@
+gibibytes :: Integral n => Size -> n
+gibibytes = (`div` 1024) . mebibytes
+
+-- | @1 tebibyte = 1024 gibibytes@
+tebibytes :: Integral n => Size -> n
+tebibytes = (`div` 1024) . gibibytes
+
+{-| Count the number of characters in the stream (like @wc -c@)
+
+    This uses the convention that the elements of the stream are implicitly
+    ended by newlines that are one character wide
+-}
+countChars :: Integral n => Fold Text n
+countChars = Control.Foldl.Text.length + charsPerNewline * countLines
+
+charsPerNewline :: Num a => a
+#ifdef mingw32_HOST_OS
+charsPerNewline = 2
+#else
+charsPerNewline = 1
+#endif
+
+-- | Count the number of words in the stream (like @wc -w@)
+countWords :: Integral n => Fold Text n
+countWords = premap Text.words (handles traverse genericLength)
+
+{-| Count the number of lines in the stream (like @wc -l@)
+
+    This uses the convention that each element of the stream represents one
+    line
+-}
+countLines :: Integral n => Fold Text n
+countLines = genericLength
