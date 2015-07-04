@@ -130,6 +130,7 @@ module Turtle.Prelude (
     , datefile
     , touch
     , time
+    , hostname
     , sleep
     , exit
     , die
@@ -197,6 +198,7 @@ import qualified Data.Text.IO as Text
 import qualified Filesystem
 import Filesystem.Path.CurrentOS (FilePath, (</>))
 import qualified Filesystem.Path.CurrentOS as Filesystem
+import Network.HostName (getHostName)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Environment (
     getArgs,
@@ -716,6 +718,10 @@ time io = do
     let t = fromIntegral (    seconds2 -     seconds1)
           + fromIntegral (nanoseconds2 - nanoseconds1) / 10^(9::Int)
     return (a, fromRational t)
+
+-- | Get the system's host name
+hostname :: MonadIO io => io Text
+hostname = liftIO (fmap Text.pack getHostName)
 
 {-| Sleep for the given duration
 
