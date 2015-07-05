@@ -45,6 +45,7 @@ module Turtle.Options
     , optInt
     , optInteger
     , optDouble
+    , optPath
     , optRead
     , opt
 
@@ -53,6 +54,7 @@ module Turtle.Options
     , argInt
     , argInteger
     , argDouble
+    , argPath
     , argRead
     , arg
 
@@ -70,9 +72,11 @@ import qualified Data.Text as Text
 import Data.Optional
 import Control.Applicative
 import Control.Monad.IO.Class
+import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Options.Applicative (Parser)
 import qualified Options.Applicative as Opts
 import qualified Options.Applicative.Types as Opts
+import Prelude hiding (FilePath)
 
 -- | Parse the given options from the command line
 options :: MonadIO io => Description -> Parser a -> io a
@@ -156,6 +160,10 @@ optDouble = optRead
 optText :: ArgName -> ShortName -> Optional HelpMessage -> Parser Text
 optText = opt Just
 
+-- | Parse a `FilePath` value as a flag-based option
+optPath :: ArgName -> ShortName -> Optional HelpMessage -> Parser FilePath
+optPath argName short msg = fmap fromText (optText argName short msg)
+
 {- | Build a positional argument parser for any type by providing a
     `Text`-parsing function
 -}
@@ -187,6 +195,10 @@ argDouble = argRead
 -- | Parse a `Text` as a positional argument
 argText :: ArgName -> Optional HelpMessage -> Parser Text
 argText = arg Just
+
+-- | Parse a `FilePath` as a positional argument
+argPath :: ArgName -> Optional HelpMessage -> Parser FilePath
+argPath argName msg = fmap fromText (argText argName msg)
 
 argParseToReadM :: (Text -> Maybe a) -> Opts.ReadM a
 argParseToReadM f = do
