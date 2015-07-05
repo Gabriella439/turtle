@@ -1450,6 +1450,7 @@ import Turtle
 -- > echo "Test" > file1.txt
 -- > $ ./cp.hs file1.txt file2.txt
 -- > cat file2.txt
+-- > Test
 --
 -- This works because `argPath` produces a `Parser`:
 --
@@ -1471,18 +1472,23 @@ import Turtle
 -- For example, we can change our program to make the destination argument
 -- optional, defaulting to `stdout` if the user does not provide a destination:
 --
+--
+-- > #!/usr/bin/env runhaskell
+-- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
--- >
+-- > 
 -- > import Turtle
 -- > import Prelude hiding (FilePath)
--- >
--- > parser :: Parser (FilePath, FilePath)
--- > parser = (,) <$> argPath "src"  "The source file"
--- >              <*> argPath "dest" "The destination file"
--- >
+-- > 
+-- > parser :: Parser (FilePath, Maybe FilePath)
+-- > parser = (,) <$>           argPath "src"  "The source file"
+-- >              <*> optional (argPath "dest" "The destination file")
+-- > 
 -- > main = do
--- >     (src, dest) <- options "A simple `cp` utility" parser
--- >     cp src dest
+-- >     (src, mDest) <- options "A simple `cp` utility" parser
+-- >     case mDest of
+-- >         Nothing   -> input src & stdout
+-- >         Just dest -> cp src dest
 --
 -- Now the auto-generated usage information correctly indicates that the second
 -- argument is optional:
