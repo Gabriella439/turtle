@@ -82,6 +82,9 @@ module Turtle.Tutorial (
     -- * MonadIO
     -- $monadio
 
+    -- * Command line options
+    -- $cmdline
+
     -- * Conclusion
     -- $conclusion
     ) where
@@ -1398,6 +1401,156 @@ import Turtle
 -- way (such as `print`), so you will still occasionally need to wrap
 -- subroutines in `liftIO`.
 
+-- $cmdline
+--
+-- The "Turtle.Options" module lets you easily parse command line arguments,
+-- using either flags or positional arguments.
+--
+-- For example, if you want to write a @cp@-like script that takes two
+-- positional arguments for the source and destination file, you can write:
+--
+-- > #!/usr/bin/env runhaskell
+-- >
+-- > -- cp.hs
+-- >
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > import Turtle
+-- > import Prelude hiding (FilePath)
+-- >
+-- > parser :: Parser (FilePath, FilePath)
+-- > parser = (,) <$> argPath "src"  "The source file"
+-- >              <*> argPath "dest" "The destination file"
+-- >
+-- > main = do
+-- >     (src, dest) <- options "A simple `cp` script" parser
+-- >     cp src dest
+--
+-- If you run the script without any arguments, you will get an auto-generated
+-- usage output:
+--
+-- > $ ./cp.hs
+-- > Usage: cp.hs SRC DEST
+--
+-- ... and you can get a more descriptive output if you supply the @--help@
+-- flag:
+--
+-- > $ ./cp.hs --help
+-- > A simple `cp` utility
+-- > 
+-- > Usage: cp.hs SRC DEST
+-- > 
+-- > Available options:
+-- >   -h,--help                Show this help text
+-- >   SRC                      The source file
+-- >   DEST                     The destination file
+--
+-- ... and the script works as expected if you provide both arguments:
+--
+-- > echo "Test" > file1.txt
+-- > $ ./cp.hs file1.txt file2.txt
+-- > cat file2.txt
+--
+-- This works because `argPath` produces a `Parser`:
+--
+-- > argPath :: ArgName -> Optional HelpMessage -> Parser FilePath
+--
+-- ... and multiple `Parser`s can be combined into a single `Parser` using
+-- operations from the `Applicative` type class since the `Parser` type
+-- implements the `Applicative` interface:
+--
+-- > instance Applicative Parser
+--
+-- You can also make any argument optional using the `optional` utility
+-- provided by `Control.Applicative`:
+--
+-- @
+-- `optional` :: `Alternative` f => f a -> f (Maybe a)
+-- @
+--
+-- For example, we can change our program to make the destination argument
+-- optional, defaulting to `stdout` if the user does not provide a destination:
+--
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > import Turtle
+-- > import Prelude hiding (FilePath)
+-- >
+-- > parser :: Parser (FilePath, FilePath)
+-- > parser = (,) <$> argPath "src"  "The source file"
+-- >              <*> argPath "dest" "The destination file"
+-- >
+-- > main = do
+-- >     (src, dest) <- options "A simple `cp` utility" parser
+-- >     cp src dest
+--
+-- Now the auto-generated usage information correctly indicates that the second
+-- argument is optional:
+--
+-- > $ ./cp.hs
+-- > Usage: cp.hs SRC [DEST]
+-- > $ ./cp.hs --help
+-- > A simple `cp` utility
+-- > 
+-- > Usage: cp.hs SRC [DEST]
+-- > 
+-- > Available options:
+-- >   -h,--help                Show this help text
+-- >   SRC                      The source file
+-- >   DEST                     The destination file
+--
+-- ... and if we omit the argument the result goes to standard output:
+--
+-- > $ ./cp.hs file1.txt
+-- > Test
+--
+-- We can use the `optional` utility because the `Parser` type also implements
+-- the `Alternative` interface:
+--
+-- > instance Alternative Parser
+--
+-- We can also specify arguments on the command lines using flags instead of
+-- specifying them positionally.  Let's change our example to specify the
+-- input and output using the @--src@ and @--dest@ flags, using @-s@ and @-d@
+-- as short-hands for the flags:
+--
+-- > #!/usr/bin/env runhaskell
+-- > 
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > 
+-- > import Turtle
+-- > import Prelude hiding (FilePath)
+-- > 
+-- > parser :: Parser (FilePath, FilePath)
+-- > parser = (,) <$> optPath "src"  's' "The source file"
+-- >              <*> optPath "dest" 'd' "The destination file"
+-- > 
+-- > main = do
+-- >     (src, dest) <- options "A simple `cp` utility" parser
+-- >     cp src dest
+--
+-- This now lets us specify the arguments in terms of flags:
+--
+-- > $ ./cp
+-- > Usage: cp.hs (-s|--src SRC) (-d|--dest DEST)
+-- > $ ./cp --help
+-- > A simple `cp` utility
+-- > 
+-- > Usage: cp.hs (-s|--src SRC) (-d|--dest DEST)
+-- > 
+-- > Available options:
+-- >   -h,--help                Show this help text
+-- >   -s,--src SRC             The source file
+-- >   -d,--dest DEST           The destination file
+-- > $ ./cp --src file1.txt --dest file3.txt
+-- > $ cat file3.txt
+-- > Test
+--
+-- See the "Turtle.Options" module for more details and utilities related to
+-- parsing command line options.  This module is built on top of the
+-- @optparse-applicative@ library, which provides even more extensive
+-- functionality.
+
 -- $conclusion
 --
 -- By this point you should be able to write basic shell scripts in Haskell.  If
@@ -1424,8 +1577,3 @@ import Turtle
 -- This library provides an extended suite of Unix-like utilities, but would
 -- still benefit from adding more utilities for better parity with the Unix
 -- ecosystem.  Pull requests to add new utilities are highly welcome!
---
--- The @turtle@ library does not yet provide support for command line argument
--- parsing, but I highly recommend the @optparse-applicative@ library for this
--- purpose.  A future release of this library might include a simplified
--- interface to @optparse-applicative@.
