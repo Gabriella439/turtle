@@ -25,19 +25,19 @@
 -- FilePath "/usr/games"
 -- FilePath "/usr/local"
 -- FilePath "/usr/bin"
--- >>> view (find "Browser.py" "/usr/lib")
--- FilePath "lib/python3.2/idlelib/ObjectBrowser.py"
--- FilePath "lib/python3.2/idlelib/PathBrowser.py"
--- FilePath "lib/python3.2/idlelib/RemoteObjectBrowser.py"
--- FilePath "lib/python3.2/idlelib/ClassBrowser.py"
+-- >>> view (find (suffix "Browser.py") "/usr/lib")
+-- FilePath "/usr/lib/python3.4/idlelib/ClassBrowser.py"
+-- FilePath "/usr/lib/python3.4/idlelib/RemoteObjectBrowser.py"
+-- FilePath "/usr/lib/python3.4/idlelib/PathBrowser.py"
+-- FilePath "/usr/lib/python3.4/idlelib/ObjectBrowser.py"
 --
 -- Use `fold` to reduce the output of a `Shell` stream:
 --
 -- >>> import qualified Control.Foldl as Fold
 -- >>> fold (ls "/usr") Fold.length
 -- 8
--- >>> fold (find "Browser.py" "/usr/lib") Fold.head
--- Just (FilePath "/usr/lib/python3.2/idlelib/ObjectBrowser.py")
+-- >>> fold (find (suffix "Browser.py") "/usr/lib") Fold.head
+-- Just (FilePath "/usr/lib/python3.4/idlelib/ClassBrowser.py")
 --
 -- Create files using `output`:
 --
