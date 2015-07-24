@@ -235,7 +235,7 @@ import System.Environment (
 import System.Directory (Permissions)
 import qualified System.Directory as Directory
 import System.Exit (ExitCode(..), exitWith)
-import System.IO (Handle)
+import System.IO (Handle, hClose, hFlush)
 import qualified System.IO as IO
 import System.IO.Temp (withTempDirectory, withTempFile)
 import qualified System.Process as Process
@@ -334,9 +334,12 @@ system p s = liftIO (do
             , Process.std_err = Process.Inherit
             }
     (Just hIn, Nothing, Nothing, ph) <- liftIO (Process.createProcess p')
-    let feedIn = sh (do
-            txt <- s
-            liftIO (Text.hPutStrLn hIn txt) )
+    let feedIn = do
+            sh (do
+                txt <- s
+                liftIO (Text.hPutStrLn hIn txt) )
+            hFlush hIn
+            hClose hIn
     withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) )
 
 systemStrict
@@ -354,9 +357,12 @@ systemStrict p s = liftIO (do
             , Process.std_err = Process.Inherit
             }
     (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
-    let feedIn = sh (do
-            txt <- s
-            liftIO (Text.hPutStrLn hIn txt) )
+    let feedIn = do
+            sh (do
+                txt <- s
+                liftIO (Text.hPutStrLn hIn txt) )
+            hFlush hIn
+            hClose hIn
     concurrently
         (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
         (Text.hGetContents hOut) )
@@ -405,12 +411,15 @@ stream p s = do
             , Process.std_out = Process.CreatePipe
             , Process.std_err = Process.Inherit
             }
-    (Just hIn, Just hOut, Nothing, _) <- liftIO (Process.createProcess p')
-    let feedIn = sh (do
-            txt <- s
-            liftIO (Text.hPutStrLn hIn txt) )
+    (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
+    let feedIn = do
+            sh (do
+                txt <- s
+                liftIO (Text.hPutStrLn hIn txt) )
+            hFlush hIn
+            hClose hIn
     a <- using (fork feedIn)
-    inhandle hOut <|> (liftIO (wait a) *> empty)
+    inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
 
 -- | Print to @stdout@
 echo :: MonadIO io => Text -> io ()
