@@ -24,13 +24,15 @@
     If you are already proficient with Haskell, then you can get quickly up to
     speed by reading the Quick Start guide at the top of "Turtle.Prelude".
 
-    To follow along with the examples, install the Haskell Platform:
+    The easiest way to follow along with the examples is to download the
+    `stack` package management tool by following the instructions here:
 
-    <http://www.haskell.org/platform/>
+    <https://github.com/commercialhaskell/stack>
 
-    ... and then install the @turtle@ library by running:
+    ... and then run:
 
-> $ cabal install turtle
+> $ stack install turtle
+
 -}
 
 module Turtle.Tutorial (
@@ -97,7 +99,9 @@ import Turtle
 -- in both languages:
 --
 -- @
--- #!\/usr\/bin\/env runhaskell
+-- #!\/usr\/bin\/env stack
+-- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
+-- \ 
 --                                     -- #!\/bin\/bash
 -- {-\# LANGUAGE OverloadedStrings \#-}  --
 --                                     --
@@ -118,20 +122,20 @@ import Turtle
 -- > $ ./example.hs
 -- > Hello, world!
 --
--- If you delete the first line of the program, you can also compile the above
--- code to generate a native executable which will have a much faster startup
--- time and improved performance:
+-- If you delete the first two lines of the program, you can also compile the
+-- above code to generate a native executable which will have a much faster
+-- startup time and improved performance:
 --
 -- > $ # `-O2` turns on all optimizations
 -- > $ # `-threaded` helps with piping shell output in and out of Haskell
--- > $ ghc -O2 -threaded example.hs
+-- > $ stack ghc -- -O2 -threaded example.hs
 -- > $ ./example
 -- > Hello, world!
 --
 -- You can even run Haskell code interactively using @ghci@, which is an
 -- interactive REPL for Haskell.  You can either use @ghci@ by itself:
 --
--- > $ ghci
+-- > $ stack ghci
 -- > <ghci links in some libraries>
 -- > Prelude> :set -XOverloadedStrings
 -- > Prelude> import Turtle
@@ -141,21 +145,9 @@ import Turtle
 -- > Prelude Turtle> :quit
 -- > $
 --
--- ... or you can load Haskell code into @ghci@, which will bring all top-level
--- values from that program into scope:
---
--- > $ ghci example.hs
--- > <ghci links in some libraries>
--- > [1 of 1] Compiling Main             ( example.hs, interpreted )
--- > Ok, modules loaded: Main.
--- > *Main> main
--- > <ghci links in some libraries>
--- > Hello, world!
--- > *Main> :quit
--- > $
---
 -- From now on I'll omit @ghci@'s linker output in tutorial examples.  You can
--- also silence this linker output by passing the @-v0@ flag to @ghci@.
+-- also silence this linker output by passing @--ghc-options -v0@ to
+-- @stack ghci@.
 
 -- $compare
 -- You'll already notice a few differences between the Haskell code and Bash
@@ -172,7 +164,9 @@ import Turtle
 -- distinguish strings by quoting them.  The following example highlights the
 -- difference:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- >
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
 -- >                                     --
@@ -187,7 +181,8 @@ import Turtle
 -- define things out of order.  For example, we could have written our original
 -- program this way instead:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -202,7 +197,8 @@ import Turtle
 -- (using the @=@ sign).  However, the top level of a Haskell program only
 -- permits definitions.  If you were to insert a statement at the top-level:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -218,7 +214,9 @@ import Turtle
 -- You can use @do@ notation to create a subroutine that runs more than one
 -- command:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- >
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
 -- >                                     --
@@ -242,7 +240,9 @@ import Turtle
 -- results:
 --
 -- @
--- #!\/usr\/bin\/env runhaskell
+-- #!\/usr\/bin\/env stack
+-- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
+-- \ 
 --                            -- #!\/bin\/bash
 -- import Turtle              --
 --                            --
@@ -268,7 +268,9 @@ import Turtle
 -- into their own smaller subroutine and then invoke that smaller subroutine
 -- within a larger subroutine:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- >
 -- >                             -- #!/bin/bash
 -- > import Turtle               --
 -- >                             --
@@ -328,7 +330,8 @@ import Turtle
 -- Notice how the above Haskell example used `print` instead of `echo`.  Run the
 -- following script to find out what happens if we choose `echo` instead:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > import Turtle
 -- > 
@@ -369,7 +372,7 @@ import Turtle
 -- Let's open up the REPL and import this library so that we can study the types
 -- and deduce why our program failed:
 --
--- > $ ghci
+-- > $ stack ghci
 -- > Prelude> import Turtle
 -- > Prelude Turtle>
 --
@@ -459,7 +462,7 @@ import Turtle
 -- @turtle@:
 --
 -- @
--- $ ghci
+-- $ stack ghci
 -- Prelude> :set -XOverloadedStrings
 -- Prelude> import Turtle
 -- Prelude Turtle> `cd` \"/tmp\"
@@ -524,7 +527,8 @@ import Turtle
 --
 -- Let's illustrate this by adding types to our original script:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > import Turtle
 -- > 
@@ -561,7 +565,8 @@ import Turtle
 -- Not every top-level value has to be a subroutine, though.  For example, you
 -- can define unadorned `Text` values at the top-level, as we saw previously:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -580,7 +585,8 @@ import Turtle
 --
 -- Let's test this out by providing an incorrect type for @\'str\'@:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -631,7 +637,8 @@ import Turtle
 -- Let's also try reversing the type error, providing a number where we expect
 -- a string:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -666,7 +673,9 @@ import Turtle
 -- uses a `shell` command to archive the directory:
 --
 -- @
--- #!\/usr\/bin\/env runhaskell
+-- #!\/usr\/bin\/env stack
+-- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
+-- \ 
 --                                              -- #!\/bin\/bash
 -- {-\# LANGUAGE OverloadedStrings \#-}           --
 --                                              --
@@ -709,7 +718,8 @@ import Turtle
 -- descriptive error message if an external command fails:
 --
 -- @
--- #!\/usr\/bin\/env runhaskell
+-- #!\/usr\/bin\/env stack
+-- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
 -- 
 -- {-\# LANGUAGE OverloadedStrings \#-}
 -- 
@@ -758,7 +768,7 @@ import Turtle
 -- What's neat is that the compiler will automatically infer the number of
 -- arguments and their types from the `Format` string:
 --
--- > $ ghci
+-- > $ stack ghci
 -- > Prelude Turtle> :type format (s%" failed with exit code: "%d)
 -- > format (s%" failed with exit code: "%d) :: Text -> Int -> Text
 --
@@ -966,7 +976,9 @@ import Turtle
 --
 -- We can use `select` to implement loops within a `Shell`:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > 
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
 -- >                                     --
@@ -1081,7 +1093,9 @@ import Turtle
 -- Let's combine `stdin` and `stdout` to forward all input from standard input
 -- to standard output:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > 
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
 -- >                                     --
@@ -1320,7 +1334,8 @@ import Turtle
 -- ... and here is an example of creating a temporary directory and file within
 -- a `Shell`:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1345,7 +1360,8 @@ import Turtle
 -- As an exercise, try inserting an exception and verifying that the temporary:
 -- file and directory are still cleaned up correctly:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1409,7 +1425,8 @@ import Turtle
 -- For example, if you want to write a @cp@-like script that takes two
 -- positional arguments for the source and destination file, you can write:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- >
 -- > -- cp.hs
 -- >
@@ -1473,7 +1490,8 @@ import Turtle
 -- optional, defaulting to `stdout` if the user does not provide a destination:
 --
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1520,7 +1538,8 @@ import Turtle
 -- input and output using the @--src@ and @--dest@ flags, using @-s@ and @-d@
 -- as short-hands for the flags:
 --
--- > #!/usr/bin/env runhaskell
+-- > #!/usr/bin/env stack
+-- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
