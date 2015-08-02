@@ -201,11 +201,12 @@ module Turtle.Prelude (
 
 import Control.Applicative (Alternative(..), (<*), (*>))
 import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
+import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import Control.Concurrent (threadDelay)
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
-import Control.Monad (liftM, msum, when)
+import Control.Monad (liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, managed)
 #ifdef mingw32_HOST_OS
@@ -333,13 +334,25 @@ system p s = liftIO (do
             , Process.std_out = Process.Inherit
             , Process.std_err = Process.Inherit
             }
-    (Just hIn, Nothing, Nothing, ph) <- liftIO (Process.createProcess p')
-    let feedIn = do
-            sh (do
-                txt <- s
-                liftIO (Text.hPutStrLn hIn txt) )
-            hClose hIn
-    withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) )
+
+    let open = do
+            (Just hIn, Nothing, Nothing, ph) <- Process.createProcess p'
+            return (hIn, ph)
+
+    -- Prevent double close
+    mvar <- newMVar False
+    let close handle = do
+            modifyMVar_ mvar (\finalized -> do
+                unless finalized (hClose handle)
+                return True )
+
+    bracket open (\(hIn, _) -> close hIn) (\(hIn, ph) -> do
+        let feedIn = do
+                sh (do
+                    txt <- s
+                    liftIO (Text.hPutStrLn hIn txt) )
+                close hIn
+        withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) )
 
 systemStrict
     :: MonadIO io
@@ -355,15 +368,28 @@ systemStrict p s = liftIO (do
             , Process.std_out = Process.CreatePipe
             , Process.std_err = Process.Inherit
             }
-    (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
-    let feedIn = do
-            sh (do
-                txt <- s
-                liftIO (Text.hPutStrLn hIn txt) )
-            hClose hIn
-    concurrently
-        (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
-        (Text.hGetContents hOut) )
+
+    let open = do
+            (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
+            return (hIn, hOut, ph)
+
+    -- Prevent double close
+    mvar <- newMVar False
+    let close handle = do
+            modifyMVar_ mvar (\finalized -> do
+                unless finalized (hClose handle)
+                return True )
+
+    bracket open (\(hIn, _, _) -> close hIn) (\(hIn, hOut, ph) -> do
+        let feedIn = do
+                sh (do
+                    txt <- s
+                    liftIO (Text.hPutStrLn hIn txt) )
+                close hIn
+
+        concurrently
+            (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
+            (Text.hGetContents hOut) ) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
 
@@ -409,12 +435,25 @@ stream p s = do
             , Process.std_out = Process.CreatePipe
             , Process.std_err = Process.Inherit
             }
-    (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
+
+    let open = do
+            (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
+            return (hIn, hOut, ph)
+
+    -- Prevent double close
+    mvar <- liftIO (newMVar False)
+    let close handle = do
+            modifyMVar_ mvar (\finalized -> do
+                unless finalized (hClose handle)
+                return True )
+
+    (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, _) -> close hIn)))
     let feedIn = do
             sh (do
                 txt <- s
                 liftIO (Text.hPutStrLn hIn txt) )
-            hClose hIn
+            close hIn
+
     a <- using (fork feedIn)
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
 
