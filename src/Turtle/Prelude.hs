@@ -235,7 +235,7 @@ import System.Environment (
 import System.Directory (Permissions)
 import qualified System.Directory as Directory
 import System.Exit (ExitCode(..), exitWith)
-import System.IO (Handle, hClose, hFlush)
+import System.IO (Handle, hClose)
 import qualified System.IO as IO
 import System.IO.Temp (withTempDirectory, withTempFile)
 import qualified System.Process as Process
@@ -338,7 +338,6 @@ system p s = liftIO (do
             sh (do
                 txt <- s
                 liftIO (Text.hPutStrLn hIn txt) )
-            hFlush hIn
             hClose hIn
     withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) )
 
@@ -361,7 +360,6 @@ systemStrict p s = liftIO (do
             sh (do
                 txt <- s
                 liftIO (Text.hPutStrLn hIn txt) )
-            hFlush hIn
             hClose hIn
     concurrently
         (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
@@ -416,7 +414,6 @@ stream p s = do
             sh (do
                 txt <- s
                 liftIO (Text.hPutStrLn hIn txt) )
-            hFlush hIn
             hClose hIn
     a <- using (fork feedIn)
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
