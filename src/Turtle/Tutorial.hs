@@ -100,7 +100,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-install-ghc runghc \-\-package turtle
 -- \ 
 --                                     -- #!\/bin\/bash
 -- {-\# LANGUAGE OverloadedStrings \#-}  --
@@ -165,7 +165,7 @@ import Turtle
 -- difference:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- >
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -182,7 +182,7 @@ import Turtle
 -- program this way instead:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -198,7 +198,7 @@ import Turtle
 -- permits definitions.  If you were to insert a statement at the top-level:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -215,7 +215,7 @@ import Turtle
 -- command:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- >
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -241,7 +241,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-install-ghc runghc \-\-package turtle
 -- \ 
 --                            -- #!\/bin\/bash
 -- import Turtle              --
@@ -269,7 +269,7 @@ import Turtle
 -- within a larger subroutine:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- >
 -- >                             -- #!/bin/bash
 -- > import Turtle               --
@@ -331,7 +331,7 @@ import Turtle
 -- following script to find out what happens if we choose `echo` instead:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > import Turtle
 -- > 
@@ -528,7 +528,7 @@ import Turtle
 -- Let's illustrate this by adding types to our original script:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > import Turtle
 -- > 
@@ -566,7 +566,7 @@ import Turtle
 -- can define unadorned `Text` values at the top-level, as we saw previously:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -586,7 +586,7 @@ import Turtle
 -- Let's test this out by providing an incorrect type for @\'str\'@:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -638,7 +638,7 @@ import Turtle
 -- a string:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -674,7 +674,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-install-ghc runghc \-\-package turtle
 -- \ 
 --                                              -- #!\/bin\/bash
 -- {-\# LANGUAGE OverloadedStrings \#-}           --
@@ -719,7 +719,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-resolver lts-2.9 \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-install-ghc runghc \-\-package turtle
 -- 
 -- {-\# LANGUAGE OverloadedStrings \#-}
 -- 
@@ -977,7 +977,7 @@ import Turtle
 -- We can use `select` to implement loops within a `Shell`:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -1094,7 +1094,7 @@ import Turtle
 -- to standard output:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -1335,7 +1335,7 @@ import Turtle
 -- a `Shell`:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1361,7 +1361,7 @@ import Turtle
 -- file and directory are still cleaned up correctly:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1426,7 +1426,7 @@ import Turtle
 -- positional arguments for the source and destination file, you can write:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- >
 -- > -- cp.hs
 -- >
@@ -1491,7 +1491,7 @@ import Turtle
 --
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1539,7 +1539,7 @@ import Turtle
 -- as short-hands for the flags:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --resolver lts-2.9 --install-ghc runghc --package turtle
+-- > -- stack --install-ghc runghc --package turtle
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
