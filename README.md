@@ -1,4 +1,4 @@
-# Turtle v1.1.1
+# Turtle v1.2.1
 
 Turtle is a reimplementation of the Unix command line environment in Haskell so
 that you can use Haskell as a scripting language or a shell.  Think of `turtle`
