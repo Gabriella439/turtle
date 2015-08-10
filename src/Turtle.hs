@@ -75,7 +75,7 @@ module Turtle (
     , module Control.Monad
     , module Control.Monad.IO.Class
     , module Data.Monoid
-    , module Control.Monad.Managed.Safe
+    , module Control.Monad.Managed
     , module Filesystem.Path.CurrentOS
     , Fold(..)
     , FoldM(..)
@@ -140,7 +140,7 @@ import Filesystem.Path.CurrentOS
     , toText
     , fromText
     )
-import Control.Monad.Managed.Safe (Managed, managed, runManaged)
+import Control.Monad.Managed (Managed, managed, runManaged, with)
 import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
