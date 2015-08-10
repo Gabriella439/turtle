@@ -812,7 +812,7 @@ infixr 2 .&&., .||.
 
     Runs the second command only if the first one returns `ExitSuccess`
 -}
-(.&&.) :: IO ExitCode -> IO ExitCode -> IO ExitCode
+(.&&.) :: Monad m => m ExitCode -> m ExitCode -> m ExitCode
 cmd1 .&&. cmd2 = do
     r <- cmd1
     case r of
@@ -823,7 +823,7 @@ cmd1 .&&. cmd2 = do
 
     Run the second command only if the first one returns `ExitFailure`
 -}
-(.||.) :: IO ExitCode -> IO ExitCode -> IO ExitCode
+(.||.) :: Monad m => m ExitCode -> m ExitCode -> m ExitCode
 cmd1 .||. cmd2 = do
     r <- cmd1
     case r of
