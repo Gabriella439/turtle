@@ -958,11 +958,15 @@ grep pattern s = do
 -}
 sed :: Pattern Text -> Shell Text -> Shell Text
 sed pattern s = do
+    when (matchesEmpty pattern) (die message)
     let pattern' = fmap Text.concat
             (many (pattern <|> fmap Text.singleton anyChar))
     txt    <- s
     txt':_ <- return (match pattern' txt)
     return txt'
+  where
+    message = "sed: the given pattern matches the empty string"
+    matchesEmpty = not . null . flip match ""
 
 -- | Search a directory recursively for all files matching the given `Pattern`
 find :: Pattern a -> FilePath -> Shell FilePath
