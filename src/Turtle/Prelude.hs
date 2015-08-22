@@ -172,6 +172,7 @@ module Turtle.Prelude (
     , sed
     , find
     , yes
+    , nl
     , limit
     , limitWhile
     , cache
@@ -1009,6 +1010,21 @@ yes = Shell (\(FoldM step begin _) -> do
             x' <- step x "y"
             loop $! x'
     loop $! x0 )
+
+-- | Number each element of a `Shell` (starting at 0)
+nl :: Num n => Shell a -> Shell (n, a)
+nl s = Shell _foldIO'
+  where
+    _foldIO' (FoldM step begin done) = _foldIO s (FoldM step' begin' done')
+      where
+        step' (x, n) a = do
+            x' <- step x (n, a)
+            let n' = n + 1
+            n' `seq` return (x', n')
+        begin' = do
+            x0 <- begin
+            return (x0, 0)
+        done' (x, _) = done x
 
 -- | Limit a `Shell` to a fixed number of values
 limit :: Int -> Shell a -> Shell a
