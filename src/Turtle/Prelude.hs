@@ -52,6 +52,12 @@
 -- 456
 -- ABC
 --
+-- Format strings in a type safe way using `format`:
+--
+-- >>> dir <- pwd
+-- >>> format ("I am in the "%fp%" directory") dir
+-- "I am in the /tmp directory"
+--
 -- Commands like `grep`, `sed` and `find` accept arbitrary `Pattern`s
 --
 -- >>> stdout (grep ("123" <|> "ABC") (input "foo.txt"))

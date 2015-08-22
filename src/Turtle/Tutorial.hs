@@ -777,6 +777,10 @@ import Turtle
 -- another argument of type `Int` to satisfy the `d` at the end of the format
 -- string.
 --
+-- Note that this is also the idiomatic way to convert a `FilePath` to `Text`:
+--
+-- > format fp :: FilePath -> Text
+--
 -- If you are interested in this feature, check out the "Turtle.Format" module
 -- for more details.
 
