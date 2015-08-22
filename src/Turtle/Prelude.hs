@@ -605,14 +605,14 @@ lstree path = do
 > lstree = lsif (\_ -> return True)
 -}
 lsif :: (FilePath -> IO Bool) -> FilePath -> Shell FilePath
-lsif pred path = do
+lsif predicate path = do
     child <- ls path
     isDir <- liftIO (testdir child)
     if isDir
         then do
-            continue <- liftIO (pred child)
+            continue <- liftIO (predicate child)
             if continue
-                then return child <|> lsif pred child
+                then return child <|> lsif predicate child
                 else return child
         else return child
 
