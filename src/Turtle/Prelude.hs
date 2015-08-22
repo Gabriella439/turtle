@@ -165,6 +165,7 @@ module Turtle.Prelude (
     , stderr
     , strict
     , ls
+    , lsif
     , lstree
     , cat
     , grep
@@ -594,6 +595,24 @@ lstree path = do
     isDir <- liftIO (testdir child)
     if isDir
         then return child <|> lstree child
+        else return child
+
+{-| Stream all recursive descendents of the given directory
+
+    This skips any directories that fail the supplied predicate
+
+> lstree = lsif (\_ -> return True)
+-}
+lsif :: (FilePath -> IO Bool) -> FilePath -> Shell FilePath
+lsif pred path = do
+    child <- ls path
+    isDir <- liftIO (testdir child)
+    if isDir
+        then do
+            continue <- liftIO (pred child)
+            if continue
+                then return child <|> lsif pred child
+                else return child
         else return child
 
 -- | Move a file or directory
