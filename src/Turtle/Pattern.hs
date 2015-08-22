@@ -88,6 +88,7 @@ module Turtle.Pattern (
     , selfless
     , choice
     , count
+    , lowerBounded
     , upperBounded
     , bounded
     , option
@@ -540,6 +541,20 @@ choice = msum
 count :: Int -> Pattern a -> Pattern [a]
 count = replicateM
 
+{-| Apply the given pattern at least the given number of times, collecting the
+    results
+
+>>> match (lowerBounded 5 dot) "123"
+[]
+>>> match (lowerBounded 2 dot) "123"
+["123"]
+-}
+lowerBounded :: Int -> Pattern a -> Pattern [a]
+lowerBounded n p = do
+    ps1 <- count n p
+    ps2 <- many p
+    return (ps1 ++ ps2)
+
 {-| Apply the given pattern 0 or more times, up to a given bound,
     collecting the results
 
@@ -550,7 +565,6 @@ count = replicateM
 >>> match ((,) <$> upperBounded 2 dot <*> chars) "123"
 [("12","3"),("1","23")]
 -}
-
 upperBounded :: Int -> Pattern a -> Pattern [a]
 upperBounded n p
     | n <= 0 = mempty
@@ -574,7 +588,6 @@ upperBounded n p
 >   count x p
 
 -}
-
 bounded :: Int -> Int -> Pattern a -> Pattern [a]
 bounded m n p
     | m == n = count m p
