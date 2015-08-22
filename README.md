@@ -6,14 +6,14 @@ as `coreutils` embedded within the Haskell language.
 
 ## Quick start
 
-* Install the [Haskell Platform](http://www.haskell.org/platform/)
+* Install [Stack](https://github.com/commercialhaskell/stack)
 
-* `cabal install turtle`
+* `stack setup && stack install turtle`
 
 Then fire up `ghci`:
 
 ```
-$ ghci
+$ stack ghci
 Prelude> :set -XOverloadedStrings
 Prelude> import Turtle
 ```
@@ -44,7 +44,7 @@ FilePath "/usr/lib/libgif.so.4.1"
 ...
 ```
 
-To learn more, read the [turtle tutorial](http://hackage.haskell.org/package/turtle-1.0.2/docs/Turtle-Tutorial.html).
+To learn more, read the [turtle tutorial](https://hackage.haskell.org/package/turtle-1.2.1/docs/Turtle-Tutorial.html).
 
 ## Goals
 
