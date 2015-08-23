@@ -173,6 +173,8 @@ module Turtle.Prelude (
     , find
     , yes
     , nl
+    , paste
+    , endless
     , limit
     , limitWhile
     , cache
@@ -181,6 +183,9 @@ module Turtle.Prelude (
     , countChars
     , countWords
     , countLines
+
+    -- * Text
+    , cut
 
     -- * Permissions
     , Permissions
@@ -208,9 +213,10 @@ module Turtle.Prelude (
     ) where
 
 import Control.Applicative (Alternative(..), (<*), (*>))
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
-import Control.Concurrent (threadDelay)
+import qualified Control.Concurrent.STM as STM
 import Control.Exception (bracket, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
@@ -255,7 +261,7 @@ import System.Posix (openDirStream, readDirStream, closeDirStream, touchFile)
 #endif
 import Prelude hiding (FilePath)
 
-import Turtle.Pattern (Pattern, anyChar, match)
+import Turtle.Pattern (Pattern, anyChar, chars, match, selfless, sepBy)
 import Turtle.Shell
 import Turtle.Format (format, w, (%))
 
@@ -1004,12 +1010,7 @@ find pattern dir = do
 
 -- | A Stream of @\"y\"@s
 yes :: Shell Text
-yes = Shell (\(FoldM step begin _) -> do
-    x0 <- begin
-    let loop x = do
-            x' <- step x "y"
-            loop $! x'
-    loop $! x0 )
+yes = fmap (\_ -> "y") endless
 
 -- | Number each element of a `Shell` (starting at 0)
 nl :: Num n => Shell a -> Shell (n, a)
@@ -1025,6 +1026,81 @@ nl s = Shell _foldIO'
             x0 <- begin
             return (x0, 0)
         done' (x, _) = done x
+
+data ZipState a b = Empty | HasA a | HasAB a b | Done
+
+{-| Merge two `Shell`s together, element-wise
+
+    If one `Shell` is longer than the other, the excess elements are
+    truncated
+-}
+paste :: Shell a -> Shell b -> Shell (a, b)
+paste sA sB = Shell _foldIOAB
+  where
+    _foldIOAB (FoldM stepAB beginAB doneAB) = do
+        x0 <- beginAB
+
+        tvar <- STM.atomically (STM.newTVar Empty)
+
+        let begin = return ()
+
+        let stepA () a = STM.atomically (do
+                x <- STM.readTVar tvar
+                case x of
+                    Empty -> STM.writeTVar tvar (HasA a)
+                    Done  -> return ()
+                    _     -> STM.retry )
+        let doneA () = STM.atomically (do
+                x <- STM.readTVar tvar
+                case x of
+                    Empty -> STM.writeTVar tvar Done
+                    Done  -> return ()
+                    _     -> STM.retry )
+        let foldA = FoldM stepA begin doneA
+
+        let stepB () b = STM.atomically (do
+                x <- STM.readTVar tvar
+                case x of
+                    HasA a -> STM.writeTVar tvar (HasAB a b)
+                    Done   -> return ()
+                    _      -> STM.retry )
+        let doneB () = STM.atomically (do
+                x <- STM.readTVar tvar
+                case x of
+                    HasA _ -> STM.writeTVar tvar Done
+                    Done   -> return ()
+                    _      -> STM.retry )
+        let foldB = FoldM stepB begin doneB
+
+        withAsync (foldIO sA foldA) (\asyncA -> do
+            withAsync (foldIO sB foldB) (\asyncB -> do
+                let loop x = do
+                        y <- STM.atomically (do
+                            x <- STM.readTVar tvar
+                            case x of
+                                HasAB a b -> do
+                                    STM.writeTVar tvar Empty
+                                    return (Just (a, b))
+                                Done      -> return  Nothing
+                                _         -> STM.retry )
+                        case y of
+                            Nothing -> return x
+                            Just ab -> do
+                                x' <- stepAB x ab
+                                loop $! x'
+                x' <- loop $! x0
+                wait asyncA
+                wait asyncB
+                doneAB x' ) )
+
+-- | A `Shell` that endlessly emits @()@
+endless :: Shell ()
+endless = Shell (\(FoldM step begin _) -> do
+    x0 <- begin
+    let loop x = do
+            x' <- step x ()
+            loop $! x'
+    loop $! x0 )
 
 -- | Limit a `Shell` to a fixed number of values
 limit :: Int -> Shell a -> Shell a
@@ -1083,6 +1159,11 @@ cache file s = do
                     liftIO (Text.hPutStrLn handle (Text.pack (show n)))
                     empty
             justs <|> nothing
+
+-- | Split a line into chunks delimited by the given `Pattern`
+cut :: Pattern a -> Text -> [Text]
+cut pattern txt = head (match (selfless chars `sepBy` pattern) txt)
+-- This `head` should be safe ... in theory
 
 -- | Get the current time
 date :: MonadIO io => io UTCTime
