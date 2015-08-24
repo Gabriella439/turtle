@@ -887,14 +887,14 @@ mktemp
     -- ^ Parent directory
     -> Text
     -- ^ File name template
-    -> Managed (FilePath, Handle)
+    -> Managed FilePath
 mktemp parent prefix = do
     let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
     (file', handle) <- managed (\k ->
         withTempFile parent' prefix' (\file' handle -> k (file', handle)) )
-    let file = Filesystem.decodeString file'
-    return (file, handle)
+    liftIO (hClose handle)
+    return (Filesystem.decodeString file')
 
 -- | Fork a thread, acquiring an `Async` value
 fork :: IO a -> Managed (Async a)
