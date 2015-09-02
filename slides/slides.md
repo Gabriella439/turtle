@@ -41,7 +41,7 @@ $ cabal install turtle-1.1.0
 * Folds
 * Patterns
 
-I've hosted slides on go/learn so that people can follow along locally
+I'm hosting slides on Github so that people can follow along locally
 
 # Overview of Haskell
 
@@ -58,13 +58,13 @@ Haskell can be both **interpreted** or **compiled** to a native binary
 Haskell is a managed language, providing garbage collection, concurrency, and
 transactional shared memory:
 
-* **Garbage collection** is generational and efficient (measured in GB / s)
-* **Concurrency** uses green-threads and is efficient (world record for SDN)
-* **Transactional memory** simplifies race-free concurrent code without polling
+* **Garbage collection** is efficient (throughput measured in GB / s)
+* **Concurrency** uses green-threads and is efficient (can handle 1M threads)
+* **Transactional memory** simplifies race-free concurrent code
 
-# Biggest disadvantages of Haskell
+# Big disadvantages of Haskell
 
-* Not a JVM language
+* No JVM backend
 * Beginners can't easily reason about performance
 * Built-in record syntax is clumsy
 * Most language features are libraries, which hampers discoverability
@@ -122,7 +122,7 @@ import Turtle                       --
 main = echo "Hello, world!"         -- echo Hello, world!
 ```
 
-... then run the example:
+... then run the example script:
 
 ```bash
 $ chmod u+x example.hs
@@ -133,7 +133,7 @@ Hello, world!
 # Create a native binary
 
 ```bash
-$ ghc -O2 -threaded example.hs
+$ ghc -O2 example.hs
 $ ./example
 Hello, world!
 ```
@@ -312,7 +312,7 @@ main = do                  --
 
 ```haskell
 $ ./example.hs
-2015-01-24 03:40:31 UTC
+2015-09-01 23:56:03.245 UTC
 ```
 
 Why not this?
@@ -341,6 +341,17 @@ scala> for { x <- Seq(1, 2); y <- Seq(3, 4) } yield (x, y)
 res0: Seq[(Int, Int)] = List((1,3), (1,4), (2,3), (2,4))
 ```
 
+... or LINQ/`from`/`select` in C#:
+
+```cs
+List<int> xs = new List<int> { 1, 2 }
+List<int> ys = new List<int> { 3, 4 }
+var result =
+    from x in xs
+    from y in ys
+    select Tuple<int, int>(x, y)
+```
+
 # Nesting subroutines
 
 ```haskell
@@ -362,7 +373,7 @@ Same result:
 
 ```haskell
 $ ./example.hs
-2015-01-24 03:40:31 UTC
+2015-09-01 23:56:03.245 UTC
 ```
 
 # Unnecessary `return`
