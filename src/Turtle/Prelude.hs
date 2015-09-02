@@ -985,8 +985,15 @@ grep pattern s = do
 
 {-| Replace all occurrences of a `Pattern` with its `Text` result
 
+    `sed` performs substitution on a line-by-line basis, meaning that
+    substitutions may not span multiple lines.  Additionally, substitutions may
+    occur multiple times within the same line, like the behavior of
+    @s/.../.../g@.
+
     Warning: Do not use a `Pattern` that matches the empty string, since it will
-    match an infinite number of times
+    match an infinite number of times.  `sed` tries to detect such `Pattern`s
+    and `die` with an error message if they occur, but this detection is
+    necessarily incomplete.
 -}
 sed :: Pattern Text -> Shell Text -> Shell Text
 sed pattern s = do

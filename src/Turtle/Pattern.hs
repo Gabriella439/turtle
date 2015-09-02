@@ -81,6 +81,9 @@ module Turtle.Pattern (
     , prefix
     , suffix
     , has
+    , begins
+    , ends
+    , contains
     , invert
     , once
     , star
@@ -479,6 +482,42 @@ suffix p = chars *> p
 -}
 has :: Pattern a -> Pattern a
 has p = chars *> p <* chars
+
+{-| Match the entire string if it begins with the given pattern
+
+    This returns the entire string, not just the matched prefix
+
+>>> match (begins  "A"             ) "ABC"
+["ABC"]
+>>> match (begins ("A" *> pure "1")) "ABC"
+["1BC"]
+-}
+begins :: Pattern Text -> Pattern Text
+begins pattern = pattern <> chars
+
+{-| Match the entire string if it ends with the given pattern
+
+    This returns the entire string, not just the matched prefix
+
+>>> match (ends  "C"             ) "ABC"
+["ABC"]
+>>> match (ends ("C" *> pure "1")) "ABC"
+["AB1"]
+-}
+ends :: Pattern Text -> Pattern Text
+ends pattern = chars <> pattern
+
+{-| Match the entire string if it contains the given pattern
+
+    This returns the entire string, not just the interior pattern
+
+>>> match (contains  "B"             ) "ABC"
+["ABC"]
+>>> match (contains ("B" *> pure "1")) "ABC"
+["A1C"]
+-}
+contains :: Pattern Text -> Pattern Text
+contains pattern = chars <> pattern <> chars
 
 {-| Parse 0 or more occurrences of the given character
 
