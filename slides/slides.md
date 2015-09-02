@@ -1,19 +1,16 @@
 % Haskell for Shell Scripting
 % Gabriel Gonzalez
-% April 8, 2015
+% September 3, 2015
 
 # Before class
 
-If you haven't installed `ghc`, yet:
+If you haven't installed `ghc`, visit:
 
-```bash
-$ echo "/home/ggonzalez/tools/ghc-7.8.3-Darwin.x86_64" >> ~/.tools
-$ sync-dottools.sh
-```
+* [https://www.haskell.org/downloads](https://www.haskell.org/downloads)
 
-... then open a new terminal window.
+... and install a GHC distribution appropriate to your operating system.
 
-To test your Haskell installation, run these commands:
+To test your Haskell installation, run these commands from a terminal:
 
 ```bash
 $ echo 'main = putStrLn "Hello, world!"' > hello.hs
@@ -25,7 +22,7 @@ Install the shell scripting library using these commands:
 
 ```bash
 $ cabal update
-$ cabal install turtle-1.1.0
+$ cabal install turtle-1.2.1
 ```
 
 # Outline
@@ -252,6 +249,8 @@ example.hs:7:1: Parse error: naked expression at top level
 The top level of a Haskell program is declarative and only allows definitions
 
 You cannot execute code at the top level
+
+The runtime only executes `main`!
 
 # Subroutines
 
@@ -950,15 +949,15 @@ Prelude Turtle> format "I take 0 arguments"
 ```haskell
 (%) :: Format b c -> Format a b -> Format a c
 
-"A "                  :: Format a            a
-s                     :: Format a (String -> a)
-" string that takes " :: Format a            a
-d                     :: Format a (Int    -> a)
-" arguments"          :: Format a            a
+"A "                  :: Format a          a
+s                     :: Format a (Text -> a)
+" string that takes " :: Format a          a
+d                     :: Format a (Int  -> a)
+" arguments"          :: Format a          a
 
 "A "%s%" string that takes "%d%" arguments" :: Format a (Text -> Int -> a)
 
-format "A "%s%" string that takes "%d%" arguments" :: Text -> Int -> Text
+format ("A "%s%" string that takes "%d%" arguments") :: Text -> Int -> Text
 ```
 
 You can build your own format specifiers!
@@ -1498,7 +1497,7 @@ Fold.head :: Fold a (Maybe a)
 ```
 
 ```haskell
-ls :: Shell Turtle.FilePath
+ls "/tmp" :: Shell Turtle.FilePath
 
 fold                         :: Shell a -> Fold a               b -> IO b
 fold (ls "/tmp")             ::            Fold Turtle.FilePath b -> IO b
@@ -1732,14 +1731,6 @@ tuple = do
 
 You can use Haskell as a "better Bash", getting types for free without slow
 startup times or heavyweight syntax.
-
-If you want others to run your Haskell scripts, they can use `dottools` to install
-`ghc` on their machine.
-
-I also have a relocatable `ghc` uploaded to Packer that you can use to interpret
-scripts on Mesos.
-
-We also have an internal Hackage server at Twitter (go/hackage)
 
 Visit https://hackage.haskell.org/package/turtle for more extensive documentation
 on the shell scripting library we used today
