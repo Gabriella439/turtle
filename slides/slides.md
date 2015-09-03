@@ -491,7 +491,6 @@ main = do
 
 ```haskell
 $ ghci -v0
-Prelude> :set -XOverloadedStrings
 Prelude> import Turtle
 ```
 
@@ -919,14 +918,10 @@ format (s%" failed with exit code: "%d) :: Text -> Int -> Text
 
 # Exercise
 
-What do you think these print out?
+What do you think this prints out?
 
 ```haskell
 Prelude Turtle> format ("A "%s%" string that takes "%d%" arguments") "format" 2
-```
-
-```haskell
-Prelude Turtle> format "I take 0 arguments"
 ```
 
 # The `Format` type
@@ -942,6 +937,7 @@ So what is going on here?
 
 ```haskell
 Prelude Turtle> format "I take 0 arguments"
+"I take 0 arguments"
 ```
 
 # `Format` implements `IsString`
@@ -1726,6 +1722,63 @@ tuple = do
 ```
 
 # Questions?
+
+# Backup utility example
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+
+import Turtle
+import Prelude hiding (FilePath)
+
+parser = (,) <$> argPath "src" "Source directory"
+             <*> argPath "dst" "Destination directory"
+
+backup file = do
+    exists <- testfile file
+    when exists (do
+        let backupFile = file <.> "bak"
+        backup backupFile
+        mv file backupFile )
+
+main = do
+    (src, dest) <- options "Backup a directory" parser
+    sh (do
+        inFile <- lstree src
+        Just suffix <- return (stripPrefix src inFile)
+        let outFile = dest </> suffix
+        backup outFile
+        echo (format ("Copying "%fp%" to "%fp) inFile outFile)
+        cp inFile outFile )
+    echo "Done!"
+```
+
+# Command line usage
+
+```bash
+$ ./backup --help
+Backup a directory
+
+Usage: backup SRC DST
+
+Available options:
+  -h,--help                Show this help text
+  SRC                      Source directory
+  DST                      Destination directory
+```
+
+```bash
+$ ./backup a/ b/
+Copying a/1 to b/1
+Copying a/2 to b/2
+$ ls b/
+1  2
+$ ./backup a/ b/
+Copying a/1 to b/1
+Copying a/2 to b/2
+$ ls b/
+1  1.bak  2  2.bak
+```
 
 # Conclusions
 
