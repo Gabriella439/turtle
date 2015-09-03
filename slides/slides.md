@@ -1,19 +1,16 @@
 % Haskell for Shell Scripting
 % Gabriel Gonzalez
-% April 8, 2015
+% September 3, 2015
 
 # Before class
 
-If you haven't installed `ghc`, yet:
+If you haven't installed `ghc`, visit:
 
-```bash
-$ echo "/home/ggonzalez/tools/ghc-7.8.3-Darwin.x86_64" >> ~/.tools
-$ sync-dottools.sh
-```
+* [https://www.haskell.org/downloads](https://www.haskell.org/downloads)
 
-... then open a new terminal window.
+... and install a GHC distribution appropriate to your operating system.
 
-To test your Haskell installation, run these commands:
+To test your Haskell installation, run these commands from a terminal:
 
 ```bash
 $ echo 'main = putStrLn "Hello, world!"' > hello.hs
@@ -25,7 +22,7 @@ Install the shell scripting library using these commands:
 
 ```bash
 $ cabal update
-$ cabal install turtle-1.1.0
+$ cabal install turtle-1.2.1
 ```
 
 # Outline
@@ -41,7 +38,7 @@ $ cabal install turtle-1.1.0
 * Folds
 * Patterns
 
-I've hosted slides on go/learn so that people can follow along locally
+I'm hosting slides on Github so that people can follow along locally
 
 # Overview of Haskell
 
@@ -58,13 +55,13 @@ Haskell can be both **interpreted** or **compiled** to a native binary
 Haskell is a managed language, providing garbage collection, concurrency, and
 transactional shared memory:
 
-* **Garbage collection** is generational and efficient (measured in GB / s)
-* **Concurrency** uses green-threads and is efficient (world record for SDN)
-* **Transactional memory** simplifies race-free concurrent code without polling
+* **Garbage collection** is efficient (throughput measured in GB / s)
+* **Concurrency** uses green-threads and is efficient (can handle 1M threads)
+* **Transactional memory** simplifies race-free concurrent code
 
-# Biggest disadvantages of Haskell
+# Big disadvantages of Haskell
 
-* Not a JVM language
+* No JVM backend
 * Beginners can't easily reason about performance
 * Built-in record syntax is clumsy
 * Most language features are libraries, which hampers discoverability
@@ -122,7 +119,7 @@ import Turtle                       --
 main = echo "Hello, world!"         -- echo Hello, world!
 ```
 
-... then run the example:
+... then run the example script:
 
 ```bash
 $ chmod u+x example.hs
@@ -133,7 +130,7 @@ Hello, world!
 # Create a native binary
 
 ```bash
-$ ghc -O2 -threaded example.hs
+$ ghc -O2 example.hs
 $ ./example
 Hello, world!
 ```
@@ -253,6 +250,8 @@ The top level of a Haskell program is declarative and only allows definitions
 
 You cannot execute code at the top level
 
+The runtime only executes `main`!
+
 # Subroutines
 
 Use `do` to create a subroutine that runs more than one command:
@@ -312,7 +311,7 @@ main = do                  --
 
 ```haskell
 $ ./example.hs
-2015-01-24 03:40:31 UTC
+2015-09-01 23:56:03.245 UTC
 ```
 
 Why not this?
@@ -341,6 +340,17 @@ scala> for { x <- Seq(1, 2); y <- Seq(3, 4) } yield (x, y)
 res0: Seq[(Int, Int)] = List((1,3), (1,4), (2,3), (2,4))
 ```
 
+... or LINQ/`from`/`select` in C#:
+
+```cs
+List<int> xs = new List<int> { 1, 2 }
+List<int> ys = new List<int> { 3, 4 }
+var result =
+    from x in xs
+    from y in ys
+    select Tuple<int, int>(x, y)
+```
+
 # Nesting subroutines
 
 ```haskell
@@ -362,7 +372,7 @@ Same result:
 
 ```haskell
 $ ./example.hs
-2015-01-24 03:40:31 UTC
+2015-09-01 23:56:03.245 UTC
 ```
 
 # Unnecessary `return`
@@ -481,7 +491,6 @@ main = do
 
 ```haskell
 $ ghci -v0
-Prelude> :set -XOverloadedStrings
 Prelude> import Turtle
 ```
 
@@ -909,14 +918,10 @@ format (s%" failed with exit code: "%d) :: Text -> Int -> Text
 
 # Exercise
 
-What do you think these print out?
+What do you think this prints out?
 
 ```haskell
 Prelude Turtle> format ("A "%s%" string that takes "%d%" arguments") "format" 2
-```
-
-```haskell
-Prelude Turtle> format "I take 0 arguments"
 ```
 
 # The `Format` type
@@ -932,6 +937,7 @@ So what is going on here?
 
 ```haskell
 Prelude Turtle> format "I take 0 arguments"
+"I take 0 arguments"
 ```
 
 # `Format` implements `IsString`
@@ -939,15 +945,15 @@ Prelude Turtle> format "I take 0 arguments"
 ```haskell
 (%) :: Format b c -> Format a b -> Format a c
 
-"A "                  :: Format a            a
-s                     :: Format a (String -> a)
-" string that takes " :: Format a            a
-d                     :: Format a (Int    -> a)
-" arguments"          :: Format a            a
+"A "                  :: Format a          a
+s                     :: Format a (Text -> a)
+" string that takes " :: Format a          a
+d                     :: Format a (Int  -> a)
+" arguments"          :: Format a          a
 
 "A "%s%" string that takes "%d%" arguments" :: Format a (Text -> Int -> a)
 
-format "A "%s%" string that takes "%d%" arguments" :: Text -> Int -> Text
+format ("A "%s%" string that takes "%d%" arguments") :: Text -> Int -> Text
 ```
 
 You can build your own format specifiers!
@@ -1487,7 +1493,7 @@ Fold.head :: Fold a (Maybe a)
 ```
 
 ```haskell
-ls :: Shell Turtle.FilePath
+ls "/tmp" :: Shell Turtle.FilePath
 
 fold                         :: Shell a -> Fold a               b -> IO b
 fold (ls "/tmp")             ::            Fold Turtle.FilePath b -> IO b
@@ -1717,18 +1723,67 @@ tuple = do
 
 # Questions?
 
+# Backup utility example
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+
+import Turtle
+import Prelude hiding (FilePath)
+
+parser = (,) <$> argPath "src" "Source directory"
+             <*> argPath "dst" "Destination directory"
+
+backup file = do
+    exists <- testfile file
+    when exists (do
+        let backupFile = file <.> "bak"
+        backup backupFile
+        mv file backupFile )
+
+main = do
+    (src, dest) <- options "Backup a directory" parser
+    sh (do
+        inFile <- lstree src
+        Just suffix <- return (stripPrefix src inFile)
+        let outFile = dest </> suffix
+        backup outFile
+        echo (format ("Copying "%fp%" to "%fp) inFile outFile)
+        cp inFile outFile )
+    echo "Done!"
+```
+
+# Command line usage
+
+```bash
+$ ./backup --help
+Backup a directory
+
+Usage: backup SRC DST
+
+Available options:
+  -h,--help                Show this help text
+  SRC                      Source directory
+  DST                      Destination directory
+```
+
+```bash
+$ ./backup a/ b/
+Copying a/1 to b/1
+Copying a/2 to b/2
+$ ls b/
+1  2
+$ ./backup a/ b/
+Copying a/1 to b/1
+Copying a/2 to b/2
+$ ls b/
+1  1.bak  2  2.bak
+```
+
 # Conclusions
 
 You can use Haskell as a "better Bash", getting types for free without slow
 startup times or heavyweight syntax.
-
-If you want others to run your Haskell scripts, they can use `dottools` to install
-`ghc` on their machine.
-
-I also have a relocatable `ghc` uploaded to Packer that you can use to interpret
-scripts on Mesos.
-
-We also have an internal Hackage server at Twitter (go/hackage)
 
 Visit https://hackage.haskell.org/package/turtle for more extensive documentation
 on the shell scripting library we used today
