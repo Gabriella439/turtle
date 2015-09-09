@@ -360,7 +360,7 @@ system p s = liftIO (do
                 unless finalized (hClose handle)
                 return True )
 
-    bracket open (\(hIn, _) -> close hIn) (\(hIn, ph) -> do
+    bracket open (\(hIn, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, ph) -> do
         let feedIn = do
                 sh (do
                     txt <- s
@@ -394,7 +394,7 @@ systemStrict p s = liftIO (do
                 unless finalized (hClose handle)
                 return True )
 
-    bracket open (\(hIn, _, _) -> close hIn) (\(hIn, hOut, ph) -> do
+    bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
         let feedIn = do
                 sh (do
                     txt <- s
@@ -461,7 +461,7 @@ stream p s = do
                 unless finalized (hClose handle)
                 return True )
 
-    (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, _) -> close hIn)))
+    (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn = do
             sh (do
                 txt <- s
