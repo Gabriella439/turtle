@@ -212,7 +212,7 @@ module Turtle.Prelude (
     , tebibytes
     ) where
 
-import Control.Applicative (Alternative(..), (<*), (*>))
+import Control.Applicative
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
@@ -229,7 +229,7 @@ import Data.Bits ((.&.))
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
-import Data.Traversable (traverse)
+import Data.Traversable
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 import qualified Filesystem
@@ -1083,8 +1083,8 @@ paste sA sB = Shell _foldIOAB
             withAsync (foldIO sB foldB) (\asyncB -> do
                 let loop x = do
                         y <- STM.atomically (do
-                            x <- STM.readTVar tvar
-                            case x of
+                            z <- STM.readTVar tvar
+                            case z of
                                 HasAB a b -> do
                                     STM.writeTVar tvar Empty
                                     return (Just (a, b))
