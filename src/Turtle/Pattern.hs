@@ -113,10 +113,11 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
 import Data.Char
 import Data.List (foldl')
-import Data.Monoid (Monoid(..), (<>))
+import Data.Monoid
 import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as Text
+import Prelude -- Fix redundant import warnings
 
 -- | A fully backtracking pattern that parses an @\'a\'@ from some `Text`
 newtype Pattern a = Pattern { runPattern :: StateT Text [] a }

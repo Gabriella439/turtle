@@ -70,14 +70,15 @@ module Turtle.Shell (
     , using
     ) where
 
-import Control.Applicative (Applicative(..), Alternative(..), liftA2)
+import Control.Applicative
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (Managed, with)
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
-import Data.Monoid (Monoid(..), (<>))
+import Data.Monoid
 import Data.String (IsString(..))
+import Prelude -- Fix redundant import warnings
 
 -- | A @(Shell a)@ is a protected stream of @a@'s with side effects
 newtype Shell a = Shell { _foldIO :: forall r . FoldM IO a r -> IO r }
