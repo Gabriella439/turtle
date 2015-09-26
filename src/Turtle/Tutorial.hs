@@ -33,6 +33,14 @@
 
 > $ stack install turtle
 
+    The first two lines of each script below contain boilerplate instructions
+    so that `stack` will load and run the script.  This helps ensure that a
+    script will run on any computer that has a `stack` executable, as `stack`
+    can install a Haskell compiler if one is not already present.
+    If you are curious about how these two lines work, they are described here:
+
+    <https://github.com/commercialhaskell/stack/wiki/Script-interpreter>
+
 -}
 
 module Turtle.Tutorial (
