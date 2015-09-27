@@ -800,6 +800,7 @@ owx = writable . executable . ooo
 rwx :: Permissions -> Permissions
 rwx = readable . writable . executable . ooo
 
+-- | @+r +w +s@
 rws :: Permissions -> Permissions
 rws = readable . writable . searchable . ooo
 
