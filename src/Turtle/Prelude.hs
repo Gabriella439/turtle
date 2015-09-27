@@ -148,6 +148,7 @@ module Turtle.Prelude (
     , writeonly
     , appendonly
     , mktemp
+    , mktempfile
     , mktempdir
     , fork
     , wait
@@ -881,14 +882,36 @@ mktempdir parent prefix = do
 {-| Create a temporary file underneath the given directory
 
     Deletes the temporary file when done
+
+    Note that this provides the `Handle` of the file in order to avoid a
+    potential race condition from the file being moved or deleted before you
+    have a chance to open the file.  The `mktempfile` function provides a
+    simpler API if you don't need to worry about that possibility.
 -}
 mktemp
     :: FilePath
     -- ^ Parent directory
     -> Text
     -- ^ File name template
-    -> Managed FilePath
+    -> Managed (FilePath, Handle)
 mktemp parent prefix = do
+    let parent' = Filesystem.encodeString parent
+    let prefix' = unpack prefix
+    (file', handle) <- managed (\k ->
+        withTempFile parent' prefix' (\file' handle -> k (file', handle)) )
+    return (Filesystem.decodeString file', handle)
+
+{-| Create a temporary file underneath the given directory
+
+    Deletes the temporary file when done
+-}
+mktempfile
+    :: FilePath
+    -- ^ Parent directory
+    -> Text
+    -- ^ File name template
+    -> Managed FilePath
+mktempfile parent prefix = do
     let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
     (file', handle) <- managed (\k ->
