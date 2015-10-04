@@ -24,8 +24,13 @@
     If you are already proficient with Haskell, then you can get quickly up to
     speed by reading the Quick Start guide at the top of "Turtle.Prelude".
 
-    The easiest way to follow along with the examples is to download the
-    `stack` package management tool by following the instructions here:
+    If you are on Windows, the easiest way to follow along is to install
+    [Git for Windows](https://git-scm.com/download/win) and use the Git Bash
+    program that it installs to get a fully featured Unix-like environment.
+
+    For all operating systems, the recommended way to compile and run the
+    following examples is to download the `stack` package management tool by
+    following the instructions here:
 
     <https://github.com/commercialhaskell/stack>
 
@@ -33,6 +38,7 @@
 
 > $ stack install turtle
 
+    This tutorial will mostly focus on using Haskell as a scripting language.
     The first two lines of each script below contain boilerplate instructions
     so that `stack` will load and run the script.  This helps ensure that a
     script will run on any computer that has a `stack` executable, as `stack`
@@ -41,6 +47,13 @@
 
     <https://github.com/commercialhaskell/stack/blob/master/doc/GUIDE.md#ghcrunghc>
 
+    If you want to make a Windows script independently executable outside of a
+    Git Bash environment, you can either (A) compile the script into an
+    executable or (B) run these two commands from a @cmd@ shell with
+    administrator privileges to make all @*.hs@ scripts executable:
+
+> assoc .hs=Haskell
+> ftype Haskell="C:\path\to\stack.exe" "%1" %*
 -}
 
 module Turtle.Tutorial (
