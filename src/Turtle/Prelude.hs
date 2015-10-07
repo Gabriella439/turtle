@@ -236,6 +236,7 @@ import qualified Data.Text.IO as Text
 import qualified Filesystem
 import Filesystem.Path.CurrentOS (FilePath, (</>))
 import qualified Filesystem.Path.CurrentOS as Filesystem
+import GHC.IO.Exception (IOErrorType(UnsupportedOperation))
 import Network.HostName (getHostName)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Environment (
@@ -254,6 +255,7 @@ import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle, hClose)
 import qualified System.IO as IO
 import System.IO.Temp (withTempDirectory, withTempFile)
+import System.IO.Error (catchIOError, ioeGetErrorType)
 import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
 import qualified System.Win32 as Win32
@@ -623,9 +625,19 @@ lsif predicate path = do
                 else return child
         else return child
 
--- | Move a file or directory
+{-| Move a file or directory
+
+    Works if the two paths are on the same filesystem.
+    If not, @mv@ will still work when dealing with a regular file,
+    but the operation will not be atomic
+-}
 mv :: MonadIO io => FilePath -> FilePath -> io ()
-mv oldPath newPath = liftIO (Filesystem.rename oldPath newPath)
+mv oldPath newPath = liftIO $ catchIOError (Filesystem.rename oldPath newPath)
+   (\ioe -> if ioeGetErrorType ioe == UnsupportedOperation -- certainly EXDEV
+                then do
+                    Filesystem.copyFile oldPath newPath
+                    Filesystem.removeFile oldPath
+                else ioError ioe)
 
 {-| Create a directory
 
