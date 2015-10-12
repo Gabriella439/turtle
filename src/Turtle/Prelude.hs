@@ -132,6 +132,7 @@ module Turtle.Prelude (
     , rmtree
     , testfile
     , testdir
+    , testpath
     , date
     , datefile
     , touch
@@ -679,6 +680,14 @@ testfile path = liftIO (Filesystem.isFile path)
 -- | Check if a directory exists
 testdir :: MonadIO io => FilePath -> io Bool
 testdir path = liftIO (Filesystem.isDirectory path)
+
+-- | Check if a path exists
+testpath :: MonadIO io => FilePath -> io Bool
+testpath path = do
+  exists <- testfile path
+  if exists
+    then return exists
+    else testdir path
 
 {-| Touch a file, updating the access and modification times to the current time
 
