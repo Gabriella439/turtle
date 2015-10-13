@@ -355,6 +355,7 @@ system p s = liftIO (do
 
     let open = do
             (Just hIn, Nothing, Nothing, ph) <- Process.createProcess p'
+            IO.hSetBuffering hIn IO.LineBuffering
             return (hIn, ph)
 
     -- Prevent double close
@@ -389,6 +390,7 @@ systemStrict p s = liftIO (do
 
     let open = do
             (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
+            IO.hSetBuffering hIn IO.LineBuffering
             return (hIn, hOut, ph)
 
     -- Prevent double close
@@ -456,6 +458,7 @@ stream p s = do
 
     let open = do
             (Just hIn, Just hOut, Nothing, ph) <- liftIO (Process.createProcess p')
+            IO.hSetBuffering hIn IO.LineBuffering
             return (hIn, hOut, ph)
 
     -- Prevent double close
