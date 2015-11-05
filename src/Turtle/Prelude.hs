@@ -864,7 +864,8 @@ exit code = liftIO (exitWith code)
 die :: MonadIO io => Text -> io a
 die txt = liftIO (throwIO (userError (unpack txt)))
 
-infixr 2 .&&., .||.
+infixr 2 .||.
+infixr 3 .&&.
 
 {-| Analogous to `&&` in Bash
 
