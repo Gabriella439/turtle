@@ -35,6 +35,7 @@ module Turtle.Options
     ( -- * Types
       Parser
     , ArgName
+    , CommandName
     , ShortName
     , Description
     , HelpMessage
@@ -59,6 +60,7 @@ module Turtle.Options
     , arg
 
       -- * Consume parsers
+    , subcommand
     , options
 
     ) where
@@ -96,6 +98,15 @@ newtype ArgName = ArgName { getArgName :: Text }
 
 -- | The short one-character abbreviation for a flag (i.e. @-n@)
 type ShortName = Char
+
+{-| The name of a sub-command
+
+    This is lower-cased to create a sub-command.  For example, a `CommandName` of
+    @\"Name\"@ will parse `name` on the command line before parsing the
+    remaining arguments using the command's subparser.
+-}
+newtype CommandName = CommandName { getCommandName :: Text }
+    deriving (IsString)
 
 {-| A brief description of what your program does
 
@@ -206,3 +217,16 @@ argParseToReadM f = do
     case f (Text.pack s) of
         Just a -> return a
         Nothing -> Opts.readerAbort Opts.ShowHelpText
+
+{-| Create a sub-command that parses `CommandName` and then parses the rest
+    of the command-line arguments
+
+    The sub-command will have its own `Description` and help text
+-}
+subcommand :: CommandName -> Description -> Parser a -> Parser a
+subcommand cmdName desc p =
+    Opts.subparser (Opts.command name info <> Opts.metavar name)
+  where
+    name = Text.unpack (getCommandName cmdName)
+
+    info = Opts.info p (Opts.header (Text.unpack (getDescription desc)))
