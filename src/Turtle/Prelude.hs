@@ -172,6 +172,7 @@ module Turtle.Prelude (
     , cat
     , grep
     , sed
+    , inplace
     , find
     , yes
     , nl
@@ -224,7 +225,7 @@ import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Managed (Managed, managed)
+import Control.Monad.Managed (Managed, managed, runManaged)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
@@ -1055,6 +1056,16 @@ sed pattern s = do
   where
     message = "sed: the given pattern matches the empty string"
     matchesEmpty = not . null . flip match ""
+
+-- | Like `sed`, but operates in place on a `FilePath` (analogous to @sed -i@)
+inplace :: MonadIO io => Pattern Text -> FilePath -> io ()
+inplace pattern file = liftIO (runManaged (do
+    here              <- pwd
+    (tmpfile, handle) <- mktemp here "turtle"
+    outhandle handle (sed pattern (input file))
+    liftIO (hClose handle)
+    mv tmpfile file ))
+    
 
 -- | Search a directory recursively for all files matching the given `Pattern`
 find :: Pattern a -> FilePath -> Shell FilePath
