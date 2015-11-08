@@ -110,6 +110,9 @@ module Turtle.Tutorial (
 
     -- * Conclusion
     -- $conclusion
+
+    -- * FAQ
+    -- $faq
     ) where
 
 import Turtle
@@ -1627,3 +1630,30 @@ import Turtle
 -- This library provides an extended suite of Unix-like utilities, but would
 -- still benefit from adding more utilities for better parity with the Unix
 -- ecosystem.  Pull requests to add new utilities are highly welcome!
+
+-- $faq
+--
+-- These are the most frequently asked questions from new users:
+--
+-- /Question:/ How do I convert `FilePath` to `Text`?
+--
+-- /Answer:/ Use @(`format` `fp`)@
+--
+-- /Question:/ My program prints some extra output every time it starts.  How do
+-- I remove it?
+--
+-- /Answer:/ Compile your program and run the executable instead of interpreting-- the program.
+--
+-- /Question:/ What's the easiest way to fail with a descriptive error message
+-- if a subprocess command like `proc`/`shell` returns a non-zero exit code?
+-- code?
+--
+-- /Answer:/ Use @(`proc` cmd args input `.||.` `die` "Descriptive error message")@
+-- or @(`shell` cmdline input `.||.` `die` "Descriptive error message")@, very
+-- similar to Bash and Perl.
+--
+-- /Question:/ How do I close a resource that I acquired?
+--
+-- /Answer:/ Use `runManaged`, `sh`, or (`<|>`) (all resources acquired in the
+-- left stream will close before beginning the right stream).  Alternatively,
+-- use `with` to acquire a resource for a limited scope.
