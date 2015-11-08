@@ -1,4 +1,4 @@
-# Turtle v1.2.1
+# Turtle v1.2.3
 
 Turtle is a reimplementation of the Unix command line environment in Haskell so
 that you can use Haskell as a scripting language or a shell.  Think of `turtle`
@@ -44,7 +44,7 @@ FilePath "/usr/lib/libgif.so.4.1"
 ...
 ```
 
-To learn more, read the [turtle tutorial](https://hackage.haskell.org/package/turtle-1.2.1/docs/Turtle-Tutorial.html).
+To learn more, read the [turtle tutorial](https://hackage.haskell.org/package/turtle/docs/Turtle-Tutorial.html).
 
 ## Goals
 
