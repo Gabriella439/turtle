@@ -1,6 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- | Example usage of this module:
+-- | Comprehensive example involving:
+-- |   - one subcommand (task)
+-- |   - one positional argument (TASK e.g Haskell)
+-- |   - two flag-based options (--name, --age):
+-- | (do not hesitate to go with a much simpler usage by using only flag-based options for instance)
 --
 -- > -- options.hs
 -- >
@@ -8,28 +12,31 @@
 -- >
 -- > import Turtle
 -- >
--- > parser :: Parser (Text, Int)
--- > parser = (,) <$> optText "name" 'n' "Your first name"
--- >              <*> optInt  "age"  'a' "Your current age"
--- >
+-- > parser :: Parser (Text, Text, Int)
+-- > parser = (,,) <$> argText "task" "A task"
+-- >               <*> optText "name" 'n' "Your first name"
+-- >               <*> optInt  "age"  'a' "Your current age"
 -- > main = do
--- >     (name, age) <- options "Greeting script" parser
--- >     echo (format ("Hello there, "%s) name)
--- >     echo (format ("You are "%d%" years old") age)
+-- >    (task, name, age) <- options "Greeting script" (subcommand "task" "task subcommand" parser)
+-- >    echo (format ("Mr." %s% " . Now that I know you are " %d% " years old, let's do some " %s) name age task )
 --
--- > $ ./options --name John --age 42
--- > Hello there, John
--- > You are 42 years old
+-- > $ ./options task Haskell --name John --age 42
+-- > Mr.John . Now that I know you are 42 years old, let's do some Haskell
 --
 -- > $ ./options --help
 -- > Greeting script
--- >
--- > Usage: options (-n|--name NAME) (-a|--age AGE)
+--
+-- > Usage: options task
 -- >
 -- > Available options:
 -- >  -h,--help                Show this help text
--- >  --name NAME              Your first name
--- >  --age AGE                Your current age
+-- >
+-- > Available commands:
+-- >  task
+-- >
+--
+-- > $ ./options task
+-- > Usage: options task TASK (-n|--name NAME) (-a|--age AGE)
 
 module Turtle.Options
     ( -- * Types
