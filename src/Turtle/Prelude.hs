@@ -204,6 +204,7 @@ module Turtle.Prelude (
     -- * File size
     , du
     , Size
+    , sz
     , bytes
     , kilobytes
     , megabytes
@@ -268,7 +269,7 @@ import Prelude hiding (FilePath)
 
 import Turtle.Pattern (Pattern, anyChar, chars, match, selfless, sepBy)
 import Turtle.Shell
-import Turtle.Format (format, w, (%))
+import Turtle.Format (Format, format, makeFormat, d, w, (%))
 
 {-| Run a command using @execvp@, retrieving the exit code
 
@@ -1254,6 +1255,35 @@ newtype Size = Size { _bytes :: Integer } deriving (Num)
 
 instance Show Size where
     show = show . _bytes
+
+{-| `Format` a `Size` using a human readable representation
+
+>>> format sz 42
+"42 B"
+>>> format sz 2309
+"2.309 KB"
+>>> format sz 949203
+"949.203 MB"
+>>> format sz 1600000000
+"1.600 GB"
+>>> format sz 999999999999999999
+"999999.999 TB"
+-}
+sz :: Format r (Size -> r)
+sz = makeFormat (\(Size numBytes) ->
+    let (numKilobytes, remainingBytes    ) = numBytes     `quotRem` 1000
+        (numMegabytes, remainingKilobytes) = numKilobytes `quotRem` 1000
+        (numGigabytes, remainingMegabytes) = numMegabytes `quotRem` 1000
+        (numTerabytes, remainingGigabytes) = numGigabytes `quotRem` 1000
+    in  if numKilobytes <= 0
+        then format (d%" B" ) remainingBytes
+        else if numMegabytes == 0
+        then format (d%"."%d%" KB") remainingKilobytes remainingBytes
+        else if numGigabytes == 0
+        then format (d%"."%d%" MB") remainingMegabytes remainingKilobytes
+        else if numTerabytes == 0
+        then format (d%"."%d%" GB") remainingGigabytes remainingMegabytes
+        else format (d%"."%d%" TB") numTerabytes       remainingGigabytes )
 
 -- | Extract a size in bytes
 bytes :: Integral n => Size -> n

@@ -108,15 +108,15 @@ makeFormat k = Format (\return_ -> \a -> return_ (k a))
 w :: Show a => Format r (a -> r)
 w = makeFormat (pack . show)
 
-{-| `Format` an `Int` value as a signed decimal
+{-| `Format` an `Integral` value as a signed decimal
 
 >>> format d 25
 "25"
 >>> format d (-25)
 "-25"
 -}
-d :: Format r (Int -> r)
-d = w
+d :: Integral n => Format r (n -> r)
+d = makeFormat (pack . show . toInteger)
 
 {-| `Format` a `Word` value as an unsigned decimal
 
