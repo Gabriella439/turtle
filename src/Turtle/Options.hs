@@ -30,6 +30,9 @@
 -- >  -h,--help                Show this help text
 -- >  --name NAME              Your first name
 -- >  --age AGE                Your current age
+--
+-- See the "Turtle.Tutorial" module which contains more examples on how to use
+-- command-line parsing.
 
 module Turtle.Options
     ( -- * Types

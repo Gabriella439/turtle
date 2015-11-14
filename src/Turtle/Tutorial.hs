@@ -1541,6 +1541,7 @@ import Turtle
 --
 -- > $ ./cp.hs
 -- > Usage: cp.hs SRC [DEST]
+-- > 
 -- > $ ./cp.hs --help
 -- > A simple `cp` utility
 -- > 
@@ -1586,6 +1587,7 @@ import Turtle
 --
 -- > $ ./cp
 -- > Usage: cp.hs (-s|--src SRC) (-d|--dest DEST)
+-- > 
 -- > $ ./cp --help
 -- > A simple `cp` utility
 -- > 
@@ -1595,9 +1597,62 @@ import Turtle
 -- >   -h,--help                Show this help text
 -- >   -s,--src SRC             The source file
 -- >   -d,--dest DEST           The destination file
+-- > 
 -- > $ ./cp --src file1.txt --dest file3.txt
 -- > $ cat file3.txt
 -- > Test
+--
+-- You can also provide `subcommand` functionality such as the following
+-- example which pretends to increase or decrease the system volume:
+--
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > 
+-- > import Turtle
+-- > 
+-- > data Command = IncreaseVolume Int | DecreaseVolume Int deriving (Show)
+-- > 
+-- > parser :: Parser Command
+-- > parser
+-- >     =   fmap IncreaseVolume 
+-- >             (subcommand "up" "Turn the volume up"
+-- >                 (argInt "amount" "How much to increase the volume") )
+-- >     <|> fmap DecreaseVolume
+-- >             (subcommand "down" "Turn the volume down"
+-- >                 (argInt "amount" "How much to decrease the volume") )
+-- > 
+-- > main = do
+-- >     x <- options "Volume adjuster" parser
+-- >     case x of
+-- >         IncreaseVolume n -> echo (format ("Increasing the volume by "%d) n)
+-- >         DecreaseVolume n -> echo (format ("Decreasing the volume by "%d) n)
+--
+-- This will provide `--help` output at both the top level and for each
+-- subcommand:
+--
+-- > $ ./options --help
+-- > Volume adjuster
+-- > 
+-- > Usage: options (up | down)
+-- > 
+-- > Available options:
+-- >   -h,--help                Show this help text
+-- > 
+-- >   Available commands:
+-- >     up
+-- >     down
+-- > 
+-- > $ ./options up --help
+-- > Turn the volume up
+-- > 
+-- > Usage: options up AMOUNT
+-- > 
+-- > Available options:
+-- >   -h,--help                Show this help text
+-- >   AMOUNT                   How much to increase the volume
+-- >
+-- > $ ./options up 10
+-- > Increasing the volume by 10
+-- > 
 --
 -- See the "Turtle.Options" module for more details and utilities related to
 -- parsing command line options.  This module is built on top of the
