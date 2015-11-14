@@ -229,4 +229,6 @@ subcommand cmdName desc p =
   where
     name = Text.unpack (getCommandName cmdName)
 
-    info = Opts.info p (Opts.header (Text.unpack (getDescription desc)))
+    info = Opts.info
+        (Opts.helper <*> p)
+        (Opts.header (Text.unpack (getDescription desc)))
