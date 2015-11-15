@@ -221,7 +221,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
-import Control.Exception (bracket, throwIO)
+import Control.Exception (bracket, finally, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
@@ -368,11 +368,11 @@ system p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, ph) -> do
-        let feedIn = do
+        let feedIn =
                 sh (do
                     txt <- s
                     liftIO (Text.hPutStrLn hIn txt) )
-                close hIn
+                `finally` close hIn
         withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) )
 
 systemStrict
@@ -403,11 +403,11 @@ systemStrict p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
-        let feedIn = do
+        let feedIn =
                 sh (do
                     txt <- s
                     liftIO (Text.hPutStrLn hIn txt) )
-                close hIn
+                `finally` close hIn
 
         concurrently
             (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
@@ -471,11 +471,11 @@ stream p s = do
                 return True )
 
     (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
-    let feedIn = do
+    let feedIn =
             sh (do
                 txt <- s
                 liftIO (Text.hPutStrLn hIn txt) )
-            close hIn
+            `finally` close hIn
 
     a <- using (fork feedIn)
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
