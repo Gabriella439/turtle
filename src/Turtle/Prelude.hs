@@ -218,7 +218,7 @@ module Turtle.Prelude (
 
 import Control.Applicative
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Async, withAsync, wait, concurrently)
+import Control.Concurrent.Async (Async, withAsync, withAsyncWithUnmask, wait, concurrently)
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
 import Control.Exception (bracket, finally, throwIO)
@@ -368,12 +368,12 @@ system p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, ph) -> do
-        let feedIn =
-                sh (do
+        let feedIn restore =
+                restore (sh (do
                     txt <- s
-                    liftIO (Text.hPutStrLn hIn txt) )
+                    liftIO (Text.hPutStrLn hIn txt) ) )
                 `finally` close hIn
-        withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) )
+        withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) )
 
 systemStrict
     :: MonadIO io
@@ -403,14 +403,14 @@ systemStrict p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
-        let feedIn =
-                sh (do
+        let feedIn restore =
+                restore (sh (do
                     txt <- s
-                    liftIO (Text.hPutStrLn hIn txt) )
+                    liftIO (Text.hPutStrLn hIn txt) ) )
                 `finally` close hIn
 
         concurrently
-            (withAsync feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
+            (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
             (Text.hGetContents hOut) ) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
@@ -471,13 +471,13 @@ stream p s = do
                 return True )
 
     (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
-    let feedIn =
-            sh (do
+    let feedIn restore =
+            restore (sh (do
                 txt <- s
-                liftIO (Text.hPutStrLn hIn txt) )
+                liftIO (Text.hPutStrLn hIn txt) ) )
             `finally` close hIn
 
-    a <- using (fork feedIn)
+    a <- using (managed (withAsyncWithUnmask feedIn))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
 
 -- | Print to @stdout@
@@ -1066,7 +1066,7 @@ inplace pattern file = liftIO (runManaged (do
     outhandle handle (sed pattern (input file))
     liftIO (hClose handle)
     mv tmpfile file ))
-    
+
 
 -- | Search a directory recursively for all files matching the given `Pattern`
 find :: Pattern a -> FilePath -> Shell FilePath
