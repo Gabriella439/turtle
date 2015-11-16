@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes                 #-}
 
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
@@ -368,7 +369,8 @@ system p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, ph) -> do
-        let feedIn restore =
+        let feedIn :: (forall a. IO a -> IO a) -> IO ()
+            feedIn restore =
                 restore (sh (do
                     txt <- s
                     liftIO (Text.hPutStrLn hIn txt) ) )
@@ -403,7 +405,8 @@ systemStrict p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
-        let feedIn restore =
+        let feedIn :: (forall a. IO a -> IO a) -> IO ()
+            feedIn restore =
                 restore (sh (do
                     txt <- s
                     liftIO (Text.hPutStrLn hIn txt) ) )
@@ -471,7 +474,8 @@ stream p s = do
                 return True )
 
     (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
-    let feedIn restore =
+    let feedIn :: (forall a. IO a -> IO a) -> IO ()
+        feedIn restore =
             restore (sh (do
                 txt <- s
                 liftIO (Text.hPutStrLn hIn txt) ) )
