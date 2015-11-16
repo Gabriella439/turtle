@@ -221,7 +221,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, withAsync, withAsyncWithUnmask, wait, concurrently)
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
-import Control.Exception (bracket, finally, throwIO)
+import Control.Exception (bracket, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
@@ -373,7 +373,7 @@ system p s = liftIO (do
                     txt <- s
                     liftIO (Text.hPutStrLn hIn txt) ) )
                 `finally` close hIn
-        withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) )
+        mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) ) )
 
 systemStrict
     :: MonadIO io
@@ -410,7 +410,7 @@ systemStrict p s = liftIO (do
                 `finally` close hIn
 
         concurrently
-            (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
+            (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a)))
             (Text.hGetContents hOut) ) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
@@ -477,7 +477,7 @@ stream p s = do
                 liftIO (Text.hPutStrLn hIn txt) ) )
             `finally` close hIn
 
-    a <- using (managed (withAsyncWithUnmask feedIn))
+    a <- using (managed (mask_ . withAsyncWithUnmask feedIn))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
 
 -- | Print to @stdout@
