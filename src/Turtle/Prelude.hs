@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes                 #-}
 
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
@@ -221,7 +222,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, withAsync, withAsyncWithUnmask, wait, concurrently)
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
-import Control.Exception (bracket, finally, throwIO)
+import Control.Exception (bracket, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
@@ -368,12 +369,13 @@ system p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, ph) -> do
-        let feedIn restore =
+        let feedIn :: (forall a. IO a -> IO a) -> IO ()
+            feedIn restore =
                 restore (sh (do
                     txt <- s
                     liftIO (Text.hPutStrLn hIn txt) ) )
                 `finally` close hIn
-        withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) )
+        mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) ) )
 
 systemStrict
     :: MonadIO io
@@ -403,14 +405,15 @@ systemStrict p s = liftIO (do
                 return True )
 
     bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
-        let feedIn restore =
+        let feedIn :: (forall a. IO a -> IO a) -> IO ()
+            feedIn restore =
                 restore (sh (do
                     txt <- s
                     liftIO (Text.hPutStrLn hIn txt) ) )
                 `finally` close hIn
 
         concurrently
-            (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a))
+            (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a)))
             (Text.hGetContents hOut) ) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
@@ -471,13 +474,14 @@ stream p s = do
                 return True )
 
     (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
-    let feedIn restore =
+    let feedIn :: (forall a. IO a -> IO a) -> IO ()
+        feedIn restore =
             restore (sh (do
                 txt <- s
                 liftIO (Text.hPutStrLn hIn txt) ) )
             `finally` close hIn
 
-    a <- using (managed (withAsyncWithUnmask feedIn))
+    a <- using (managed (mask_ . withAsyncWithUnmask feedIn))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
 
 -- | Print to @stdout@
