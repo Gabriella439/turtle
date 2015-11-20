@@ -8,12 +8,8 @@ as `coreutils` embedded within the Haskell language.
 
 * Install [Stack](https://github.com/commercialhaskell/stack)
 
-* `stack setup && stack install turtle`
-
-Then fire up `ghci`:
-
 ```
-$ stack ghci
+$ stack ghci turtle
 Prelude> :set -XOverloadedStrings
 Prelude> import Turtle
 ```
