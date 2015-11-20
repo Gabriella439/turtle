@@ -8,9 +8,7 @@ as `coreutils` embedded within the Haskell language.
 
 * Install [Stack](https://github.com/commercialhaskell/stack)
 
-* `stack setup && stack install turtle`
-
-Then fire up `ghci`:
+* `stack ghci turtle`
 
 ```
 $ stack ghci
