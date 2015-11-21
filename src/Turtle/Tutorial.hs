@@ -34,7 +34,8 @@
 
     <https://github.com/commercialhaskell/stack>
 
-    ... and then run:
+    ... and then run the following instruction anywhere outside of a Haskell
+    project:
 
 > $ stack install turtle
 
