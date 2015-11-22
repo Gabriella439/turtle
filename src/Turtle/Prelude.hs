@@ -158,6 +158,8 @@ module Turtle.Prelude (
     -- * Shell
     , inproc
     , inshell
+    , inprocWithErr
+    , inshellWithErr
     , stdin
     , input
     , inhandle
@@ -219,9 +221,11 @@ module Turtle.Prelude (
 
 import Control.Applicative
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Async, withAsync, withAsyncWithUnmask, wait, concurrently)
+import Control.Concurrent.Async
+    (Async, withAsync, withAsyncWithUnmask, wait, waitSTM, concurrently)
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
+import qualified Control.Concurrent.STM.TQueue as TQueue
 import Control.Exception (bracket, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
@@ -483,6 +487,108 @@ stream p s = do
 
     a <- using (managed (mask_ . withAsyncWithUnmask feedIn))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
+
+streamWithErr
+    :: Process.CreateProcess
+    -- ^ Command
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> Shell (Either Text Text)
+    -- ^ Lines of standard output
+streamWithErr p s = do
+    let p' = p
+            { Process.std_in  = Process.CreatePipe
+            , Process.std_out = Process.CreatePipe
+            , Process.std_err = Process.CreatePipe
+            }
+
+    let open = do
+            (Just hIn, Just hOut, Just hErr, ph) <- liftIO (Process.createProcess p')
+            IO.hSetBuffering hIn IO.LineBuffering
+            return (hIn, hOut, hErr, ph)
+
+    -- Prevent double close
+    mvar <- liftIO (newMVar False)
+    let close handle = do
+            modifyMVar_ mvar (\finalized -> do
+                unless finalized (hClose handle)
+                return True )
+
+    (hIn, hOut, hErr, ph) <- using (managed (bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph)))
+    let feedIn :: (forall a. IO a -> IO a) -> IO ()
+        feedIn restore =
+            restore (sh (do
+                txt <- s
+                liftIO (Text.hPutStrLn hIn txt) ) )
+            `finally` close hIn
+
+    queue <- liftIO TQueue.newTQueueIO
+    let forwardOut restore =
+            restore (sh (do
+                txt <- inhandle hOut
+                liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Right txt)))) ))
+            `finally` STM.atomically (TQueue.writeTQueue queue Nothing)
+    let forwardErr restore =
+            restore (sh (do
+                txt <- inhandle hErr
+                liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Left  txt)))) ))
+            `finally` STM.atomically (TQueue.writeTQueue queue Nothing)
+    let drain = Shell (\(FoldM step begin done) -> do
+            x0 <- begin
+            let loop x numNothing
+                    | numNothing < 2 = do
+                        m <- STM.atomically (TQueue.readTQueue queue)
+                        case m of
+                            Nothing -> loop x $! numNothing + 1
+                            Just e  -> do
+                                x' <- step x e
+                                loop x' numNothing
+                    | otherwise      = return x
+            x1 <- loop x0 (0 :: Int)
+            done x1 )
+
+    a <- using (managed (mask_ . withAsyncWithUnmask feedIn    ))
+    b <- using (managed (mask_ . withAsyncWithUnmask forwardOut))
+    c <- using (managed (mask_ . withAsyncWithUnmask forwardErr))
+    let l `also` r = do
+            _ <- l <|> (r *> STM.retry)
+            _ <- r
+            return ()
+    let waitAll = STM.atomically (waitSTM a `also` (waitSTM b `also` waitSTM c))
+    drain <|> (liftIO (Process.waitForProcess ph *> waitAll) *> empty)
+
+{-| Run a command using the shell, streaming @stdout@ and @stderr@ as lines of
+    `Text`.  Lines from @stdout@ are wrapped in `Right` and lines from @stderr@
+    are wrapped in `Left`.
+-}
+inprocWithErr
+    :: Text
+    -- ^ Command
+    -> [Text]
+    -- ^ Arguments
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> Shell (Either Text Text)
+    -- ^ Lines of standard output
+inprocWithErr cmd args =
+    streamWithErr (Process.proc (unpack cmd) (map unpack args))
+
+
+{-| Run a command line using the shell, streaming @stdout@ and @stderr@ as lines
+    of `Text`.  Lines from @stdout@ are wrapped in `Right` and lines from
+    @stderr@ are wrapped in `Left`.
+
+    This command is more powerful than `inprocWithErr`, but highly vulnerable to
+    code injection if you template the command line with untrusted input
+-}
+inshellWithErr
+    :: Text
+    -- ^ Command line
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> Shell (Either Text Text)
+    -- ^ Lines of standard output
+inshellWithErr cmd = streamWithErr (Process.shell (unpack cmd))
 
 -- | Print to @stdout@
 echo :: MonadIO io => Text -> io ()
