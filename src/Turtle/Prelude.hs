@@ -523,12 +523,14 @@ streamWithErr p s = do
             `finally` close hIn
 
     queue <- liftIO TQueue.newTQueueIO
-    let forwardOut restore =
+    let forwardOut :: (forall a. IO a -> IO a) -> IO ()
+        forwardOut restore =
             restore (sh (do
                 txt <- inhandle hOut
                 liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Right txt)))) ))
             `finally` STM.atomically (TQueue.writeTQueue queue Nothing)
-    let forwardErr restore =
+    let forwardErr :: (forall a. IO a -> IO a) -> IO ()
+        forwardErr restore =
             restore (sh (do
                 txt <- inhandle hErr
                 liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Left  txt)))) ))
