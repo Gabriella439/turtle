@@ -1417,7 +1417,7 @@ import Turtle
 -- pwd :: `MonadIO` io => io Turtle.`Turtle.FilePath`
 -- @
 --
--- This means you can this command is overloaded to run in any context that
+-- This means this command is overloaded to run in any context that
 -- implements the `MonadIO` interface, including:
 --
 -- * `IO` (obviously)
