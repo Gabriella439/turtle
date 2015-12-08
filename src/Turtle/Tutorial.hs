@@ -25,7 +25,7 @@
     speed by reading the Quick Start guide at the top of "Turtle.Prelude".
 
     If you are on Windows, the easiest way to follow along is to install
-    [Git for Windows](https://git-scm.com/download/win) and use the Git Bash
+    <https://git-scm.com/download/win Git for Windows> and use the Git Bash
     program that it installs to get a fully featured Unix-like environment.
 
     For all operating systems, the recommended way to compile and run the
