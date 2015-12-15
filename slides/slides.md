@@ -1,28 +1,24 @@
 % Haskell for Shell Scripting
 % Gabriel Gonzalez
-% September 3, 2015
+% December 14, 2015
 
 # Before class
 
-If you haven't installed `ghc`, visit:
+If you haven't installed `stack`, visit:
 
-* [https://www.haskell.org/downloads](https://www.haskell.org/downloads)
+* [haskellstack.com](http://haskellstack.com)
 
-... and install a GHC distribution appropriate to your operating system.
-
-To test your Haskell installation, run these commands from a terminal:
+... and install the `stack` build tool.  Then run these commands:
 
 ```bash
-$ echo 'main = putStrLn "Hello, world!"' > hello.hs
-$ runhaskell hello.hs
-Hello, world!
-```
-
-Install the shell scripting library using these commands:
-
-```bash
-$ cabal update
-$ cabal install turtle-1.2.1
+$ stack setup
+...
+$ stack ghci turtle
+...
+Prelude> :set -XOverloadedStrings
+Prelude> import Turtle
+Prelude Turtle> echo "Hello, world!"
+Hello, world!"
 ```
 
 # Outline
@@ -56,7 +52,7 @@ Haskell is a managed language, providing garbage collection, concurrency, and
 transactional shared memory:
 
 * **Garbage collection** is efficient (throughput measured in GB / s)
-* **Concurrency** uses green-threads and is efficient (can handle 1M threads)
+* **Concurrency** uses efficient green-threads (even more efficient than Go)
 * **Transactional memory** simplifies race-free concurrent code
 
 # Big disadvantages of Haskell
@@ -110,7 +106,8 @@ Haskell code is easy to refactor and maintain
 Save this to: `example.hs`:
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -130,7 +127,7 @@ Hello, world!
 # Create a native binary
 
 ```bash
-$ ghc -O2 example.hs
+$ stack ghc -- -O2 example.hs
 $ ./example
 Hello, world!
 ```
@@ -138,7 +135,7 @@ Hello, world!
 # Use Haskell interactively
 
 ```haskell
-$ ghci -v0
+$ stack ghci
 Prelude> :set -XOverloadedStrings
 Prelude> import Turtle
 Prelude Turtle> echo "Hello, world!"
@@ -154,7 +151,8 @@ Prelude Turtle> :quit
 # Load code into the REPL
 
 ```haskell
-$ ghci -v0 example.hs
+$ stack ghci
+Prelude> :load example.hs
 *Main> main
 Hello, world!
 *Main> :quit
@@ -165,7 +163,8 @@ Hello, world!
 What do you think this code does?
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -192,7 +191,8 @@ main = say "Hello, world!"
 # Values
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -215,7 +215,8 @@ Why do you think Haskell defaults to immutability?
 # Order of definitions does not matter
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -231,7 +232,8 @@ str = "Hello, world!"
 Modify your program to to eliminate `main`:
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -259,7 +261,8 @@ Use `do` to create a subroutine that runs more than one command:
 Using significant whitespace:
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -299,7 +302,8 @@ main = do { echo "Line1"; echo "Line2" }
 # Storing results
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
                            -- #!/bin/bash
 import Turtle              --
                            --
@@ -354,7 +358,8 @@ var result =
 # Nesting subroutines
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
                             -- #!/bin/bash
 import Turtle               --
                             --
@@ -457,7 +462,8 @@ main = do
 What happens if we use `print` instead of `echo`?
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
 
 import Turtle
 
@@ -490,7 +496,7 @@ main = do
 ```
 
 ```haskell
-$ ghci -v0
+$ stack ghci
 Prelude> import Turtle
 ```
 
@@ -606,7 +612,7 @@ This automatically runs the above two commands every time you run `ghci`
 # Use `ghci` like a shell
 
 ```haskell
-$ ghci -v0
+$ stack ghci
 Prelude Turtle> view (ls ".")
 FilePath "/Users/ggonzalez/.bash_history"
 FilePath "/Users/ggonzalez/.bash_profile"
@@ -711,7 +717,8 @@ Prelude Turtle> rmdir "dir2"
 # Type signatures
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
 
 import Turtle
 
@@ -874,7 +881,8 @@ swap :: (t1, t) -> (t, t1)
 # Exit codes
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -1208,7 +1216,8 @@ Prelude Turtle> view (select [1, 2, 3])
 We can use `select` to loop within a `Shell`:
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -1308,7 +1317,8 @@ stdin :: Shell Text
 `stdin` streams lines from standard input:
 
 ```haskell
-#!/usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -1420,13 +1430,7 @@ Turtle Prelude> stdout (inproc "awk" ["{ print $1 }"] "123 456")
 
 # Exercise
 
-Build the following pipeline within the REPL:
-
-* Use `input` to read in `example.hs`
-* Use `inshell`/`inproc` to number the lines with the Unix `nl` utility
-* Use `output` to write the result to `numbered.txt`
-
-The result should be equivalent to this Unix command:
+Translate this Bash command to Haskell:
 
 ```bash
 $ nl < example.hs > numbered.txt
@@ -1684,7 +1688,8 @@ pattern = do
 # Patterns are typed
 
 ```haskell
-$ ghci -v0 pattern.hs
+$ stack ghci
+Prelude Turtle> :load pattern.hs
 *Main Turtle> :type pattern
 pattern :: Pattern (Day, TimeOfDay)
 *Main Turtle> match (prefix pattern) entry
