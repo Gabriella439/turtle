@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -106,6 +107,8 @@ module Turtle.Prelude (
     -- * IO
       proc
     , shell
+    , procs
+    , shells
     , procStrict
     , shellStrict
     , echo
@@ -217,6 +220,10 @@ module Turtle.Prelude (
     , mebibytes
     , gibibytes
     , tebibytes
+
+    -- * Exceptions
+    , ProcFailed(..)
+    , ShellFailed(..)
     ) where
 
 import Control.Applicative
@@ -226,7 +233,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TQueue as TQueue
-import Control.Exception (bracket, finally, mask_, throwIO)
+import Control.Exception (Exception, bracket, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
@@ -241,6 +248,7 @@ import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
 import Data.Traversable
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
+import Data.Typeable (Typeable)
 import qualified Filesystem
 import Filesystem.Path.CurrentOS (FilePath, (</>))
 import qualified Filesystem.Path.CurrentOS as Filesystem
@@ -308,6 +316,56 @@ shell
     -> io ExitCode
     -- ^ Exit code
 shell cmdLine = system (Process.shell (unpack cmdLine))
+
+data ProcFailed = ProcFailed
+    { procCommand   :: Text
+    , procArguments :: [Text]
+    , procExitCode  :: ExitCode
+    } deriving (Show, Typeable)
+
+instance Exception ProcFailed
+
+{-| This function is identical to `proc` except this throws `ProcFailed` for
+    non-zero exit codes
+-}
+procs
+    :: MonadIO io
+    => Text
+    -- ^ Command
+    -> [Text]
+    -- ^ Arguments
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> io ()
+procs cmd args s = do
+    exitCode <- proc cmd args s
+    case exitCode of
+        ExitSuccess -> return ()
+        _           -> liftIO (throwIO (ProcFailed cmd args exitCode))
+
+data ShellFailed = ShellFailed
+    { shellCommandLine :: Text
+    , shellExitCode    :: ExitCode
+    } deriving (Show, Typeable)
+
+instance Exception ShellFailed
+
+{-| This function is identical to `shell` except this throws `ShellFailed` for
+    non-zero exit codes
+-}
+shells
+    :: MonadIO io
+    => Text
+    -- ^ Command line
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> io ()
+    -- ^ Exit code
+shells cmdline s = do
+    exitCode <- shell cmdline s
+    case exitCode of
+        ExitSuccess -> return ()
+        _           -> liftIO (throwIO (ShellFailed cmdline exitCode))
 
 {-| Run a command using @execvp@, retrieving the exit code and stdout as a
     non-lazy blob of Text
