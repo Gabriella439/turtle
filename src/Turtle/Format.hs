@@ -58,6 +58,7 @@ module Turtle.Format (
     , g
     , s
     , fp
+    , utc
 
     -- * Utilities
     , repr
@@ -67,6 +68,7 @@ import Control.Category (Category(..))
 import Data.Monoid ((<>))
 import Data.String (IsString(..))
 import Data.Text (Text, pack)
+import Data.Time (UTCTime)
 import Data.Word
 import Filesystem.Path.CurrentOS (FilePath, toText)
 import Numeric (showEFloat, showFFloat, showGFloat, showHex, showOct)
@@ -183,6 +185,10 @@ s = makeFormat id
 -- | `Format` a `Filesystem.Path.CurrentOS.FilePath` into `Text`
 fp :: Format r (FilePath -> r)
 fp = makeFormat (\fpath -> either id id (toText fpath))
+
+-- | `Format` a `UTCTime` into `Text`
+utc :: Format r (UTCTime -> r)
+utc = w
 
 {-| Convert a `Show`able value to `Text`
 
