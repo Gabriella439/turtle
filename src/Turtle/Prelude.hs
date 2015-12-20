@@ -109,6 +109,7 @@ module Turtle.Prelude (
     , procStrict
     , shellStrict
     , echo
+    , printf
     , err
     , readline
     , arguments
@@ -595,6 +596,13 @@ inshellWithErr cmd = streamWithErr (Process.shell (unpack cmd))
 -- | Print to @stdout@
 echo :: MonadIO io => Text -> io ()
 echo txt = liftIO (Text.putStrLn txt)
+
+{-| Print a formatted string to @stdout@
+
+> printf = echo . format
+-}
+printf :: MonadIO io => Format Text Text -> io ()
+printf = echo . format
 
 -- | Print to @stderr@
 err :: MonadIO io => Text -> io ()
