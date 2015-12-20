@@ -778,6 +778,10 @@ import Turtle
 -- Most of the commands in this library do not actually invoke an external
 -- shell or program.  Instead, they indirectly wrap other Haskell libraries that
 -- bind to C code.
+--
+-- Also, some people prefer that subprocess runners throw exceptions instead of
+-- returning an `ExitCode`.  `procs` and `shells` are the exception-throwing
+-- variations on `proc` and `shell`.
 
 -- $format
 --
