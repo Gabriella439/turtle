@@ -1702,15 +1702,18 @@ import Turtle
 -- /Question:/ My program prints some extra output every time it starts.  How do
 -- I remove it?
 --
--- /Answer:/ Compile your program and run the executable instead of interpreting-- the program.
+-- /Answer:/ Compile your program and run the executable instead of interpreting
+-- the program.
+--
+-- /Question:/ My
 --
 -- /Question:/ What's the easiest way to fail with a descriptive error message
 -- if a subprocess command like `proc`/`shell` returns a non-zero exit code?
 -- code?
 --
--- /Answer:/ Use @(`proc` cmd args input `.||.` `die` "Descriptive error message")@
--- or @(`shell` cmdline input `.||.` `die` "Descriptive error message")@, very
--- similar to Bash and Perl.
+-- /Answer:/ Use @(`procs` cmd args input)@ or
+-- @(`proc` cmd args input `.||.` `die` "Descriptive error message")@ (or
+-- `shell` / `shells`, respectively)
 --
 -- /Question:/ How do I close a resource that I acquired?
 --
