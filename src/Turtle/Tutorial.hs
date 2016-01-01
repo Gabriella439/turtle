@@ -1705,7 +1705,23 @@ import Turtle
 -- /Answer:/ Compile your program and run the executable instead of interpreting
 -- the program.
 --
--- /Question:/ My
+-- /Question:/ How do I transform a @(`Pattern` a)@ into a @(`Pattern` [a])@?
+--
+-- /Answer:/ Use `many` or `some` (both are from "Control.Applicative" and
+-- re-exported by "Turtle")
+--
+-- /Question:/ Why are `star` \/ `plus` not the same as `many` \/ `some`?
+--
+-- /Answer:/ Because @[Char]@ is a `String`, which is not the same thing as
+-- `Text`.  `String` is deprecated in favor of `Text` in modern Haskell code,
+-- primarily for performance reasons and also because `Text` provides better
+-- support for Unicode.
+--
+-- /Question:/ Some Haskell libraries still use `String`.  How do I convert
+-- back and forth between `String` and `Text`?
+--
+-- /Answer:/ Use @"Data.Text".`Data.Text.pack`@ and
+-- @"Data.Text".`Data.Text.unpack`@
 --
 -- /Question:/ What's the easiest way to fail with a descriptive error message
 -- if a subprocess command like `proc`/`shell` returns a non-zero exit code?
