@@ -45,6 +45,7 @@ module Turtle.Format (
       Format
     , (%)
     , format
+    , printf
     , makeFormat
 
     -- * Parameters
@@ -74,6 +75,8 @@ import Filesystem.Path.CurrentOS (FilePath, toText)
 import Numeric (showEFloat, showFFloat, showGFloat, showHex, showOct)
 import Prelude hiding ((.), id, FilePath)
 
+import qualified Data.Text.IO as Text
+
 -- | A `Format` string
 newtype Format a b = Format { (>>-) :: (Text -> a) -> b }
 
@@ -97,6 +100,14 @@ instance (a ~ b) => IsString (Format a b) where
 -}
 format :: Format Text r -> r
 format fmt = fmt >>- id
+
+{-| Print a `Format` string to standard output (without a trailing newline)
+
+>>> printf ("Hello, "%s%"!\n") "world"
+Hello, world!
+-}
+printf :: Format (IO ()) r -> r
+printf fmt = fmt >>- Text.putStr
 
 -- | Create your own format specifier
 makeFormat :: (a -> Text) -> Format r (a -> r)
