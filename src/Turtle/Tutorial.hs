@@ -810,8 +810,15 @@ import Turtle
 --
 -- > format fp :: FilePath -> Text
 --
+-- For the very common case where you `echo` a formatted value, you can use
+-- `printf`:
+--
+-- >>> printf ("Hello, "%s%"!\n") "world"
+-- Hello, world!
+--
 -- If you are interested in this feature, check out the "Turtle.Format" module
--- for more details.
+-- for more details.  For more complex string formatting needs, check out the
+-- @text-format@ library.
 
 -- $streams
 -- The @turtle@ library provides support for streaming computations, just like
