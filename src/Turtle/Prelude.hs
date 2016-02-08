@@ -114,6 +114,7 @@ module Turtle.Prelude (
     , echo
     , err
     , readline
+    , Filesystem.readTextFile
     , arguments
 #if MIN_VERSION_base(4,7,0)
     , export
