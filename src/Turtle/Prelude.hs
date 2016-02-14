@@ -620,7 +620,8 @@ streamWithErr p s = do
 
 {-| Run a command using the shell, streaming @stdout@ and @stderr@ as lines of
     `Text`.  Lines from @stdout@ are wrapped in `Right` and lines from @stderr@
-    are wrapped in `Left`.
+    are wrapped in `Left`.  This does /not/ throw an exception if the command
+    returns a non-zero exit code
 -}
 inprocWithErr
     :: Text
@@ -630,14 +631,15 @@ inprocWithErr
     -> Shell Text
     -- ^ Lines of standard input
     -> Shell (Either Text Text)
-    -- ^ Lines of standard output
+    -- ^ Lines of either standard output (`Right`) or standard error (`Left`)
 inprocWithErr cmd args =
     streamWithErr (Process.proc (unpack cmd) (map unpack args))
 
 
 {-| Run a command line using the shell, streaming @stdout@ and @stderr@ as lines
     of `Text`.  Lines from @stdout@ are wrapped in `Right` and lines from
-    @stderr@ are wrapped in `Left`.
+    @stderr@ are wrapped in `Left`.  This does /not/ throw an exception if the
+    command returns a non-zero exit code
 
     This command is more powerful than `inprocWithErr`, but highly vulnerable to
     code injection if you template the command line with untrusted input
@@ -648,7 +650,7 @@ inshellWithErr
     -> Shell Text
     -- ^ Lines of standard input
     -> Shell (Either Text Text)
-    -- ^ Lines of standard output
+    -- ^ Lines of either standard output (`Right`) or standard error (`Left`)
 inshellWithErr cmd = streamWithErr (Process.shell (unpack cmd))
 
 -- | Print to @stdout@
