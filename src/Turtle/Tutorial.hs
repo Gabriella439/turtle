@@ -770,7 +770,7 @@ import Turtle
 -- @
 -- `proc`
 --     :: Text         -- Program
---     :: [Text]       -- Arguments
+--     -> [Text]       -- Arguments
 --     -> Shell Text   -- Standard input (as lines of \`Text\`)
 --     -> IO ExitCode  -- Exit code of the shell command
 -- @
