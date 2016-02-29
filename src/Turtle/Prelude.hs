@@ -115,6 +115,7 @@ module Turtle.Prelude (
     , err
     , readline
     , Filesystem.readTextFile
+    , Filesystem.writeTextFile
     , arguments
 #if MIN_VERSION_base(4,7,0)
     , export
