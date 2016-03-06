@@ -105,13 +105,7 @@
 
 module Turtle.Prelude (
     -- * IO
-      proc
-    , shell
-    , procs
-    , shells
-    , procStrict
-    , shellStrict
-    , echo
+      echo
     , err
     , readline
     , Filesystem.readTextFile
@@ -197,6 +191,15 @@ module Turtle.Prelude (
 
     -- * Text
     , cut
+
+    -- * Subprocess management
+    , proc
+    , shell
+    , system
+    , procs
+    , shells
+    , procStrict
+    , shellStrict
 
     -- * Permissions
     , Permissions
@@ -300,7 +303,13 @@ proc
     -- ^ Lines of standard input
     -> io ExitCode
     -- ^ Exit code
-proc cmd args = system (Process.proc (unpack cmd) (map unpack args))
+proc cmd args =
+    system
+        ( (Process.proc (unpack cmd) (map unpack args))
+            { Process.std_in  = Process.CreatePipe
+            , Process.std_out = Process.Inherit
+            , Process.std_err = Process.Inherit
+            } )
 
 {-| Run a command line using the shell, retrieving the exit code
 
@@ -317,7 +326,13 @@ shell
     -- ^ Lines of standard input
     -> io ExitCode
     -- ^ Exit code
-shell cmdLine = system (Process.shell (unpack cmdLine))
+shell cmdLine =
+    system
+        ( (Process.shell (unpack cmdLine))
+            { Process.std_in  = Process.CreatePipe
+            , Process.std_out = Process.Inherit
+            , Process.std_err = Process.Inherit
+            } )
 
 data ProcFailed = ProcFailed
     { procCommand   :: Text
@@ -405,6 +420,10 @@ shellStrict
     -- ^ Exit code and stdout
 shellStrict cmdLine = systemStrict (Process.shell (Text.unpack cmdLine))
 
+{-| `system` generalizes `shell` and `proc` by allowing you to supply your own
+    custom `CreateProcess`.  This is for advanced users who feel comfortable
+    using the lower-level @process@ API
+-}
 system
     :: MonadIO io
     => Process.CreateProcess
@@ -414,14 +433,8 @@ system
     -> io ExitCode
     -- ^ Exit code
 system p s = liftIO (do
-    let p' = p
-            { Process.std_in  = Process.CreatePipe
-            , Process.std_out = Process.Inherit
-            , Process.std_err = Process.Inherit
-            }
-
     let open = do
-            (Just hIn, Nothing, Nothing, ph) <- Process.createProcess p'
+            (Just hIn, Nothing, Nothing, ph) <- Process.createProcess p
             IO.hSetBuffering hIn IO.LineBuffering
             return (hIn, ph)
 
