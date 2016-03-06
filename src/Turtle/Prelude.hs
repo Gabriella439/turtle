@@ -281,7 +281,14 @@ import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
 import qualified System.Win32 as Win32
 #else
-import System.Posix (openDirStream, readDirStream, closeDirStream, touchFile)
+import System.Posix (
+    openDirStream,
+    readDirStream,
+    closeDirStream,
+    touchFile,
+    getSymbolicLinkStatus,
+    isDirectory,
+    isSymbolicLink )
 #endif
 import Prelude hiding (FilePath)
 
@@ -865,6 +872,7 @@ rmdir path = liftIO (Filesystem.removeDirectory path)
 rmtree :: MonadIO io => FilePath -> io ()
 rmtree path0 = liftIO (sh (loop path0))
   where
+#ifdef mingw32_HOST_OS
     loop path = do
         isDir <- testdir path
         if isDir
@@ -872,6 +880,21 @@ rmtree path0 = liftIO (sh (loop path0))
                 child <- ls path
                 loop child ) <|> rmdir path
             else rm path
+#else
+    loop path = do
+        let path' = Filesystem.encodeString path
+        stat <- liftIO $ getSymbolicLinkStatus path'
+        let isLink = isSymbolicLink stat
+            isDir = isDirectory stat
+        if isLink
+            then rm path
+            else do
+                if isDir
+                    then (do
+                        child <- ls path
+                        loop child ) <|> rmdir path
+                    else rm path
+#endif
 
 -- | Check if a file exists
 testfile :: MonadIO io => FilePath -> io Bool
