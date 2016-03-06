@@ -795,7 +795,7 @@ deslash (c0:cs0) = c0:go cs0
 lstree :: FilePath -> Shell FilePath
 lstree path = do
     child <- ls path
-    isDir <- liftIO (testdir child)
+    isDir <- testdir child
     if isDir
         then return child <|> lstree child
         else return child
@@ -809,7 +809,7 @@ lstree path = do
 lsif :: (FilePath -> IO Bool) -> FilePath -> Shell FilePath
 lsif predicate path = do
     child <- ls path
-    isDir <- liftIO (testdir child)
+    isDir <- testdir child
     if isDir
         then do
             continue <- liftIO (predicate child)
@@ -863,7 +863,15 @@ rmdir path = liftIO (Filesystem.removeDirectory path)
     Use at your own risk
 -}
 rmtree :: MonadIO io => FilePath -> io ()
-rmtree path = liftIO (Filesystem.removeTree path)
+rmtree path0 = liftIO (sh (loop path0))
+  where
+    loop path = do
+        isDir <- testdir path
+        if isDir
+            then (do
+                child <- ls path
+                loop child ) <|> rmdir path
+            else rm path
 
 -- | Check if a file exists
 testfile :: MonadIO io => FilePath -> io Bool
