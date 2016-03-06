@@ -66,6 +66,7 @@ module Turtle.Format (
     ) where
 
 import Control.Category (Category(..))
+import Control.Monad.IO.Class (MonadIO(..))
 import Data.Monoid ((<>))
 import Data.String (IsString(..))
 import Data.Text (Text, pack)
@@ -106,8 +107,8 @@ format fmt = fmt >>- id
 >>> printf ("Hello, "%s%"!\n") "world"
 Hello, world!
 -}
-printf :: Format (IO ()) r -> r
-printf fmt = fmt >>- Text.putStr
+printf :: MonadIO io => Format (io ()) r -> r
+printf fmt = fmt >>- (liftIO . Text.putStr)
 
 -- | Create your own format specifier
 makeFormat :: (a -> Text) -> Format r (a -> r)
