@@ -1702,6 +1702,11 @@ import Turtle
 --
 -- These are the most frequently asked questions from new users:
 --
+-- /Question:/ My program hangs when I run a subprocess that reads from standard
+-- input.  What do I do?
+--
+-- /Answer:/ Make sure you compile your program with the @-threaded@ flag
+--
 -- /Question:/ How do I convert `FilePath` to `Text`?
 --
 -- /Answer:/ Use @(`format` `fp`)@
