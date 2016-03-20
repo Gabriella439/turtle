@@ -1291,6 +1291,7 @@ inplace pattern file = liftIO (runManaged (do
     (tmpfile, handle) <- mktemp here "turtle"
     outhandle handle (sed pattern (input file))
     liftIO (hClose handle)
+    copymod file tmpfile
     mv tmpfile file ))
 
 
