@@ -206,6 +206,7 @@ module Turtle.Prelude (
     , chmod
     , getmod
     , setmod
+    , copymod
     , readable, nonreadable
     , writable, nonwritable
     , executable, nonexecutable
@@ -971,6 +972,13 @@ setmod :: MonadIO io => Permissions -> FilePath -> io ()
 setmod permissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
     Directory.setPermissions path' permissions )
+
+-- | Copy a file or directory's permissions (analogous to @chmod --reference@)
+copymod :: MonadIO io => FilePath -> FilePath -> io ()
+copymod sourcePath targetPath = liftIO (do
+    let sourcePath' = deslash (Filesystem.encodeString sourcePath)
+        targetPath' = deslash (Filesystem.encodeString targetPath)
+    Directory.copyPermissions sourcePath' targetPath' )
 
 -- | @+r@
 readable :: Permissions -> Permissions
