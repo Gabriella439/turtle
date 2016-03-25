@@ -1260,6 +1260,14 @@ grep pattern s = do
     _:_ <- return (match pattern txt)
     return txt
 
+-- | Keep all files that match the given `Pattern`
+fpgrep :: Pattern a -> Shell FilePath -> Shell FilePath
+fpgrep pattern s = do
+  fpath <- s
+  _:_ <- return (match pattern (either id id (toText fpath)))
+  return fpath
+
+
 {-| Replace all occurrences of a `Pattern` with its `Text` result
 
     `sed` performs substitution on a line-by-line basis, meaning that
