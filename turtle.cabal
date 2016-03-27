@@ -53,7 +53,6 @@ Library
         foldl                >= 1.1     && < 1.2,
         hostname                           < 1.1,
         managed              >= 1.0.3   && < 1.1,
-        optparse-generic     >= 1.1.0   && < 1.2,
         process              >= 1.0.1.1 && < 1.5,
         system-filepath      >= 0.3.1   && < 0.5,
         system-fileio        >= 0.2.1   && < 0.4,
