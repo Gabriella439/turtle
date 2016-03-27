@@ -1,6 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- | Example usage of this module:
+-- | You can use this module to either build your own command-line parsers or
+-- auto-generate them.
+--
+-- Here is an example of hand-writing a command-line parser:
 --
 -- > -- options.hs
 -- >
@@ -31,8 +34,30 @@
 -- >  --name NAME              Your first name
 -- >  --age AGE                Your current age
 --
--- See the "Turtle.Tutorial" module which contains more examples on how to use
+-- Here is an example of auto-generating a command-line parser:
+--
+-- > {-# LANGUAGE DeriveGeneric     #-}
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > 
+-- > import Turtle
+-- >
+-- > data Options = Options
+-- >     { name :: Text
+-- >     , age  :: Int
+-- >     } deriving (Generic)
+-- > 
+-- > instance ParseRecord Options
+-- > 
+-- > main = do
+-- >     Options name age <- getRecord "Greeting script"
+-- >     echo (format ("Hello there, "%s) name)
+-- >     echo (format ("You are "%d%" years old") age)
+--
+-- See the "Turtle.Tutorial" module, which contains more examples on how to use
 -- command-line parsing.
+--
+-- Also, see the "Options.Generic" module, which contains examples on
+-- auto-generating command-line parsers.
 
 module Turtle.Options
     ( -- * Types
@@ -66,6 +91,11 @@ module Turtle.Options
     , subcommand
     , options
 
+      -- * Automatic option parsing
+    , getRecord
+    , ParseRecord
+    , (<?>)(..)
+    , Generic
     ) where
 
 import Data.Monoid
@@ -79,6 +109,7 @@ import Control.Applicative
 import Control.Monad.IO.Class
 import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Options.Applicative (Parser)
+import Options.Generic (ParseRecord, Generic, (<?>)(..), getRecord)
 import qualified Options.Applicative as Opts
 import qualified Options.Applicative.Types as Opts
 import Prelude hiding (FilePath)

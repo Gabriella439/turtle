@@ -1695,10 +1695,32 @@ import Turtle
 -- > Increasing the volume by 10
 -- > 
 --
+-- You can also auto-generate command line parsers from data types.  For
+-- exapmle, you can simplify the volume adjuster example to just:
+--
+-- > {-# LANGUAGE DeriveGeneric     #-}
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > 
+-- > import Turtle
+-- > 
+-- > data Command = Up Int | Down Int deriving (Generic)
+-- > 
+-- > instance ParseRecord Command
+-- > 
+-- > main = do
+-- >     x <- getRecord "Volume adjuster"
+-- >     case x of
+-- >         Up   n -> echo (format ("Increasing the volume by "%d) n)
+-- >         Down n -> echo (format ("Decreasing the volume by "%d) n)
+--
 -- See the "Turtle.Options" module for more details and utilities related to
 -- parsing command line options.  This module is built on top of the
 -- @optparse-applicative@ library, which provides even more extensive
 -- functionality.
+--
+-- You can also check out the "Options.Generic" module from the
+-- @optparse-generic@ library, which contains more instructions on how to
+-- auto-generate command-line parsers.
 
 -- $conclusion
 --
