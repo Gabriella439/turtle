@@ -73,7 +73,7 @@ module Turtle.Shell (
 import Control.Applicative
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Managed (Managed, with)
+import Control.Monad.Managed (MonadManaged(..), with)
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
 import Data.Monoid
@@ -143,6 +143,12 @@ instance MonadIO Shell where
         x' <- step x a
         done x' )
 
+instance MonadManaged Shell where
+    using resource = Shell (\(FoldM step begin done) -> do
+        x  <- begin
+        x' <- with resource (step x)
+        done x' )
+
 instance Monoid a => Monoid (Shell a) where
     mempty  = pure mempty
     mappend = liftA2 mappend
@@ -165,10 +171,3 @@ select as = Shell (\(FoldM step begin done) -> do
             x' <- step x a
             k $! x'
     foldr step' done as $! x0 )
-
--- | Acquire a `Managed` resource within a `Shell` in an exception-safe way
-using :: Managed a -> Shell a
-using resource = Shell (\(FoldM step begin done) -> do
-    x  <- begin
-    x' <- with resource (step x)
-    done x' )

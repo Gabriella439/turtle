@@ -106,6 +106,9 @@ module Turtle.Tutorial (
     -- * MonadIO
     -- $monadio
 
+    -- * MonadManaged
+    -- $monadmanaged
+
     -- * Command line options
     -- $cmdline
 
@@ -1447,6 +1450,7 @@ import Turtle
 -- > Applicative Shell
 -- > Alternative Shell
 -- > MonadIO Shell
+-- > MonadManaged Shell
 -- > ...
 -- 
 -- These instances represent the overloaded functions associated with `Shell`
@@ -1456,6 +1460,31 @@ import Turtle
 -- However, not all subroutines in the Haskell ecosystem are overloaded in this
 -- way (such as `print`), so you will still occasionally need to wrap
 -- subroutines in `liftIO`.
+
+-- $monadmanaged
+--
+-- All `Managed` operations are also overloaded in @turtle@, meaning that you
+-- can omit the `using` command.  For example, we could change our last example
+-- to:
+--
+-- > #!/usr/bin/env stack
+-- > -- stack --install-ghc runghc --package turtle
+-- > 
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > 
+-- > import Turtle
+-- > 
+-- > main = sh (do
+-- >     dir       <- mktempdir "/tmp" "turtle"
+-- >     (file, _) <- mktemp dir "turtle"
+-- >     liftIO (print file)
+-- >     die "Urk!" )
+--
+-- Any command that is generalized over the `MonadManaged` interface can run
+-- in the following contexts:
+--
+-- * `Managed` (obviously)
+-- * `Shell`
 
 -- $cmdline
 --

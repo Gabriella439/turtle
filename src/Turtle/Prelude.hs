@@ -243,7 +243,7 @@ import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Managed (Managed, managed, runManaged)
+import Control.Monad.Managed (MonadManaged(..), managed, runManaged)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
@@ -1114,16 +1114,17 @@ cmd1 .||. cmd2 = do
     Deletes the temporary directory when done
 -}
 mktempdir
-    :: FilePath
+    :: MonadManaged managed
+    => FilePath
     -- ^ Parent directory
     -> Text
     -- ^ Directory name template
-    -> Managed FilePath
-mktempdir parent prefix = do
+    -> managed FilePath
+mktempdir parent prefix = using (do
     let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
     dir' <- managed (withTempDirectory parent' prefix')
-    return (Filesystem.decodeString dir')
+    return (Filesystem.decodeString dir'))
 
 {-| Create a temporary file underneath the given directory
 
@@ -1135,39 +1136,41 @@ mktempdir parent prefix = do
     simpler API if you don't need to worry about that possibility.
 -}
 mktemp
-    :: FilePath
+    :: MonadManaged managed
+    => FilePath
     -- ^ Parent directory
     -> Text
     -- ^ File name template
-    -> Managed (FilePath, Handle)
-mktemp parent prefix = do
+    -> managed (FilePath, Handle)
+mktemp parent prefix = using (do
     let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
     (file', handle) <- managed (\k ->
         withTempFile parent' prefix' (\file' handle -> k (file', handle)) )
-    return (Filesystem.decodeString file', handle)
+    return (Filesystem.decodeString file', handle) )
 
 {-| Create a temporary file underneath the given directory
 
     Deletes the temporary file when done
 -}
 mktempfile
-    :: FilePath
+    :: MonadManaged managed
+    => FilePath
     -- ^ Parent directory
     -> Text
     -- ^ File name template
-    -> Managed FilePath
-mktempfile parent prefix = do
+    -> managed FilePath
+mktempfile parent prefix = using (do
     let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
     (file', handle) <- managed (\k ->
         withTempFile parent' prefix' (\file' handle -> k (file', handle)) )
     liftIO (hClose handle)
-    return (Filesystem.decodeString file')
+    return (Filesystem.decodeString file') )
 
 -- | Fork a thread, acquiring an `Async` value
-fork :: IO a -> Managed (Async a)
-fork io = managed (withAsync io)
+fork :: MonadManaged managed => IO a -> managed (Async a)
+fork io = using (managed (withAsync io))
 
 -- | Read lines of `Text` from standard input
 stdin :: Shell Text
@@ -1230,16 +1233,16 @@ strict :: MonadIO io => Shell Text -> io Text
 strict s = liftM Text.unlines (fold s list)
 
 -- | Acquire a `Managed` read-only `Handle` from a `FilePath`
-readonly :: FilePath -> Managed Handle
-readonly file = managed (Filesystem.withTextFile file IO.ReadMode)
+readonly :: MonadManaged managed => FilePath -> managed Handle
+readonly file = using (managed (Filesystem.withTextFile file IO.ReadMode))
 
 -- | Acquire a `Managed` write-only `Handle` from a `FilePath`
-writeonly :: FilePath -> Managed Handle
-writeonly file = managed (Filesystem.withTextFile file IO.WriteMode)
+writeonly :: MonadManaged managed => FilePath -> managed Handle
+writeonly file = using (managed (Filesystem.withTextFile file IO.WriteMode))
 
 -- | Acquire a `Managed` append-only `Handle` from a `FilePath`
-appendonly :: FilePath -> Managed Handle
-appendonly file = managed (Filesystem.withTextFile file IO.AppendMode)
+appendonly :: MonadManaged managed => FilePath -> managed Handle
+appendonly file = using (managed (Filesystem.withTextFile file IO.AppendMode))
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
