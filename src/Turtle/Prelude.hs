@@ -173,6 +173,7 @@ module Turtle.Prelude (
     , lstree
     , cat
     , grep
+    , fpgrep
     , sed
     , inplace
     , find
@@ -1264,7 +1265,8 @@ grep pattern s = do
 fpgrep :: Pattern a -> Shell FilePath -> Shell FilePath
 fpgrep pattern s = do
   fpath <- s
-  _:_ <- return (match pattern (either id id (toText fpath)))
+  _:_ <- return (match pattern
+                 (either id id (Filesystem.toText fpath)))
   return fpath
 
 
