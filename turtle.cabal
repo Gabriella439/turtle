@@ -86,7 +86,7 @@ test-suite tests
     Default-Language: Haskell2010
     Build-Depends:
         base         >= 4      && < 5  ,
-        doctest      >= 0.9.12 && < 0.11
+        doctest      >= 0.9.12 && < 0.12
 
 benchmark bench
     Type: exitcode-stdio-1.0
