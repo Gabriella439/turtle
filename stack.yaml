@@ -1,5 +1,5 @@
-flags: {}
+resolver: lts-5.9
 packages:
 - '.'
-extra-deps: []
-resolver: lts-3.16
+extra-deps:
+- managed-1.0.3
