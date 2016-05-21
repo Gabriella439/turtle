@@ -46,7 +46,7 @@ Source-Repository head
 Library
     HS-Source-Dirs: src
     Build-Depends:
-        base                 >= 4.5     && < 5  ,
+        base                 >= 4.6     && < 5  ,
         async                >= 2.0.0.0 && < 2.2,
         clock                >= 0.4.1.2 && < 0.8,
         directory            >= 1.0.7   && < 1.3,
