@@ -37,11 +37,11 @@
 module Turtle.Options
     ( -- * Types
       Parser
-    , ArgName
-    , CommandName
+    , ArgName(..)
+    , CommandName(..)
     , ShortName
-    , Description
-    , HelpMessage
+    , Description(..)
+    , HelpMessage(..)
 
       -- * Flag-based option parsers
     , switch
