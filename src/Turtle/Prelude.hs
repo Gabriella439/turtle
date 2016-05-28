@@ -1481,7 +1481,7 @@ du path = liftIO (fmap Size (Filesystem.getSize path))
 
     The `Num` instance for `Size` interprets numeric literals as bytes
 -}
-newtype Size = Size { _bytes :: Integer } deriving (Num)
+newtype Size = Size { _bytes :: Integer } deriving (Eq, Ord, Num)
 
 instance Show Size where
     show = show . _bytes
