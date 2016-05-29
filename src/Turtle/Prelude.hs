@@ -241,6 +241,7 @@ import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TQueue as TQueue
 import Control.Exception (Exception, bracket, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
+import qualified Control.Foldl
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
@@ -1473,7 +1474,18 @@ datefile path = liftIO (Filesystem.getModified path)
 
 -- | Get the size of a file or a directory
 du :: MonadIO io => FilePath -> io Size
-du path = liftIO (fmap Size (Filesystem.getSize path))
+du path = liftIO (do
+    isDir <- testdir path
+    size <- do
+        if isDir
+        then do
+            let sizes = do
+                    child <- lstree path
+                    True  <- testfile child
+                    liftIO (Filesystem.getSize child)
+            fold sizes Control.Foldl.sum
+        else Filesystem.getSize path
+    return (Size size) )
 
 {-| An abstract file size
 
