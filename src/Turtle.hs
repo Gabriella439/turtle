@@ -148,7 +148,7 @@ import System.IO (Handle)
 import System.Exit (ExitCode(..))
 import Prelude hiding (FilePath)
 
-#if MIN_VERSION_base(4,8,0)
+#if __GLASGOW_HASKELL__ >= 710
 import Data.Function ((&))
 #else
 infixl 1 &
