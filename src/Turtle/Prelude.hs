@@ -153,6 +153,7 @@ module Turtle.Prelude (
     , mktempdir
     , fork
     , wait
+    , pushd
 
     -- * Shell
     , inproc
@@ -239,13 +240,13 @@ import Control.Concurrent.Async
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TQueue as TQueue
-import Control.Exception (Exception, bracket, finally, mask_, throwIO)
+import Control.Exception (Exception, bracket, bracket_, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Managed (MonadManaged(..), managed, runManaged)
+import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
@@ -724,6 +725,21 @@ env = liftIO (fmap (fmap toTexts) getEnvironment)
 -- | Change the current directory
 cd :: MonadIO io => FilePath -> io ()
 cd path = liftIO (Filesystem.setWorkingDirectory path)
+
+{-| Change the current directory. Once the current 'Shell' is done, it returns
+back to the original directory.
+
+>>> :set -XOverloadedStrings
+>>> cd "/"
+>>> view (pushd "/tmp" >> pwd)
+FilePath "/tmp"
+>>> pwd
+FilePath "/"
+-}
+pushd :: MonadManaged managed => FilePath -> managed ()
+pushd path = do
+    cwd <- pwd
+    using (managed_ (bracket_ (cd path) (cd cwd)))
 
 -- | Get the current directory
 pwd :: MonadIO io => io FilePath
