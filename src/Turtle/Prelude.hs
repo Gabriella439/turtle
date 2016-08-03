@@ -1505,7 +1505,7 @@ instance Show Size where
 >>> format sz 2309
 "2.309 KB"
 >>> format sz 949203
-"949.203 MB"
+"949.203 KB"
 >>> format sz 1600000000
 "1.600 GB"
 >>> format sz 999999999999999999
