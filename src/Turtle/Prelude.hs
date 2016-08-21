@@ -111,11 +111,11 @@ module Turtle.Prelude (
     , Filesystem.readTextFile
     , Filesystem.writeTextFile
     , arguments
-#if MIN_VERSION_base(4,7,0)
+#if __GLASGOW_HASKELL__ >= 710
     , export
     , unset
 #endif
-#if MIN_VERSION_base(4,6,0)
+#if __GLASGOW_HASKELL__ >= 708
     , need
 #endif
     , env
@@ -265,11 +265,11 @@ import Network.HostName (getHostName)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Environment (
     getArgs,
-#if MIN_VERSION_base(4,7,0)
+#if __GLASGOW_HASKELL__ >= 710
     setEnv,
     unsetEnv,
 #endif
-#if MIN_VERSION_base(4,6,0)
+#if __GLASGOW_HASKELL__ >= 708
     lookupEnv,
 #endif
     getEnvironment )
@@ -700,7 +700,7 @@ readline = liftIO (do
 arguments :: MonadIO io => io [Text]
 arguments = liftIO (fmap (map pack) getArgs)
 
-#if MIN_VERSION_base(4,7,0)
+#if __GLASGOW_HASKELL__ >= 710
 -- | Set or modify an environment variable
 export :: MonadIO io => Text -> Text -> io ()
 export key val = liftIO (setEnv (unpack key) (unpack val))
@@ -710,7 +710,7 @@ unset :: MonadIO io => Text -> io ()
 unset key = liftIO (unsetEnv (unpack key))
 #endif
 
-#if MIN_VERSION_base(4,6,0)
+#if __GLASGOW_HASKELL__ >= 708
 -- | Look up an environment variable
 need :: MonadIO io => Text -> io (Maybe Text)
 need key = liftIO (fmap (fmap pack) (lookupEnv (unpack key)))
