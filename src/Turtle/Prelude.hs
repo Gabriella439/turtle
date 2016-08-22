@@ -184,6 +184,7 @@ module Turtle.Prelude (
     , limit
     , limitWhile
     , cache
+    , json
 
     -- * Folds
     , countChars
@@ -247,14 +248,19 @@ import qualified Control.Foldl.Text
 import Control.Monad (liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Parser as Aeson
+import qualified Data.Attoparsec.ByteString as A
 #ifdef mingw32_HOST_OS
 import Data.Bits ((.&.))
 #endif
+import qualified Data.ByteString as ByteString
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
 import Data.Traversable
 import qualified Data.Text    as Text
+import qualified Data.Text.Encoding as Text
 import qualified Data.Text.IO as Text
 import Data.Typeable (Typeable)
 import qualified Filesystem
@@ -1474,6 +1480,41 @@ cache file s = do
                     liftIO (Text.hPutStrLn handle (Text.pack (show n)))
                     empty
             justs <|> nothing
+
+{- | Decode JSON text into aeson's 'Aeson.Value'. Invalid JSON values are
+    implicitly discarded.
+
+>>> view $ json $ select ["{ \"ke", "y\": [", " 1] }[", "]1"]
+Object (fromList [("key",Array [Number 1.0])])
+Array []
+Number 1.0
+>>> view $ json $ select ["][]"]
+Array []
+-}
+json :: Shell Text -> Shell Aeson.Value
+json s = Shell _foldIO'
+  where
+    _foldIO' (FoldM step begin done) = foldIO s
+        (Control.Foldl.premapM Text.encodeUtf8 (FoldM step' begin' done'))
+      where
+        step' (x, r) bs = case A.feed r bs of
+          A.Fail leftover _ _ ->
+            step' (x, r0) (ByteString.drop 1 leftover)
+          r'@(A.Partial {}) -> return (x, r')
+          r'@(A.Done leftover val) -> do
+            x' <- step x val
+            if ByteString.null leftover
+              then return (x', r')
+              else step' (x', r0) leftover
+        begin' = do
+          x0 <- begin
+          return (x0, r0)
+        done' (x, r) = case r of
+          A.Partial {} -> do
+            (x', _) <- step' (x, r) ""
+            done x'
+          _ -> done x
+        r0 = A.Partial (A.parse Aeson.value)
 
 -- | Split a line into chunks delimited by the given `Pattern`
 cut :: Pattern a -> Text -> [Text]
