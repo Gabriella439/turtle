@@ -65,7 +65,8 @@ Library
         time                               < 1.7 ,
         transformers         >= 0.2.0.0 && < 0.6 ,
         optparse-applicative >= 0.11    && < 0.14,
-        optional-args        >= 1.0     && < 2.0
+        optional-args        >= 1.0     && < 2.0 ,
+        unix-compat          >= 0.4     && < 0.5
     if os(windows)
         Build-Depends: Win32 >= 2.2.0.1 && < 2.4
     else
