@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -136,6 +137,7 @@ module Turtle.Prelude (
     , touch
     , time
     , hostname
+    , which
     , sleep
     , exit
     , die
@@ -295,7 +297,8 @@ import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle, hClose)
 import qualified System.IO as IO
 import System.IO.Temp (withTempDirectory, withTempFile)
-import System.IO.Error (catchIOError, ioeGetErrorType)
+import System.IO.Error
+    (catchIOError, ioeGetErrorType, isPermissionError, isDoesNotExistError)
 import qualified System.PosixCompat as PosixCompat
 import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
@@ -1094,6 +1097,32 @@ time io = do
 -- | Get the system's host name
 hostname :: MonadIO io => io Text
 hostname = liftIO (fmap Text.pack getHostName)
+
+-- | Show the full path of an executable file
+which :: MonadIO io => FilePath -> io (Maybe FilePath)
+which cmd = fold go Control.Foldl.head
+  where
+    go :: Shell FilePath
+    go =
+      need "PATH" >>= \case
+          Nothing -> empty
+          Just paths -> do
+            path <- select (Text.split (== ':') paths)
+            let path' = Filesystem.fromText path </> cmd
+            exists <- testfile path'
+            if exists
+                then do
+                    perms <- liftIO $
+                        getmod path'
+                          `catchIOError`
+                            \e ->
+                                if isPermissionError e || isDoesNotExistError e
+                                    then return Directory.emptyPermissions
+                                    else throwIO e
+                    if Directory.executable perms
+                        then return path'
+                        else empty
+                else empty
 
 {-| Sleep for the given duration
 
