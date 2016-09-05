@@ -22,7 +22,7 @@ Description: @turtle@ is a reimplementation of the Unix command line environment
     .
     * Portability: Works on Windows, OS X, and Linux
     .
-    * Exception safety: Safely acquire and release resources 
+    * Exception safety: Safely acquire and release resources
     .
     * Streaming: Transform or fold command output in constant space
     .
@@ -48,6 +48,7 @@ Library
     HS-Source-Dirs: src
     Build-Depends:
         base                 >= 4.6     && < 5   ,
+        ansi-wl-pprint       >= 0.6     && < 0.7 ,
         async                >= 2.0.0.0 && < 2.2 ,
         bytestring           >= 0.9.1.8 && < 0.11,
         clock                >= 0.4.1.2 && < 0.8 ,
