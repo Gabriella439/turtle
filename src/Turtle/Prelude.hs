@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -1105,26 +1104,24 @@ which cmd = fold (whichAll cmd) Control.Foldl.head
 
 -- | Show all matching executables in PATH, not just the first
 whichAll :: FilePath -> Shell FilePath
-whichAll cmd =
-    need "PATH" >>= \case
-        Nothing -> empty
-        Just paths -> do
-          path <- select (Text.split (== ':') paths)
-          let path' = Filesystem.fromText path </> cmd
+whichAll cmd = do
+  Just paths <- need "PATH"
+  path <- select (Text.split (== ':') paths)
+  let path' = Filesystem.fromText path </> cmd
 
-          exists <- testfile path'
-          guard (exists)
+  exists <- testfile path'
+  guard (exists)
 
-          let handler :: IOError -> IO Permissions
-              handler e =
-                  if isPermissionError e || isDoesNotExistError e
-                      then return Directory.emptyPermissions
-                      else throwIO e
+  let handler :: IOError -> IO Permissions
+      handler e =
+          if isPermissionError e || isDoesNotExistError e
+              then return Directory.emptyPermissions
+              else throwIO e
 
-          perms <- liftIO (getmod path' `catchIOError` handler)
+  perms <- liftIO (getmod path' `catchIOError` handler)
 
-          guard (Directory.executable perms)
-          return path'
+  guard (Directory.executable perms)
+  return path'
 
 {-| Sleep for the given duration
 
