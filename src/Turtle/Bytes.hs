@@ -117,4 +117,6 @@ stderr s = sh (do
 
 -- | Read in a stream's contents strictly
 strict :: MonadIO io => Shell ByteString -> io ByteString
-strict s = fmap Data.ByteString.concat (fold s Control.Foldl.list)
+strict s = do
+    listOfByteStrings <- fold s Control.Foldl.list
+    return (Data.ByteString.concat listOfByteStrings)
