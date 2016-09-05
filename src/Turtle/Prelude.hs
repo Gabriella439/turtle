@@ -236,7 +236,8 @@ module Turtle.Prelude (
 import Control.Applicative
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async
-    (Async, withAsync, withAsyncWithUnmask, wait, waitSTM, concurrently)
+    (Async, withAsync, withAsyncWithUnmask, waitSTM, concurrently)
+import qualified Control.Concurrent.Async
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TQueue as TQueue
@@ -1196,6 +1197,10 @@ mktempfile parent prefix = using (do
 -- | Fork a thread, acquiring an `Async` value
 fork :: MonadManaged managed => IO a -> managed (Async a)
 fork io = using (managed (withAsync io))
+
+-- | Wait for an `Async` action to complete
+wait :: MonadIO io => Async a -> io a
+wait a = liftIO (Control.Concurrent.Async.wait a)
 
 -- | Read lines of `Text` from standard input
 stdin :: Shell Text
