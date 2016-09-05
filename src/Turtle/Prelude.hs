@@ -228,6 +228,22 @@ module Turtle.Prelude (
     , gibibytes
     , tebibytes
 
+    -- * File status
+    , PosixCompat.FileStatus
+    , stat
+    , lstat
+    , fileSize
+    , accessTime
+    , modificationTime
+    , statusChangeTime
+    , PosixCompat.isBlockDevice
+    , PosixCompat.isCharacterDevice
+    , PosixCompat.isNamedPipe
+    , PosixCompat.isRegularFile
+    , PosixCompat.isDirectory
+    , PosixCompat.isSymbolicLink
+    , PosixCompat.isSocket
+
     -- * Exceptions
     , ProcFailed(..)
     , ShellFailed(..)
@@ -254,6 +270,7 @@ import Data.Bits ((.&.))
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
+import Data.Time.Clock.POSIX (POSIXTime)
 import Data.Traversable
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
@@ -281,6 +298,7 @@ import System.IO (Handle, hClose)
 import qualified System.IO as IO
 import System.IO.Temp (withTempDirectory, withTempFile)
 import System.IO.Error (catchIOError, ioeGetErrorType)
+import qualified System.PosixCompat as PosixCompat
 import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
 import qualified System.Win32 as Win32
@@ -289,10 +307,7 @@ import System.Posix (
     openDirStream,
     readDirStream,
     closeDirStream,
-    touchFile,
-    getSymbolicLinkStatus,
-    isDirectory,
-    isSymbolicLink )
+    touchFile )
 #endif
 import Prelude hiding (FilePath)
 
@@ -891,20 +906,10 @@ rmdir path = liftIO (Filesystem.removeDirectory path)
 rmtree :: MonadIO io => FilePath -> io ()
 rmtree path0 = liftIO (sh (loop path0))
   where
-#ifdef mingw32_HOST_OS
     loop path = do
-        isDir <- testdir path
-        if isDir
-            then (do
-                child <- ls path
-                loop child ) <|> rmdir path
-            else rm path
-#else
-    loop path = do
-        let path' = Filesystem.encodeString path
-        stat <- liftIO $ getSymbolicLinkStatus path'
-        let isLink = isSymbolicLink stat
-            isDir = isDirectory stat
+        linkstat <- lstat path
+        let isLink = PosixCompat.isSymbolicLink linkstat
+            isDir = PosixCompat.isDirectory linkstat
         if isLink
             then rm path
             else do
@@ -913,7 +918,6 @@ rmtree path0 = liftIO (sh (loop path0))
                         child <- ls path
                         loop child ) <|> rmdir path
                     else rm path
-#endif
 
 -- | Check if a file exists
 testfile :: MonadIO io => FilePath -> io Bool
@@ -1610,3 +1614,27 @@ countWords = premap Text.words (handles traverse genericLength)
 -}
 countLines :: Integral n => Fold Text n
 countLines = genericLength
+
+-- | Get the status of a file
+stat :: MonadIO io => FilePath -> io PosixCompat.FileStatus
+stat = liftIO . PosixCompat.getFileStatus . Filesystem.encodeString
+
+-- | Size of the file in bytes. Does not follow symlinks
+fileSize :: PosixCompat.FileStatus -> Size
+fileSize = fromIntegral . PosixCompat.fileSize
+
+-- | Time of last access
+accessTime :: PosixCompat.FileStatus -> POSIXTime
+accessTime = realToFrac . PosixCompat.accessTime
+
+-- | Time of last modification
+modificationTime :: PosixCompat.FileStatus -> POSIXTime
+modificationTime = realToFrac . PosixCompat.modificationTime
+
+-- | Time of last status change (i.e. owner, group, link count, mode, etc.)
+statusChangeTime :: PosixCompat.FileStatus -> POSIXTime
+statusChangeTime = realToFrac . PosixCompat.statusChangeTime
+
+-- | Get the status of a file, but don't follow symbolic links
+lstat :: MonadIO io => FilePath -> io PosixCompat.FileStatus
+lstat = liftIO . PosixCompat.getSymbolicLinkStatus . Filesystem.encodeString
