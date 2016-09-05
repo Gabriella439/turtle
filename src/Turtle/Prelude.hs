@@ -138,6 +138,7 @@ module Turtle.Prelude (
     , time
     , hostname
     , which
+    , whichAll
     , sleep
     , exit
     , die
@@ -261,7 +262,7 @@ import Control.Exception (Exception, bracket, bracket_, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
-import Control.Monad (liftM, msum, when, unless)
+import Control.Monad (guard, liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 #ifdef mingw32_HOST_OS
@@ -1100,29 +1101,30 @@ hostname = liftIO (fmap Text.pack getHostName)
 
 -- | Show the full path of an executable file
 which :: MonadIO io => FilePath -> io (Maybe FilePath)
-which cmd = fold go Control.Foldl.head
-  where
-    go :: Shell FilePath
-    go =
-      need "PATH" >>= \case
-          Nothing -> empty
-          Just paths -> do
-            path <- select (Text.split (== ':') paths)
-            let path' = Filesystem.fromText path </> cmd
-            exists <- testfile path'
-            if exists
-                then do
-                    perms <- liftIO $
-                        getmod path'
-                          `catchIOError`
-                            \e ->
-                                if isPermissionError e || isDoesNotExistError e
-                                    then return Directory.emptyPermissions
-                                    else throwIO e
-                    if Directory.executable perms
-                        then return path'
-                        else empty
-                else empty
+which cmd = fold (whichAll cmd) Control.Foldl.head
+
+-- | Show all matching executables in PATH, not just the first
+whichAll :: FilePath -> Shell FilePath
+whichAll cmd =
+    need "PATH" >>= \case
+        Nothing -> empty
+        Just paths -> do
+          path <- select (Text.split (== ':') paths)
+          let path' = Filesystem.fromText path </> cmd
+
+          exists <- testfile path'
+          guard (exists)
+
+          let handler :: IOError -> IO Permissions
+              handler e =
+                  if isPermissionError e || isDoesNotExistError e
+                      then return Directory.emptyPermissions
+                      else throwIO e
+
+          perms <- liftIO (getmod path' `catchIOError` handler)
+
+          guard (Directory.executable perms)
+          return path'
 
 {-| Sleep for the given duration
 
