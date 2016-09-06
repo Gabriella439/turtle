@@ -965,7 +965,7 @@ touch file = do
 
 > chmod rwo        "foo.txt"  -- chmod u=rw foo.txt
 > chmod executable "foo.txt"  -- chmod u+x foo.txt
-> chmod nonwritable "foo.txt" -- chmod u-x foo.txt
+> chmod nonwritable "foo.txt" -- chmod u-w foo.txt
 -}
 chmod
     :: MonadIO io
