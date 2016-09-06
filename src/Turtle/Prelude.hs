@@ -115,9 +115,7 @@ module Turtle.Prelude (
     , export
     , unset
 #endif
-#if __GLASGOW_HASKELL__ >= 708
     , need
-#endif
     , env
     , cd
     , pwd
@@ -726,10 +724,12 @@ unset :: MonadIO io => Text -> io ()
 unset key = liftIO (unsetEnv (unpack key))
 #endif
 
-#if __GLASGOW_HASKELL__ >= 708
 -- | Look up an environment variable
 need :: MonadIO io => Text -> io (Maybe Text)
+#if __GLASGOW_HASKELL__ >= 708
 need key = liftIO (fmap (fmap pack) (lookupEnv (unpack key)))
+#else
+need key = liftM (lookup key) env
 #endif
 
 -- | Retrieve all environment variables
