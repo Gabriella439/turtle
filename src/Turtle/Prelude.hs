@@ -1109,8 +1109,7 @@ whichAll cmd = do
   path <- select (Text.split (== ':') paths)
   let path' = Filesystem.fromText path </> cmd
 
-  exists <- testfile path'
-  guard (exists)
+  True <- testfile path'
 
   let handler :: IOError -> IO Permissions
       handler e =
