@@ -136,6 +136,8 @@ module Turtle.Prelude (
     , touch
     , time
     , hostname
+    , which
+    , whichAll
     , sleep
     , exit
     , die
@@ -259,7 +261,7 @@ import Control.Exception (Exception, bracket, bracket_, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
-import Control.Monad (liftM, msum, when, unless)
+import Control.Monad (guard, liftM, msum, when, unless)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 #ifdef mingw32_HOST_OS
@@ -295,7 +297,8 @@ import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle, hClose)
 import qualified System.IO as IO
 import System.IO.Temp (withTempDirectory, withTempFile)
-import System.IO.Error (catchIOError, ioeGetErrorType)
+import System.IO.Error
+    (catchIOError, ioeGetErrorType, isPermissionError, isDoesNotExistError)
 import qualified System.PosixCompat as PosixCompat
 import qualified System.Process as Process
 #ifdef mingw32_HOST_OS
@@ -1094,6 +1097,30 @@ time io = do
 -- | Get the system's host name
 hostname :: MonadIO io => io Text
 hostname = liftIO (fmap Text.pack getHostName)
+
+-- | Show the full path of an executable file
+which :: MonadIO io => FilePath -> io (Maybe FilePath)
+which cmd = fold (whichAll cmd) Control.Foldl.head
+
+-- | Show all matching executables in PATH, not just the first
+whichAll :: FilePath -> Shell FilePath
+whichAll cmd = do
+  Just paths <- need "PATH"
+  path <- select (Text.split (== ':') paths)
+  let path' = Filesystem.fromText path </> cmd
+
+  True <- testfile path'
+
+  let handler :: IOError -> IO Permissions
+      handler e =
+          if isPermissionError e || isDoesNotExistError e
+              then return Directory.emptyPermissions
+              else throwIO e
+
+  perms <- liftIO (getmod path' `catchIOError` handler)
+
+  guard (Directory.executable perms)
+  return path'
 
 {-| Sleep for the given duration
 
