@@ -201,6 +201,8 @@ module Turtle.Prelude (
     , shells
     , procStrict
     , shellStrict
+    , procStrictWithErr
+    , shellStrictWithErr
 
     -- * Permissions
     , Permissions
@@ -252,7 +254,8 @@ module Turtle.Prelude (
 import Control.Applicative
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async
-    (Async, withAsync, withAsyncWithUnmask, waitSTM, concurrently)
+    (Async, withAsync, withAsyncWithUnmask, waitSTM, concurrently,
+     Concurrently(..))
 import qualified Control.Concurrent.Async
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
@@ -447,6 +450,39 @@ shellStrict
     -- ^ Exit code and stdout
 shellStrict cmdLine = systemStrict (Process.shell (Text.unpack cmdLine))
 
+{-| Run a command using @execvp@, retrieving the exit code, stdout, and stderr
+    as a non-lazy blob of Text
+-}
+procStrictWithErr
+    :: MonadIO io
+    => Text
+    -- ^ Command
+    -> [Text]
+    -- ^ Arguments
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> io (ExitCode, Text, Text)
+    -- ^ (Exit code, stdout, stderr)
+procStrictWithErr cmd args =
+    systemStrictWithErr (Process.proc (Text.unpack cmd) (map Text.unpack args))
+
+{-| Run a command line using the shell, retrieving the exit code, stdout, and
+    stderr as a non-lazy blob of Text
+
+    This command is more powerful than `proc`, but highly vulnerable to code
+    injection if you template the command line with untrusted input
+-}
+shellStrictWithErr
+    :: MonadIO io
+    => Text
+    -- ^ Command line
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> io (ExitCode, Text, Text)
+    -- ^ (Exit code, stdout, stderr)
+shellStrictWithErr cmdLine =
+    systemStrictWithErr (Process.shell (Text.unpack cmdLine))
+
 {-| `system` generalizes `shell` and `proc` by allowing you to supply your own
     custom `CreateProcess`.  This is for advanced users who feel comfortable
     using the lower-level @process@ API
@@ -519,6 +555,46 @@ systemStrict p s = liftIO (do
         concurrently
             (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a)))
             (Text.hGetContents hOut) ) )
+
+systemStrictWithErr
+    :: MonadIO io
+    => Process.CreateProcess
+    -- ^ Command
+    -> Shell Text
+    -- ^ Lines of standard input
+    -> io (ExitCode, Text, Text)
+    -- ^ Exit code and stdout
+systemStrictWithErr p s = liftIO (do
+    let p' = p
+            { Process.std_in  = Process.CreatePipe
+            , Process.std_out = Process.CreatePipe
+            , Process.std_err = Process.CreatePipe
+            }
+
+    let open = do
+            (Just hIn, Just hOut, Just hErr, ph) <- liftIO (Process.createProcess p')
+            IO.hSetBuffering hIn IO.LineBuffering
+            return (hIn, hOut, hErr, ph)
+
+    -- Prevent double close
+    mvar <- newMVar False
+    let close handle = do
+            modifyMVar_ mvar (\finalized -> do
+                unless finalized (hClose handle)
+                return True )
+
+    bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, hErr, ph) -> do
+        let feedIn :: (forall a. IO a -> IO a) -> IO ()
+            feedIn restore =
+                restore (sh (do
+                    txt <- s
+                    liftIO (Text.hPutStrLn hIn txt) ) )
+                `finally` close hIn
+
+        runConcurrently $ (,,)
+            <$> Concurrently (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a)))
+            <*> Concurrently (Text.hGetContents hOut)
+            <*> Concurrently (Text.hGetContents hErr) ) )
 
 {-| Run a command using @execvp@, streaming @stdout@ as lines of `Text`
 
