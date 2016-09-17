@@ -461,9 +461,11 @@ system
     -- ^ Exit code
 system p s = liftIO (do
     let open = do
-            (Just hIn, Nothing, Nothing, ph) <- Process.createProcess p
-            IO.hSetBuffering hIn IO.LineBuffering
-            return (hIn, ph)
+            (m, Nothing, Nothing, ph) <- Process.createProcess p
+            case m of
+                Just hIn -> IO.hSetBuffering hIn IO.LineBuffering
+                _        -> return ()
+            return (m, ph)
 
     -- Prevent double close
     mvar <- newMVar False
@@ -471,15 +473,24 @@ system p s = liftIO (do
             modifyMVar_ mvar (\finalized -> do
                 unless finalized (hClose handle)
                 return True )
+    let close' (Just hIn, ph) = do
+            close hIn
+            Process.terminateProcess ph
+        close' (Nothing , ph) = do
+            Process.terminateProcess ph
 
-    bracket open (\(hIn, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, ph) -> do
-        let feedIn :: (forall a. IO a -> IO a) -> IO ()
-            feedIn restore =
-                restore (sh (do
-                    txt <- s
-                    liftIO (Text.hPutStrLn hIn txt) ) )
-                `finally` close hIn
-        mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a) ) ) )
+    let handle (Just hIn, ph) = do
+            let feedIn :: (forall a. IO a -> IO a) -> IO ()
+                feedIn restore =
+                    restore (sh (do
+                        txt <- s
+                        liftIO (Text.hPutStrLn hIn txt) ) )
+                    `finally` close hIn
+            mask_ (withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* wait a) )
+        handle (Nothing , ph) = do
+            Process.waitForProcess ph
+
+    bracket open close' handle )
 
 systemStrict
     :: MonadIO io
