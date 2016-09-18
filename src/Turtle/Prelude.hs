@@ -175,6 +175,7 @@ module Turtle.Prelude (
     , cat
     , grep
     , sed
+    , onFiles
     , inplace
     , find
     , yes
@@ -1426,6 +1427,15 @@ sed pattern s = do
   where
     message = "sed: the given pattern matches the empty string"
     matchesEmpty = not . null . flip match ""
+
+-- | Make a `Shell Text -> Shell Text` function work on `FilePath`s instead.
+-- | Ignores any paths which cannot be decoded as valid `Text`.
+onFiles :: (Shell Text -> Shell Text) -> Shell FilePath -> Shell FilePath
+onFiles f = fmap Filesystem.fromText . f . getRights . fmap Filesystem.toText
+  where
+    getRights :: forall a. Shell (Either a Text) -> Shell Text
+    getRights s = s >>= either (const empty) return
+
 
 -- | Like `sed`, but operates in place on a `FilePath` (analogous to @sed -i@)
 inplace :: MonadIO io => Pattern Text -> FilePath -> io ()
