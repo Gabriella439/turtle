@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Example usage of this module:
@@ -87,9 +88,16 @@ import Text.PrettyPrint.ANSI.Leijen (Doc)
 -- | Parse the given options from the command line
 options :: MonadIO io => Description -> Parser a -> io a
 options desc parser = liftIO
-    $ Opts.execParser
+    $ Opts.customExecParser (Opts.prefs prefs)
     $ Opts.info (Opts.helper <*> parser)
                 (Opts.headerDoc (Just (getDescription desc)))
+  where
+    prefs :: Opts.PrefsMod
+#if MIN_VERSION_optparse_applicative(0,13,0)
+    prefs = Opts.showHelpOnError <> Opts.showHelpOnEmpty
+#else
+    prefs = Opts.showHelpOnError
+#endif
 
 {-| The name of a command-line argument
 
