@@ -243,4 +243,4 @@ subcommand cmdName desc p =
 
     info = Opts.info
         (Opts.helper <*> p)
-        (Opts.headerDoc (Just (getDescription desc)))
+        (Opts.progDescDoc (Just (getDescription desc)))
