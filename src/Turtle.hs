@@ -70,6 +70,7 @@ module Turtle (
     , module Turtle.Pattern
     , module Turtle.Options
     , module Turtle.Shell
+    , module Turtle.Line
     , module Turtle.Prelude
     , module Control.Applicative
     , module Control.Monad
@@ -92,6 +93,7 @@ import Turtle.Format
 import Turtle.Pattern
 import Turtle.Options
 import Turtle.Shell
+import Turtle.Line
 import Turtle.Prelude
 import Control.Applicative
     ( Applicative(..)
