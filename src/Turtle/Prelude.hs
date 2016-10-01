@@ -156,10 +156,6 @@ module Turtle.Prelude (
     , pushd
 
     -- * Shell
-    , inproc
-    , inshell
-    , inprocWithErr
-    , inshellWithErr
     , stdin
     , input
     , inhandle
@@ -200,6 +196,10 @@ module Turtle.Prelude (
     , system
     , procs
     , shells
+    , inproc
+    , inshell
+    , inprocWithErr
+    , inshellWithErr
     , procStrict
     , shellStrict
     , procStrictWithErr
