@@ -484,6 +484,15 @@ shellStrictWithErr
 shellStrictWithErr cmdLine =
     systemStrictWithErr (Process.shell (Text.unpack cmdLine))
 
+-- | Halt an `Async` thread, re-raising any exceptions it might have thrown
+halt :: Async a -> IO ()
+halt a = do
+    m <- Control.Concurrent.Async.poll a
+    case m of
+        Nothing        -> Control.Concurrent.Async.cancel a
+        Just (Left  e) -> throwIO e
+        Just (Right _) -> return ()
+
 {-| `system` generalizes `shell` and `proc` by allowing you to supply your own
     custom `CreateProcess`.  This is for advanced users who feel comfortable
     using the lower-level @process@ API
@@ -523,7 +532,7 @@ system p s = liftIO (do
                         txt <- s
                         liftIO (Text.hPutStrLn hIn txt) ) )
                     `finally` close hIn
-            mask_ (withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* wait a) )
+            mask_ (withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* halt a) )
         handle (Nothing , ph) = do
             Process.waitForProcess ph
 
@@ -565,7 +574,7 @@ systemStrict p s = liftIO (do
                 `finally` close hIn
 
         concurrently
-            (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a)))
+            (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
             (Text.hGetContents hOut) ) )
 
 systemStrictWithErr
@@ -604,7 +613,7 @@ systemStrictWithErr p s = liftIO (do
                 `finally` close hIn
 
         runConcurrently $ (,,)
-            <$> Concurrently (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* wait a)))
+            <$> Concurrently (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
             <*> Concurrently (Text.hGetContents hOut)
             <*> Concurrently (Text.hGetContents hErr) ) )
 
@@ -674,7 +683,7 @@ stream p s = do
             `finally` close hIn
 
     a <- using (managed (mask_ . withAsyncWithUnmask feedIn))
-    inhandle hOut <|> (liftIO (Process.waitForProcess ph *> wait a) *> empty)
+    inhandle hOut <|> (liftIO (Process.waitForProcess ph *> halt a) *> empty)
 
 streamWithErr
     :: Process.CreateProcess
