@@ -319,6 +319,7 @@ import Prelude hiding (FilePath)
 import Turtle.Pattern (Pattern, anyChar, chars, match, selfless, sepBy)
 import Turtle.Shell
 import Turtle.Format (Format, format, makeFormat, d, w, (%))
+import Turtle.Line
 
 {-| Run a command using @execvp@, retrieving the exit code
 
@@ -330,7 +331,7 @@ proc
     -- ^ Command
     -> [Text]
     -- ^ Arguments
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io ExitCode
     -- ^ Exit code
@@ -353,7 +354,7 @@ shell
     :: MonadIO io
     => Text
     -- ^ Command line
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io ExitCode
     -- ^ Exit code
@@ -382,7 +383,7 @@ procs
     -- ^ Command
     -> [Text]
     -- ^ Arguments
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io ()
 procs cmd args s = do
@@ -405,7 +406,7 @@ shells
     :: MonadIO io
     => Text
     -- ^ Command line
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io ()
     -- ^ Exit code
@@ -426,7 +427,7 @@ procStrict
     -- ^ Command
     -> [Text]
     -- ^ Arguments
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io (ExitCode, Text)
     -- ^ Exit code and stdout
@@ -445,7 +446,7 @@ shellStrict
     :: MonadIO io
     => Text
     -- ^ Command line
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io (ExitCode, Text)
     -- ^ Exit code and stdout
@@ -460,7 +461,7 @@ procStrictWithErr
     -- ^ Command
     -> [Text]
     -- ^ Arguments
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io (ExitCode, Text, Text)
     -- ^ (Exit code, stdout, stderr)
@@ -477,7 +478,7 @@ shellStrictWithErr
     :: MonadIO io
     => Text
     -- ^ Command line
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io (ExitCode, Text, Text)
     -- ^ (Exit code, stdout, stderr)
@@ -501,7 +502,7 @@ system
     :: MonadIO io
     => Process.CreateProcess
     -- ^ Command
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io ExitCode
     -- ^ Exit code
@@ -529,8 +530,8 @@ system p s = liftIO (do
             let feedIn :: (forall a. IO a -> IO a) -> IO ()
                 feedIn restore =
                     restore (sh (do
-                        txt <- s
-                        liftIO (Text.hPutStrLn hIn txt) ) )
+                        line <- s
+                        liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
                     `finally` close hIn
             mask_ (withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* halt a) )
         handle (Nothing , ph) = do
@@ -542,7 +543,7 @@ systemStrict
     :: MonadIO io
     => Process.CreateProcess
     -- ^ Command
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io (ExitCode, Text)
     -- ^ Exit code and stdout
@@ -569,8 +570,8 @@ systemStrict p s = liftIO (do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
             feedIn restore =
                 restore (sh (do
-                    txt <- s
-                    liftIO (Text.hPutStrLn hIn txt) ) )
+                    line <- s
+                    liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
                 `finally` close hIn
 
         concurrently
@@ -581,7 +582,7 @@ systemStrictWithErr
     :: MonadIO io
     => Process.CreateProcess
     -- ^ Command
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
     -> io (ExitCode, Text, Text)
     -- ^ Exit code and stdout
@@ -608,8 +609,8 @@ systemStrictWithErr p s = liftIO (do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
             feedIn restore =
                 restore (sh (do
-                    txt <- s
-                    liftIO (Text.hPutStrLn hIn txt) ) )
+                    line <- s
+                    liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
                 `finally` close hIn
 
         runConcurrently $ (,,)
@@ -626,9 +627,9 @@ inproc
     -- ^ Command
     -> [Text]
     -- ^ Arguments
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard output
 inproc cmd args = stream (Process.proc (unpack cmd) (map unpack args))
 
@@ -642,18 +643,18 @@ inproc cmd args = stream (Process.proc (unpack cmd) (map unpack args))
 inshell
     :: Text
     -- ^ Command line
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard output
 inshell cmd = stream (Process.shell (unpack cmd))
 
 stream
     :: Process.CreateProcess
     -- ^ Command
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard output
 stream p s = do
     let p' = p
@@ -678,8 +679,8 @@ stream p s = do
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
         feedIn restore =
             restore (sh (do
-                txt <- s
-                liftIO (Text.hPutStrLn hIn txt) ) )
+                line <- s
+                liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
             `finally` close hIn
 
     a <- using (managed (mask_ . withAsyncWithUnmask feedIn))
@@ -688,9 +689,9 @@ stream p s = do
 streamWithErr
     :: Process.CreateProcess
     -- ^ Command
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
-    -> Shell (Either Text Text)
+    -> Shell (Either Line Line)
     -- ^ Lines of standard output
 streamWithErr p s = do
     let p' = p
@@ -715,22 +716,22 @@ streamWithErr p s = do
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
         feedIn restore =
             restore (sh (do
-                txt <- s
-                liftIO (Text.hPutStrLn hIn txt) ) )
+                line <- s
+                liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
             `finally` close hIn
 
     queue <- liftIO TQueue.newTQueueIO
     let forwardOut :: (forall a. IO a -> IO a) -> IO ()
         forwardOut restore =
             restore (sh (do
-                txt <- inhandle hOut
-                liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Right txt)))) ))
+                line <- inhandle hOut
+                liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Right line)))) ))
             `finally` STM.atomically (TQueue.writeTQueue queue Nothing)
     let forwardErr :: (forall a. IO a -> IO a) -> IO ()
         forwardErr restore =
             restore (sh (do
-                txt <- inhandle hErr
-                liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Left  txt)))) ))
+                line <- inhandle hErr
+                liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Left  line)))) ))
             `finally` STM.atomically (TQueue.writeTQueue queue Nothing)
     let drain = Shell (\(FoldM step begin done) -> do
             x0 <- begin
@@ -766,9 +767,9 @@ inprocWithErr
     -- ^ Command
     -> [Text]
     -- ^ Arguments
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
-    -> Shell (Either Text Text)
+    -> Shell (Either Line Line)
     -- ^ Lines of either standard output (`Right`) or standard error (`Left`)
 inprocWithErr cmd args =
     streamWithErr (Process.proc (unpack cmd) (map unpack args))
@@ -785,30 +786,30 @@ inprocWithErr cmd args =
 inshellWithErr
     :: Text
     -- ^ Command line
-    -> Shell Text
+    -> Shell Line
     -- ^ Lines of standard input
-    -> Shell (Either Text Text)
+    -> Shell (Either Line Line)
     -- ^ Lines of either standard output (`Right`) or standard error (`Left`)
 inshellWithErr cmd = streamWithErr (Process.shell (unpack cmd))
 
 -- | Print to @stdout@
-echo :: MonadIO io => Text -> io ()
-echo txt = liftIO (Text.putStrLn txt)
+echo :: MonadIO io => Line -> io ()
+echo line = liftIO (Text.putStrLn (lineToText line))
 
 -- | Print to @stderr@
-err :: MonadIO io => Text -> io ()
-err txt = liftIO (Text.hPutStrLn IO.stderr txt)
+err :: MonadIO io => Line -> io ()
+err line = liftIO (Text.hPutStrLn IO.stderr (lineToText line))
 
 {-| Read in a line from @stdin@
 
     Returns `Nothing` if at end of input
 -}
-readline :: MonadIO io => io (Maybe Text)
+readline :: MonadIO io => io (Maybe Line)
 readline = liftIO (do
     eof <- IO.isEOF
     if eof
         then return Nothing
-        else fmap (Just . pack) getLine )
+        else fmap (Just . unsafeTextToLine . pack) getLine )
 
 -- | Get command line arguments in a list
 arguments :: MonadIO io => io [Text]
@@ -1331,17 +1332,17 @@ wait :: MonadIO io => Async a -> io a
 wait a = liftIO (Control.Concurrent.Async.wait a)
 
 -- | Read lines of `Text` from standard input
-stdin :: Shell Text
+stdin :: Shell Line
 stdin = inhandle IO.stdin
 
 -- | Read lines of `Text` from a file
-input :: FilePath -> Shell Text
+input :: FilePath -> Shell Line
 input file = do
     handle <- using (readonly file)
     inhandle handle
 
 -- | Read lines of `Text` from a `Handle`
-inhandle :: Handle -> Shell Text
+inhandle :: Handle -> Shell Line
 inhandle handle = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     let loop x = do
@@ -1350,45 +1351,45 @@ inhandle handle = Shell (\(FoldM step begin done) -> do
                 then done x
                 else do
                     txt <- Text.hGetLine handle
-                    x'  <- step x txt
+                    x'  <- step x (unsafeTextToLine txt)
                     loop $! x'
     loop $! x0 )
 
 -- | Stream lines of `Text` to standard output
-stdout :: MonadIO io => Shell Text -> io ()
+stdout :: MonadIO io => Shell Line -> io ()
 stdout s = sh (do
-    txt <- s
-    liftIO (echo txt) )
+    line <- s
+    liftIO (echo line) )
 
 -- | Stream lines of `Text` to a file
-output :: MonadIO io => FilePath -> Shell Text -> io ()
+output :: MonadIO io => FilePath -> Shell Line -> io ()
 output file s = sh (do
     handle <- using (writeonly file)
-    txt    <- s
-    liftIO (Text.hPutStrLn handle txt) )
+    line   <- s
+    liftIO (Text.hPutStrLn handle (lineToText line)) )
 
 -- | Stream lines of `Text` to a `Handle`
-outhandle :: MonadIO io => Handle -> Shell Text -> io ()
+outhandle :: MonadIO io => Handle -> Shell Line -> io ()
 outhandle handle s = sh (do
-    txt <- s
-    liftIO (Text.hPutStrLn handle txt) )
+    line <- s
+    liftIO (Text.hPutStrLn handle (lineToText line)) )
 
 -- | Stream lines of `Text` to append to a file
-append :: MonadIO io => FilePath -> Shell Text -> io ()
+append :: MonadIO io => FilePath -> Shell Line -> io ()
 append file s = sh (do
     handle <- using (appendonly file)
-    txt    <- s
-    liftIO (Text.hPutStrLn handle txt) )
+    line   <- s
+    liftIO (Text.hPutStrLn handle (lineToText line)) )
 
 -- | Stream lines of `Text` to standard error
-stderr :: MonadIO io => Shell Text -> io ()
+stderr :: MonadIO io => Shell Line -> io ()
 stderr s = sh (do
-    txt <- s
-    liftIO (err txt) )
+    line <- s
+    liftIO (err line) )
 
 -- | Read in a stream's contents strictly
-strict :: MonadIO io => Shell Text -> io Text
-strict s = liftM Text.unlines (fold s list)
+strict :: MonadIO io => Shell Line -> io Text
+strict s = liftM linesToText (fold s list)
 
 -- | Acquire a `Managed` read-only `Handle` from a `FilePath`
 readonly :: MonadManaged managed => FilePath -> managed Handle
@@ -1407,11 +1408,11 @@ cat :: [Shell a] -> Shell a
 cat = msum
 
 -- | Keep all lines that match the given `Pattern`
-grep :: Pattern a -> Shell Text -> Shell Text
+grep :: Pattern a -> Shell Line -> Shell Line
 grep pattern s = do
-    txt <- s
-    _:_ <- return (match pattern txt)
-    return txt
+    line <- s
+    _:_ <- return (match pattern (lineToText line))
+    return line
 
 {-| Replace all occurrences of a `Pattern` with its `Text` result
 
@@ -1425,14 +1426,14 @@ grep pattern s = do
     and `die` with an error message if they occur, but this detection is
     necessarily incomplete.
 -}
-sed :: Pattern Text -> Shell Text -> Shell Text
+sed :: Pattern Text -> Shell Line -> Shell Line
 sed pattern s = do
     when (matchesEmpty pattern) (die message)
     let pattern' = fmap Text.concat
             (many (pattern <|> fmap Text.singleton anyChar))
-    txt    <- s
-    txt':_ <- return (match pattern' txt)
-    return txt'
+    line   <- s
+    txt':_ <- return (match pattern' (lineToText line))
+    select (textToLines txt')
   where
     message = "sed: the given pattern matches the empty string"
     matchesEmpty = not . null . flip match ""
@@ -1466,7 +1467,7 @@ find pattern dir = do
     return path
 
 -- | A Stream of @\"y\"@s
-yes :: Shell Text
+yes :: Shell Line
 yes = fmap (\_ -> "y") endless
 
 -- | Number each element of a `Shell` (starting at 0)
@@ -1596,8 +1597,8 @@ limitWhile predicate s = Shell (\(FoldM step begin done) -> do
 cache :: (Read a, Show a) => FilePath -> Shell a -> Shell a
 cache file s = do
     let cached = do
-            txt <- input file
-            case reads (Text.unpack txt) of
+            line <- input file
+            case reads (Text.unpack (lineToText line)) of
                 [(ma, "")] -> return ma
                 _          ->
                     die (format ("cache: Invalid data stored in "%w) file)
@@ -1726,8 +1727,10 @@ tebibytes = (`div` 1024) . gibibytes
     This uses the convention that the elements of the stream are implicitly
     ended by newlines that are one character wide
 -}
-countChars :: Integral n => Fold Text n
-countChars = Control.Foldl.Text.length + charsPerNewline * countLines
+countChars :: Integral n => Fold Line n
+countChars =
+  premap lineToText Control.Foldl.Text.length +
+    charsPerNewline * countLines
 
 charsPerNewline :: Num a => a
 #ifdef mingw32_HOST_OS
@@ -1737,15 +1740,15 @@ charsPerNewline = 1
 #endif
 
 -- | Count the number of words in the stream (like @wc -w@)
-countWords :: Integral n => Fold Text n
-countWords = premap Text.words (handles traverse genericLength)
+countWords :: Integral n => Fold Line n
+countWords = premap (Text.words . lineToText) (handles traverse genericLength)
 
 {-| Count the number of lines in the stream (like @wc -l@)
 
     This uses the convention that each element of the stream represents one
     line
 -}
-countLines :: Integral n => Fold Text n
+countLines :: Integral n => Fold Line n
 countLines = genericLength
 
 -- | Get the status of a file
