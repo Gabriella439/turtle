@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Example usage of this module:
@@ -82,13 +83,21 @@ import Options.Applicative (Parser)
 import qualified Options.Applicative as Opts
 import qualified Options.Applicative.Types as Opts
 import Prelude hiding (FilePath)
+import Text.PrettyPrint.ANSI.Leijen (Doc)
 
 -- | Parse the given options from the command line
 options :: MonadIO io => Description -> Parser a -> io a
 options desc parser = liftIO
-    $ Opts.execParser
+    $ Opts.customExecParser (Opts.prefs prefs)
     $ Opts.info (Opts.helper <*> parser)
-                (Opts.header (Text.unpack (getDescription desc)))
+                (Opts.headerDoc (Just (getDescription desc)))
+  where
+    prefs :: Opts.PrefsMod
+#if MIN_VERSION_optparse_applicative(0,13,0)
+    prefs = Opts.showHelpOnError <> Opts.showHelpOnEmpty
+#else
+    prefs = Opts.showHelpOnError
+#endif
 
 {-| The name of a command-line argument
 
@@ -115,7 +124,7 @@ newtype CommandName = CommandName { getCommandName :: Text }
 
     This description will appear in the header of the @--help@ output
 -}
-newtype Description = Description { getDescription :: Text }
+newtype Description = Description { getDescription :: Doc }
     deriving (IsString)
 
 {-| A helpful message explaining what a flag does
@@ -234,4 +243,4 @@ subcommand cmdName desc p =
 
     info = Opts.info
         (Opts.helper <*> p)
-        (Opts.header (Text.unpack (getDescription desc)))
+        (Opts.progDescDoc (Just (getDescription desc)))

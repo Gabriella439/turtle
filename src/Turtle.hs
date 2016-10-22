@@ -70,6 +70,7 @@ module Turtle (
     , module Turtle.Pattern
     , module Turtle.Options
     , module Turtle.Shell
+    , module Turtle.Line
     , module Turtle.Prelude
     , module Control.Applicative
     , module Control.Monad
@@ -92,6 +93,7 @@ import Turtle.Format
 import Turtle.Pattern
 import Turtle.Options
 import Turtle.Shell
+import Turtle.Line
 import Turtle.Prelude
 import Control.Applicative
     ( Applicative(..)
@@ -148,7 +150,7 @@ import System.IO (Handle)
 import System.Exit (ExitCode(..))
 import Prelude hiding (FilePath)
 
-#if MIN_VERSION_base(4,8,0)
+#if __GLASGOW_HASKELL__ >= 710
 import Data.Function ((&))
 #else
 infixl 1 &

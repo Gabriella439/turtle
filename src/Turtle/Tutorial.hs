@@ -1,3 +1,4 @@
+{-# LANGUAGE NoCPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 {-| Use @turtle@ if you want to write light-weight and maintainable shell
@@ -373,7 +374,7 @@ import Turtle
 -- > $ ./example.hs
 -- > 
 -- > example.hs:8:10:
--- >     Couldn't match expected type `Text' with actual type `UTCTime'
+-- >     Couldn't match expected type `Line' with actual type `UTCTime'
 -- >     In the first argument of `echo', namely `time'
 -- >     In a stmt of a 'do' block: echo time
 -- >     In the expression:
@@ -382,13 +383,14 @@ import Turtle
 -- >            echo time }
 --
 -- The error points to the last line of our program: @(example.hs:8:10)@ means
--- line 8, column 10 of our program.  If you study the error message closely
--- you'll see that the `echo` function expects a `Text` value, but we passed it
--- @\'time\'@, which was a `UTCTime` value.  Although the error is at the end of
--- our script, Haskell catches this error before even running the script.  When
--- we \"interpret\" a Haskell script the Haskell compiler actually compiles the
--- script without any optimizations to generate a temporary executable and then
--- runs the executable, much like Perl does for Perl scripts.
+-- line 8, column 10 of our program. If you study the error message closely
+-- you'll see that the `echo` function expects a `Line` value (a piece of text
+-- without newlines), but we passed it @\'time\'@, which was a `UTCTime` value.
+-- Although the error is at the end of our script, Haskell catches this error
+-- before even running the script.  When we \"interpret\" a Haskell script the
+-- Haskell compiler actually compiles the script without any optimizations to
+-- generate a temporary executable and then runs the executable, much like Perl
+-- does for Perl scripts.
 --
 -- You might wonder: \"where are the types?\"  None of the above programs had
 -- any type signatures or type annotations, yet the compiler still detected type
@@ -590,8 +592,8 @@ import Turtle
 -- > --      v  v
 -- > main :: IO ()
 --
--- Not every top-level value has to be a subroutine, though.  For example, you
--- can define unadorned `Text` values at the top-level, as we saw previously:
+-- Not every top-level value has to be a subroutine, though. For example, you
+-- can define unadorned `Line` values at the top-level, as we saw previously:
 --
 -- > #!/usr/bin/env stack
 -- > -- stack --install-ghc runghc --package turtle
@@ -600,7 +602,7 @@ import Turtle
 -- > 
 -- > import Turtle
 -- > 
--- > str :: Text
+-- > str :: Line
 -- > str = "Hello!"
 -- > 
 -- > main :: IO ()
@@ -638,21 +640,21 @@ import Turtle
 -- >     In an equation for `str': str = "Hello, world!"
 -- > 
 -- > example.hs:11:13:
--- >     Couldn't match expected type `Text' with actual type `Int'
+-- >     Couldn't match expected type `Line' with actual type `Int'
 -- >     In the first argument of `echo', namely `str'
 -- >     In the expression: echo str
 -- >     In an equation for `main': main = echo str
 --
 -- The first error message relates to the @OverloadedStrings@ extensions. When
 -- we enable @OverloadedStrings@ the compiler overloads string literals,
--- interpreting them as any type that implements the `IsString` interface.  The
+-- interpreting them as any type that implements the `IsString` interface. The
 -- error message says that `Int` does not implement the `IsString` interface so
 -- the compiler cannot interpret a string literal as an `Int`.  On the other
--- hand the `Text` and `Turtle.FilePath` types do implement `IsString`, which
--- is why we can interpret string literals as `Text` or `Turtle.FilePath`
--- values.
+-- hand the `Text`, `Line` and `Turtle.FilePath` types do implement `IsString`,
+-- which is why we can interpret string literals as `Text`, `Line` or
+-- `Turtle.FilePath` values.
 --
--- The second error message says that `echo` expects a `Text` value, but we
+-- The second error message says that `echo` expects a `Line` value, but we
 -- declared @str@ to be an `Int`, so the compiler aborts compilation, requiring
 -- us to either fix or delete our type signature.
 --
@@ -672,7 +674,7 @@ import Turtle
 -- > 
 -- > import Turtle
 -- > 
--- > str :: Text
+-- > str :: Line
 -- > str = 4
 -- > 
 -- > main :: IO ()
@@ -683,16 +685,16 @@ import Turtle
 -- > $ ./example.hs
 -- > 
 -- > example.hs:8:7:
--- >     No instance for (Num Text)
+-- >     No instance for (Num Line)
 -- >       arising from the literal `4'
--- >     Possible fix: add an instance declaration for (Num Text)
+-- >     Possible fix: add an instance declaration for (Num Line)
 -- >     In the expression: 4
 -- >     In an equation for `str': str = 4
 --
 -- Haskell also automatically overloads numeric literals, too.  The compiler
 -- interprets integer literals as any type that implements the `Num` interface.
--- The `Text` type does not implement the `Num` interface, so we cannot
--- interpret integer literals as `Text` strings.
+-- The `Line` type does not implement the `Num` interface, so we cannot
+-- interpret integer literals as `Line` strings.
 
 -- $system
 --
@@ -733,7 +735,7 @@ import Turtle
 -- @
 -- `shell`
 --     :: Text         -- Command line
---     -> Shell Text   -- Standard input (as lines of \`Text\`)
+--     -> Shell Line   -- Standard input (as lines of \`Text\`)
 --     -> IO `ExitCode`  -- Exit code of the shell command
 -- @
 --
@@ -774,7 +776,7 @@ import Turtle
 -- `proc`
 --     :: Text         -- Program
 --     -> [Text]       -- Arguments
---     -> Shell Text   -- Standard input (as lines of \`Text\`)
+--     -> Shell Line   -- Standard input (as lines of \`Text\`)
 --     -> IO ExitCode  -- Exit code of the shell command
 -- @
 --
@@ -928,7 +930,7 @@ import Turtle
 -- @
 -- Prelude Turtle> view (`liftIO` readline)
 -- ABC\<Enter\>
--- Just \"ABC\"
+-- Just (Line "ABC")
 -- @
 --
 -- Another way to say that is:
@@ -1112,13 +1114,13 @@ import Turtle
 -- For example, you can write to standard output using the `stdout` utility:
 --
 -- @
--- `stdout` :: Shell Text -> IO ()
+-- `stdout` :: Shell Line -> IO ()
 -- `stdout` s = sh (do
 --     txt <- s
 --     liftIO (echo txt) )
 -- @
 --
--- `stdout` outputs each `Text` value on its own line:
+-- `stdout` outputs each `Line` value on its own line:
 --
 -- > Prelude Turtle> stdout "Line 1"
 -- > Line 1
@@ -1126,11 +1128,11 @@ import Turtle
 -- > Line 1
 -- > Line 2
 --
--- Another useful stream is `stdin`, which emits one line of `Text` per line of
+-- Another useful stream is `stdin`, which emits one `Line` value per line of
 -- standard input:
 --
 -- @
--- `stdin` :: Shell Text
+-- `stdin` :: Shell Line
 -- @
 --
 -- Let's combine `stdin` and `stdout` to forward all input from standard input
@@ -1193,8 +1195,8 @@ import Turtle
 -- @
 -- `inshell`
 --     :: Text    -- Command line
---     -> Shell Text  -- Standard input to feed to program
---     -> Shell Text  -- Standard output produced by program
+--     -> Shell Line  -- Standard input to feed to program
+--     -> Shell Line  -- Standard output produced by program
 -- @
 --
 -- This means you can use `inshell` to embed arbitrary external utilities as
@@ -1211,8 +1213,8 @@ import Turtle
 -- `inproc`
 --     :: Text        -- Program
 --     -> [Text]      -- Arguments
---     -> Shell Text  -- Standard input to feed to program
---     -> Shell Text  -- Standard output produced by program
+--     -> Shell Line  -- Standard input to feed to program
+--     -> Shell Line  -- Standard output produced by program
 -- @
 --
 -- Using `inproc`, you would write:
@@ -1237,7 +1239,7 @@ import Turtle
 -- Let's look at the type of `grep`:
 --
 -- @
--- `grep` :: Pattern a -> Shell Text -> Shell Text
+-- `grep` :: Pattern a -> Shell Line -> Shell Line
 -- @
 --
 -- The first argument of `grep` is actually a `Pattern`, which implements
@@ -1654,7 +1656,7 @@ import Turtle
 -- > 
 -- > parser :: Parser Command
 -- > parser
--- >     =   fmap IncreaseVolume 
+-- >     =   fmap IncreaseVolume
 -- >             (subcommand "up" "Turn the volume up"
 -- >                 (argInt "amount" "How much to increase the volume") )
 -- >     <|> fmap DecreaseVolume
@@ -1664,8 +1666,8 @@ import Turtle
 -- > main = do
 -- >     x <- options "Volume adjuster" parser
 -- >     case x of
--- >         IncreaseVolume n -> echo (format ("Increasing the volume by "%d) n)
--- >         DecreaseVolume n -> echo (format ("Decreasing the volume by "%d) n)
+-- >         IncreaseVolume n -> printf ("Increasing the volume by "%d%"\n") n
+-- >         DecreaseVolume n -> printf ("Decreasing the volume by "%d%"\n") n
 --
 -- This will provide `--help` output at both the top level and for each
 -- subcommand:
