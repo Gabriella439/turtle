@@ -94,6 +94,16 @@ test-suite tests
         base    >= 4   && < 5   ,
         doctest >= 0.7 && < 0.12
 
+test-suite regression-broken-pipe
+    Type: exitcode-stdio-1.0
+    HS-Source-Dirs: test
+    Main-Is: RegressionBrokenPipe.hs
+    GHC-Options: -Wall -threaded
+    Default-Language: Haskell2010
+    Build-Depends:
+        base    >= 4   && < 5   ,
+        turtle
+
 benchmark bench
     Type: exitcode-stdio-1.0
     HS-Source-Dirs: bench
