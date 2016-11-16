@@ -81,6 +81,8 @@ Library
         Turtle.Line,
         Turtle.Prelude,
         Turtle.Tutorial
+    Other-Modules:
+        Turtle.Internal
     GHC-Options: -Wall
     Default-Language: Haskell2010
 

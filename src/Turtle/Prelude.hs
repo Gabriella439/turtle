@@ -323,6 +323,7 @@ import Prelude hiding (FilePath)
 import Turtle.Pattern (Pattern, anyChar, chars, match, selfless, sepBy)
 import Turtle.Shell
 import Turtle.Format (Format, format, makeFormat, d, w, (%))
+import Turtle.Internal (ignoreSIGPIPE)
 import Turtle.Line
 
 {-| Run a command using @execvp@, retrieving the exit code
@@ -522,7 +523,7 @@ system p s = liftIO (do
     mvar <- newMVar False
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (hClose handle)
+                unless finalized (ignoreSIGPIPE (hClose handle))
                 return True )
     let close' (Just hIn, ph) = do
             close hIn
@@ -532,7 +533,8 @@ system p s = liftIO (do
 
     let handle (Just hIn, ph) = do
             let feedIn :: (forall a. IO a -> IO a) -> IO ()
-                feedIn restore = restore (outhandle hIn s) `finally` close hIn
+                feedIn restore =
+                    restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
             mask_ (withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* halt a) )
         handle (Nothing , ph) = do
             Process.waitForProcess ph
@@ -563,12 +565,13 @@ systemStrict p s = liftIO (do
     mvar <- newMVar False
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (hClose handle)
+                unless finalized (ignoreSIGPIPE (hClose handle))
                 return True )
 
     bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
-            feedIn restore = restore (outhandle hIn s) `finally` close hIn
+            feedIn restore =
+                restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
         concurrently
             (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
@@ -598,12 +601,13 @@ systemStrictWithErr p s = liftIO (do
     mvar <- newMVar False
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (hClose handle)
+                unless finalized (ignoreSIGPIPE (hClose handle))
                 return True )
 
     bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, hErr, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
-            feedIn restore = restore (outhandle hIn s) `finally` close hIn
+            feedIn restore =
+                restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
         runConcurrently $ (,,)
             <$> Concurrently (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
