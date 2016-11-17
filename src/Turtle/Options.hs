@@ -105,15 +105,12 @@ options desc parser = liftIO
 
 {-| The name of a command-line flag
 
-    A flag can have a short name (i.e. @-n@), a long name (i.e. @--name@), or
-    both. If multiple names of a same type are given, the last one will take
-    precedence.
-
-    >>> shortFlag 'a' <> shortFlag 'b' == shortFlag 'b'
+    A flag has at least one flag name, either a short name or a long name. You
+    can define multiple flag names for a flag.
 -}
 data FlagName = FlagName
-    { flagShortName :: !(Last ShortName)
-    , flagLongName :: !(Last ArgName)
+    { flagShortName :: [ShortName]
+    , flagLongName :: [ArgName]
     }
 
 instance Semigroup.Semigroup FlagName where
@@ -128,15 +125,15 @@ instance IsString FlagName where
 -- | A short name for a flag
 shortFlag :: ShortName -> FlagName
 shortFlag c = FlagName
-    { flagShortName = Last (Just c)
-    , flagLongName = Last Nothing
+    { flagShortName = [c]
+    , flagLongName = []
     }
 
 -- | A long name for a flag
 longFlag :: ArgName -> FlagName
 longFlag name = FlagName
-    { flagShortName = Last Nothing
-    , flagLongName = Last (Just name)
+    { flagShortName = []
+    , flagLongName = [name]
     }
 
 {-| The name of a command-line argument
@@ -182,9 +179,8 @@ switch
     -> Parser Bool
 switch flagName helpMessage
    = Opts.switch
-   $ maybe mempty (Opts.long . Text.unpack . getArgName)
-    (getLast (flagLongName flagName))
-  <> maybe mempty Opts.short (getLast (flagShortName flagName))
+   $ foldMap (Opts.long . Text.unpack . getArgName) (flagLongName flagName)
+  <> foldMap Opts.short (flagShortName flagName)
   <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 {- | Build a flag-based option parser for any type by providing a `Text`-parsing
@@ -198,9 +194,8 @@ opt :: (Text -> Maybe a)
 opt argParse flagName argName helpMessage
    = Opts.option (argParseToReadM argParse)
    $ Opts.metavar (Text.unpack (Text.toUpper (getArgName argName)))
-  <> maybe mempty (Opts.long . Text.unpack . getArgName)
-    (getLast (flagLongName flagName))
-  <> maybe mempty Opts.short (getLast (flagShortName flagName))
+  <> foldMap (Opts.long . Text.unpack . getArgName) (flagLongName flagName)
+  <> foldMap Opts.short (flagShortName flagName)
   <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 -- | Parse any type that implements `Read`
