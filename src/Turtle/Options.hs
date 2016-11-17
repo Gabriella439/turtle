@@ -10,8 +10,8 @@
 -- > import Turtle
 -- >
 -- > parser :: Parser (Text, Int)
--- > parser = (,) <$> optText (longFlag "name" <> shortFlag 'n') "name" "Your first name"
--- >              <*> optInt  (longFlag "age")                   "age"  "Your current age"
+-- > parser = (,) <$> optText ("name" <> shortFlag 'n') "name" "Your first name"
+-- >              <*> optInt  "age"                     "age"  "Your current age"
 -- >
 -- > main = do
 -- >     (name, age) <- options "Greeting script" parser
@@ -75,7 +75,7 @@ module Turtle.Options
 import Data.Monoid
 import Data.Foldable
 import qualified Data.Semigroup as Semigroup
-import Data.String (IsString)
+import Data.String (IsString(..))
 import Text.Read (readMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -121,6 +121,9 @@ instance Semigroup.Semigroup FlagName where
         { flagShortName = flagShortName a <> flagShortName b
         , flagLongName = flagLongName a <> flagLongName b
         }
+
+instance IsString FlagName where
+    fromString xs = longFlag (fromString xs)
 
 -- | A short name for a flag
 shortFlag :: ShortName -> FlagName

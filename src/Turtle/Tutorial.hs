@@ -1619,8 +1619,8 @@ import Turtle
 -- > import Prelude hiding (FilePath)
 -- > 
 -- > parser :: Parser (FilePath, FilePath)
--- > parser = (,) <$> optPath (longFlag "src"  <> shortFlag 's') "path" "The source file"
--- >              <*> optPath (longFlag "dest" <> shortFlag 'd') "path" "The destination file"
+-- > parser = (,) <$> optPath ("src"  <> shortFlag 's') "path" "The source file"
+-- >              <*> optPath ("dest" <> shortFlag 'd') "path" "The destination file"
 -- >
 -- > main = do
 -- >     (src, dest) <- options "A simple `cp` utility" parser
