@@ -24,6 +24,7 @@ import Data.String
 import Data.Monoid
 #endif
 import Data.Maybe
+import Data.Semigroup
 import Data.Typeable
 import Control.Exception
 
@@ -57,7 +58,7 @@ instance Exception NewlineForbidden
 
 -- | A line of text (does not contain newlines).
 newtype Line = Line Text
-  deriving (Eq, Ord, Show, Monoid)
+  deriving (Eq, Ord, Show, Monoid, Semigroup)
 
 instance IsString Line where
   fromString = fromMaybe (throw NewlineForbidden) . textToLine . fromString

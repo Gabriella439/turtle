@@ -77,6 +77,7 @@ import Control.Monad.Managed (MonadManaged(..), with)
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
 import Data.Monoid
+import qualified Data.Semigroup as Semigroup
 import Data.String (IsString(..))
 import Prelude -- Fix redundant import warnings
 
@@ -148,6 +149,9 @@ instance MonadManaged Shell where
         x  <- begin
         x' <- with resource (step x)
         done x' )
+
+instance Semigroup.Semigroup a => Semigroup.Semigroup (Shell a) where
+    (<>) = liftA2 (Semigroup.<>)
 
 instance Monoid a => Monoid (Shell a) where
     mempty  = pure mempty
