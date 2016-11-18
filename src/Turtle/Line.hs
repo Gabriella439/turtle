@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 module Turtle.Line
   ( Line
@@ -88,6 +89,7 @@ linesToText =
 textToLine :: Text -> Maybe Line
 textToLine = fromSingleton . textToLines
   where
+    fromSingleton []  = Just (Line "")
     fromSingleton [a] = Just a
     fromSingleton _   = Nothing
 
