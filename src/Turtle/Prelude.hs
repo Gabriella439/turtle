@@ -247,6 +247,10 @@ module Turtle.Prelude (
     , PosixCompat.isSymbolicLink
     , PosixCompat.isSocket
 
+    -- * Headers
+    , WithHeader(..)
+    , header
+
     -- * Exceptions
     , ProcFailed(..)
     , ShellFailed(..)
@@ -1774,3 +1778,30 @@ statusChangeTime = realToFrac . PosixCompat.statusChangeTime
 -- | Get the status of a file, but don't follow symbolic links
 lstat :: MonadIO io => FilePath -> io PosixCompat.FileStatus
 lstat = liftIO . PosixCompat.getSymbolicLinkStatus . Filesystem.encodeString
+
+data WithHeader a
+    = Header a
+    -- ^ The first line with the header
+    | Row a a
+    -- ^ Every other line: 1st element is header, 2nd element is original row
+    deriving (Show)
+
+data Pair a b = Pair !a !b
+
+header :: Shell a -> Shell (WithHeader a)
+header (Shell k) = Shell k'
+  where
+    k' (FoldM step begin done) = k (FoldM step' begin' done')
+      where
+        step' (Pair x Nothing ) a = do
+            x' <- step x (Header a)
+            return (Pair x' (Just a))
+        step' (Pair x (Just a)) b = do
+            x' <- step x (Row a b)
+            return (Pair x' (Just a))
+
+        begin' = do
+            x <- begin
+            return (Pair x Nothing)
+
+        done' (Pair x _) = done x
