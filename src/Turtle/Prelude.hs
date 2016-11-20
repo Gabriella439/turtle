@@ -532,11 +532,7 @@ system p s = liftIO (do
 
     let handle (Just hIn, ph) = do
             let feedIn :: (forall a. IO a -> IO a) -> IO ()
-                feedIn restore =
-                    restore (sh (do
-                        line <- s
-                        liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
-                    `finally` close hIn
+                feedIn restore = restore (outhandle hIn s) `finally` close hIn
             mask_ (withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* halt a) )
         handle (Nothing , ph) = do
             Process.waitForProcess ph
@@ -572,11 +568,7 @@ systemStrict p s = liftIO (do
 
     bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
-            feedIn restore =
-                restore (sh (do
-                    line <- s
-                    liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
-                `finally` close hIn
+            feedIn restore = restore (outhandle hIn s) `finally` close hIn
 
         concurrently
             (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
@@ -611,11 +603,7 @@ systemStrictWithErr p s = liftIO (do
 
     bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, hErr, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
-            feedIn restore =
-                restore (sh (do
-                    line <- s
-                    liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
-                `finally` close hIn
+            feedIn restore = restore (outhandle hIn s) `finally` close hIn
 
         runConcurrently $ (,,)
             <$> Concurrently (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
@@ -681,11 +669,7 @@ stream p s = do
 
     (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
-        feedIn restore =
-            restore (sh (do
-                line <- s
-                liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
-            `finally` close hIn
+        feedIn restore = restore (outhandle hIn s) `finally` close hIn
 
     a <- using (managed (mask_ . withAsyncWithUnmask feedIn))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> halt a) *> empty)
@@ -718,11 +702,7 @@ streamWithErr p s = do
 
     (hIn, hOut, hErr, ph) <- using (managed (bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
-        feedIn restore =
-            restore (sh (do
-                line <- s
-                liftIO (Text.hPutStrLn hIn (lineToText line)) ) )
-            `finally` close hIn
+        feedIn restore = restore (outhandle hIn s) `finally` close hIn
 
     queue <- liftIO TQueue.newTQueueIO
     let forwardOut :: (forall a. IO a -> IO a) -> IO ()
