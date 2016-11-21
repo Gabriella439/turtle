@@ -44,6 +44,7 @@ import Filesystem.Path (FilePath)
 import Prelude hiding (FilePath)
 import System.Exit (ExitCode(..))
 import System.IO (Handle)
+import Turtle.Internal (ignoreSIGPIPE)
 import Turtle.Prelude (ProcFailed(..), ShellFailed(..))
 import Turtle.Shell (Shell(..), fold, sh)
 
@@ -334,7 +335,8 @@ system p s = liftIO (do
     mvar <- MVar.newMVar False
     let close handle = do
             MVar.modifyMVar_ mvar (\finalized -> do
-                Control.Monad.unless finalized (System.IO.hClose handle)
+                Control.Monad.unless finalized
+                    (ignoreSIGPIPE (System.IO.hClose handle))
                 return True )
     let close' (Just hIn, ph) = do
             close hIn
@@ -345,9 +347,7 @@ system p s = liftIO (do
     let handle (Just hIn, ph) = do
             let feedIn :: (forall a. IO a -> IO a) -> IO ()
                 feedIn restore =
-                    restore (sh (do
-                        bytes <- s
-                        liftIO (Data.ByteString.hPut hIn bytes) ) )
+                    restore (ignoreSIGPIPE (outhandle hIn s))
                     `Exception.finally` close hIn
             Exception.mask_ (Async.withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* halt a) )
         handle (Nothing , ph) = do
@@ -379,15 +379,14 @@ systemStrict p s = liftIO (do
     mvar <- MVar.newMVar False
     let close handle = do
             MVar.modifyMVar_ mvar (\finalized -> do
-                Control.Monad.unless finalized (System.IO.hClose handle)
+                Control.Monad.unless finalized
+                    (ignoreSIGPIPE (System.IO.hClose handle))
                 return True )
 
     Exception.bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
             feedIn restore =
-                restore (sh (do
-                    bytes <- s
-                    liftIO (Data.ByteString.hPut hIn bytes) ) )
+                restore (ignoreSIGPIPE (outhandle hIn s))
                 `Exception.finally` close hIn
 
         Async.concurrently
@@ -418,15 +417,14 @@ systemStrictWithErr p s = liftIO (do
     mvar <- MVar.newMVar False
     let close handle = do
             MVar.modifyMVar_ mvar (\finalized -> do
-                Control.Monad.unless finalized (System.IO.hClose handle)
+                Control.Monad.unless finalized
+                    (ignoreSIGPIPE (System.IO.hClose handle))
                 return True )
 
     Exception.bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, hErr, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
             feedIn restore =
-                restore (sh (do
-                    bytes <- s
-                    liftIO (Data.ByteString.hPut hIn bytes) ) )
+                restore (ignoreSIGPIPE (outhandle hIn s))
                 `Exception.finally` close hIn
 
         runConcurrently $ (,,)
@@ -609,5 +607,3 @@ inshellWithErr
     -> Shell (Either ByteString ByteString)
     -- ^ Chunks of either output (`Right`) or error (`Left`)
 inshellWithErr cmd = streamWithErr (Process.shell (Data.Text.unpack cmd))
-
-
