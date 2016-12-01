@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Example usage of this module:
 --
@@ -65,6 +67,7 @@ module Turtle.Options
 
       -- * Consume parsers
     , subcommand
+    , subcommandGroup
     , options
 
     ) where
@@ -83,7 +86,7 @@ import Options.Applicative (Parser)
 import qualified Options.Applicative as Opts
 import qualified Options.Applicative.Types as Opts
 import Prelude hiding (FilePath)
-import Text.PrettyPrint.ANSI.Leijen (Doc)
+import Text.PrettyPrint.ANSI.Leijen (Doc, displayS, renderCompact)
 
 -- | Parse the given options from the command line
 options :: MonadIO io => Description -> Parser a -> io a
@@ -237,10 +240,28 @@ argParseToReadM f = do
 -}
 subcommand :: CommandName -> Description -> Parser a -> Parser a
 subcommand cmdName desc p =
-    Opts.subparser (Opts.command name info <> Opts.metavar name)
+    Opts.hsubparser (Opts.command name info <> Opts.metavar name)
   where
     name = Text.unpack (getCommandName cmdName)
 
-    info = Opts.info
-        (Opts.helper <*> p)
-        (Opts.progDescDoc (Just (getDescription desc)))
+    info = Opts.info p (Opts.progDescDoc (Just (getDescription desc)))
+
+-- | Create a named group of sub-commands
+subcommandGroup :: forall a. Description -> [(CommandName, Description, Parser a)] -> Parser a
+subcommandGroup name cmds =
+    Opts.hsubparser (Opts.commandGroup name' <> foldMap f cmds <> Opts.metavar metavar)
+  where
+    f :: (CommandName, Description, Parser a) -> Opts.Mod Opts.CommandFields a
+    f (cmdName, desc, p) =
+        Opts.command
+            (Text.unpack (getCommandName cmdName))
+            (Opts.info p (Opts.progDescDoc (Just (getDescription desc))))
+
+    metavar :: String
+    metavar = Text.unpack (Text.intercalate " | " (map g cmds))
+      where
+        g :: (CommandName, Description, Parser a) -> Text
+        g (cmdName, _, _) = getCommandName cmdName
+
+    name' :: String
+    name' = displayS (renderCompact (getDescription name)) ""
