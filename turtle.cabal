@@ -40,6 +40,8 @@ Description: @turtle@ is a reimplementation of the Unix command line environment
     then you should also check out the @Shelly@ library which provides similar
     functionality.
 Category: System
+Extra-Source-Files:
+    CHANGELOG.md
 Source-Repository head
     Type: git
     Location: https://github.com/Gabriel439/Haskell-Turtle-Library
