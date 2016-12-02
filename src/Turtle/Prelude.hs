@@ -181,6 +181,7 @@ module Turtle.Prelude (
     , limit
     , limitWhile
     , cache
+    , parallel
 
     -- * Folds
     , countChars
@@ -269,7 +270,7 @@ import Control.Exception (Exception, bracket, bracket_, finally, mask_, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
-import Control.Monad (guard, liftM, msum, when, unless)
+import Control.Monad (guard, liftM, msum, when, unless, (>=>))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 #ifdef mingw32_HOST_OS
@@ -1605,6 +1606,18 @@ cache file s = do
                     liftIO (Text.hPutStrLn handle (Text.pack (show n)))
                     empty
             justs <|> nothing
+
+{-| Run a list of IO actions in parallel using fork and wait.
+
+
+>>> view (parallel [(sleep 3) >> date, date, date])
+2016-12-01 17:22:10.83296 UTC
+2016-12-01 17:22:07.829876 UTC
+2016-12-01 17:22:07.829963 UTC
+
+-}
+parallel :: [IO a] -> Shell a
+parallel = traverse fork >=> select >=> wait
 
 -- | Split a line into chunks delimited by the given `Pattern`
 cut :: Pattern a -> Text -> [Text]
