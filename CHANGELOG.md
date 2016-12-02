@@ -13,7 +13,7 @@
   runners
 * Fix `du` reporting incorrect sizes for directories
 * Add `pushd`, `stat`, `lstat`, `which`, `procStrictWithErr`,
-  `shellStrictWithErr`, `onFiles`, `header`, `subcommandGroup`
+  `shellStrictWithErr`, `onFiles`, `header`, `subcommandGroup`, and `parallel`
 * Backport `need` to GHC 7.6.3
 * Fix missing help text for option parsers
 * Fix bugs in subprocess management
