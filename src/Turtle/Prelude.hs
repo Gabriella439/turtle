@@ -1450,10 +1450,15 @@ inplace pattern file = liftIO (runManaged (do
 -- | Search a directory recursively for all files matching the given `Pattern`
 find :: Pattern a -> FilePath -> Shell FilePath
 find pattern dir = do
-    path <- lstree dir
+    path <- lsif isNotSymlink dir
     Right txt <- return (Filesystem.toText path)
     _:_       <- return (match pattern txt)
     return path
+  where
+    isNotSymlink :: FilePath -> IO Bool
+    isNotSymlink file = do
+      file_stat <- lstat file
+      return (not (PosixCompat.isSymbolicLink file_stat))
 
 -- | A Stream of @\"y\"@s
 yes :: Shell Line
