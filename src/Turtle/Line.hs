@@ -10,6 +10,7 @@ module Turtle.Line
   , linesToText
   , textToLine
   , unsafeTextToLine
+  , fpToLine
   , NewlineForbidden(..)
   ) where
 
@@ -26,6 +27,7 @@ import Data.Monoid
 import Data.Maybe
 import Data.Typeable
 import Control.Exception
+import Filesystem.Path.CurrentOS (FilePath, toText)
 
 -- | The `NewlineForbidden` exception is thrown when you construct a `Line`
 -- using an overloaded string literal or by calling `fromString` explicitly
@@ -92,6 +94,9 @@ textToLine = fromSingleton . textToLines
     fromSingleton []  = Just (Line "")
     fromSingleton [a] = Just a
     fromSingleton _   = Nothing
+
+fpToLine :: Filesystem.Path.CurrentOS.FilePath -> Line
+fpToLine = unsafeTextToLine . either id id . toText
 
 -- | Convert a text value into a line.
 -- Precondition (unchecked): the argument does not contain newlines.
