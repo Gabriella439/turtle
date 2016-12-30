@@ -781,11 +781,15 @@ inshellWithErr
     -- ^ Lines of either standard output (`Right`) or standard error (`Left`)
 inshellWithErr cmd = streamWithErr (Process.shell (unpack cmd))
 
--- | Print to @stdout@
+{-| Print exactly one line to @stdout@
+
+    To print more than one line see `Turtle.Format.printf`, which also supports
+    formatted output
+-}
 echo :: MonadIO io => Line -> io ()
 echo line = liftIO (Text.putStrLn (lineToText line))
 
--- | Print to @stderr@
+-- | Print exactly one line to @stderr@
 err :: MonadIO io => Line -> io ()
 err line = liftIO (Text.hPutStrLn IO.stderr (lineToText line))
 
