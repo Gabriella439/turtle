@@ -1,3 +1,8 @@
+1.3.1
+
+* `find` no longer follows symlinks
+* Increase upper bound on `directory`
+
 1.3
 
 * BREAKING CHANGE: Several utilities now produce and consume `Line`s instead of
