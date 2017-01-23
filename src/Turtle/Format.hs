@@ -213,12 +213,11 @@ fp = makeFormat (\fpath -> either id id (toText fpath))
 utc :: Format r (UTCTime -> r)
 utc = w
 
-{-| Convert a `Show`able value to `Text`
-
-    Short-hand for @(format w)@
+{-| Convert a `Show`able value to any type that implements `IsString` (such as
+    `Text`)
 
 >>> repr (1,2)
 "(1,2)"
 -}
-repr :: Show a => a -> Text
-repr = format w
+repr :: (Show a, IsString text) => a -> text
+repr = fromString . show
