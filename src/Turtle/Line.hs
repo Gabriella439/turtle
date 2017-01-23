@@ -36,8 +36,8 @@ import Control.Exception
 -- When debugging, it might be useful to look for implicit invocations of
 -- `fromString` for `Line`:
 --
--- >>> sh (do { line <- "Hello\nWorld"; echo line })
--- *** Exception: NewlineForbidden
+-- > >>> sh (do { line <- "Hello\nWorld"; echo line })
+-- > *** Exception: NewlineForbidden
 --
 -- In the above example, `echo` expects its argument to be a `Line`, thus
 -- @line :: `Line`@. Since we bind @line@ in `Shell`, the string literal
@@ -47,9 +47,9 @@ import Control.Exception
 --
 -- To fix the problem, use `textToLines`:
 --
--- >>> sh (do { line <- select (textToLines "Hello\nWorld"); echo line })
--- Hello
--- World
+-- > >>> sh (do { line <- select (textToLines "Hello\nWorld"); echo line })
+-- > Hello
+-- > World
 data NewlineForbidden = NewlineForbidden
   deriving (Show, Typeable)
 
