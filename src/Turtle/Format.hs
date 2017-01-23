@@ -58,6 +58,7 @@ module Turtle.Format (
     , e
     , g
     , s
+    , l
     , fp
     , utc
 
@@ -75,8 +76,10 @@ import Data.Word
 import Filesystem.Path.CurrentOS (FilePath, toText)
 import Numeric (showEFloat, showFFloat, showGFloat, showHex, showOct)
 import Prelude hiding ((.), id, FilePath)
+import Turtle.Line (Line)
 
 import qualified Data.Text.IO as Text
+import qualified Turtle.Line
 
 -- | A `Format` string
 newtype Format a b = Format { (>>-) :: (Text -> a) -> b }
@@ -193,6 +196,14 @@ g = makeFormat (\n -> pack (showGFloat (Just 6) n ""))
 -}
 s :: Format r (Text -> r)
 s = makeFormat id
+
+{-| `Format` that inserts a `Line`
+
+>>> format l "ABC"
+"ABC"
+-}
+l :: Format r (Line -> r)
+l = makeFormat Turtle.Line.lineToText
 
 -- | `Format` a `Filesystem.Path.CurrentOS.FilePath` into `Text`
 fp :: Format r (FilePath -> r)

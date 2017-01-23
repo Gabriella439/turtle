@@ -49,6 +49,7 @@ module Turtle.Options
       -- * Flag-based option parsers
     , switch
     , optText
+    , optLine
     , optInt
     , optInteger
     , optDouble
@@ -58,6 +59,7 @@ module Turtle.Options
 
     -- * Positional argument parsers
     , argText
+    , argLine
     , argInt
     , argInteger
     , argDouble
@@ -77,16 +79,19 @@ import Data.Foldable
 import Data.String (IsString)
 import Text.Read (readMaybe)
 import Data.Text (Text)
-import qualified Data.Text as Text
 import Data.Optional
 import Control.Applicative
 import Control.Monad.IO.Class
 import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Options.Applicative (Parser)
-import qualified Options.Applicative as Opts
-import qualified Options.Applicative.Types as Opts
 import Prelude hiding (FilePath)
 import Text.PrettyPrint.ANSI.Leijen (Doc, displayS, renderCompact)
+import Turtle.Line (Line)
+
+import qualified Data.Text as Text
+import qualified Options.Applicative as Opts
+import qualified Options.Applicative.Types as Opts
+import qualified Turtle.Line
 
 -- | Parse the given options from the command line
 options :: MonadIO io => Description -> Parser a -> io a
@@ -186,6 +191,10 @@ optDouble = optRead
 optText :: ArgName -> ShortName -> Optional HelpMessage -> Parser Text
 optText = opt Just
 
+-- | Parse a `Line` value as a flag-based option
+optLine :: ArgName -> ShortName -> Optional HelpMessage -> Parser Line
+optLine = opt Turtle.Line.textToLine
+
 -- | Parse a `FilePath` value as a flag-based option
 optPath :: ArgName -> ShortName -> Optional HelpMessage -> Parser FilePath
 optPath argName short msg = fmap fromText (optText argName short msg)
@@ -221,6 +230,10 @@ argDouble = argRead
 -- | Parse a `Text` as a positional argument
 argText :: ArgName -> Optional HelpMessage -> Parser Text
 argText = arg Just
+
+-- | Parse a `Line` as a positional argument
+argLine :: ArgName -> Optional HelpMessage -> Parser Line
+argLine = arg Turtle.Line.textToLine
 
 -- | Parse a `FilePath` as a positional argument
 argPath :: ArgName -> Optional HelpMessage -> Parser FilePath
