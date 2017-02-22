@@ -1074,6 +1074,36 @@ import Turtle
 -- > FilePath "/tmp/orbit-gabriel"
 -- > FilePath "/tmp/ssh-vREYGbWGpiCa"
 -- > FilePath "/tmp/.ICE-unix"
+--
+-- You can filter streams using @"Control.Monad".`Control.Monad.mfilter`@, like
+-- this:
+--
+-- >>> view (select [1..10])
+-- 1
+-- 2
+-- 3
+-- 4
+-- 5
+-- 6
+-- 7
+-- 8
+-- 9
+-- 10
+-- >>> view (mfilter even (select [1..10]))
+-- 2
+-- 4
+-- 6
+-- 8
+-- 10
+--
+-- This works because `Control.Monad.mfilter`'s implementation is equivalent to:
+--
+-- > mfilter predicate stream = do
+-- >     element <- stream
+-- >     if predicate element then return element else empty
+--
+-- In other words, `Control.Monad.mfilter` loops over each @element@ of the
+-- @stream@ and only `return`s the element if the @predicate@ is `True`
 
 -- $folds
 --
