@@ -102,7 +102,7 @@ available tools to minimally match `coreutils`.
 
 ## License (BSD 3-clause)
 
-Copyright (c) 2015 Gabriel Gonzalez
+Copyright (c) 2017 Gabriel Gonzalez
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
