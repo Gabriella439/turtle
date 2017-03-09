@@ -260,13 +260,13 @@ module Turtle.Prelude (
 import Control.Applicative
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async
-    (Async, withAsync, withAsyncWithUnmask, waitSTM, concurrently,
+    (Async, withAsync, waitSTM, concurrently,
      Concurrently(..))
 import qualified Control.Concurrent.Async
 import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TQueue as TQueue
-import Control.Exception (Exception, bracket, bracket_, finally, mask_, throwIO)
+import Control.Exception (Exception, bracket, bracket_, finally, mask, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
@@ -536,7 +536,9 @@ system p s = liftIO (do
             let feedIn :: (forall a. IO a -> IO a) -> IO ()
                 feedIn restore =
                     restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
-            mask_ (withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* halt a) )
+            mask (\restore ->
+                withAsync (feedIn restore) (\a ->
+                    restore (Process.waitForProcess ph) `finally` halt a) )
         handle (Nothing , ph) = do
             Process.waitForProcess ph
 
@@ -575,7 +577,9 @@ systemStrict p s = liftIO (do
                 restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
         concurrently
-            (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
+            (mask (\restore ->
+                withAsync (feedIn restore) (\a ->
+                    restore (liftIO (Process.waitForProcess ph)) `finally` halt a ) ))
             (Text.hGetContents hOut) ) )
 
 systemStrictWithErr
@@ -611,7 +615,9 @@ systemStrictWithErr p s = liftIO (do
                 restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
         runConcurrently $ (,,)
-            <$> Concurrently (mask_ (withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
+            <$> Concurrently (mask (\restore ->
+                    withAsync (feedIn restore) (\a ->
+                        restore (liftIO (Process.waitForProcess ph)) `finally` halt a ) ))
             <*> Concurrently (Text.hGetContents hOut)
             <*> Concurrently (Text.hGetContents hErr) ) )
 
@@ -676,7 +682,9 @@ stream p s = do
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
         feedIn restore = restore (outhandle hIn s) `finally` close hIn
 
-    a <- using (managed (mask_ . withAsyncWithUnmask feedIn))
+    a <- using
+        (managed (\k ->
+            mask (\restore -> withAsync (feedIn restore) (restore . k))))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> halt a) *> empty)
 
 streamWithErr
@@ -736,9 +744,15 @@ streamWithErr p s = do
             x1 <- loop x0 (0 :: Int)
             done x1 )
 
-    a <- using (managed (mask_ . withAsyncWithUnmask feedIn    ))
-    b <- using (managed (mask_ . withAsyncWithUnmask forwardOut))
-    c <- using (managed (mask_ . withAsyncWithUnmask forwardErr))
+    a <- using
+        (managed (\k ->
+            mask (\restore -> withAsync (feedIn restore) (restore . k)) ))
+    b <- using
+        (managed (\k ->
+            mask (\restore -> withAsync (forwardOut restore) (restore . k)) ))
+    c <- using
+        (managed (\k ->
+            mask (\restore -> withAsync (forwardErr restore) (restore . k)) ))
     let l `also` r = do
             _ <- l <|> (r *> STM.retry)
             _ <- r

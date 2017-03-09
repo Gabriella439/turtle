@@ -105,7 +105,17 @@ test-suite regression-broken-pipe
     GHC-Options: -Wall -threaded
     Default-Language: Haskell2010
     Build-Depends:
-        base    >= 4   && < 5   ,
+        base   >= 4 && < 5,
+        turtle
+
+test-suite regression-masking-exception
+    Type: exitcode-stdio-1.0
+    HS-Source-Dirs: test
+    Main-Is: RegressionMaskingException.hs
+    GHC-Options: -Wall -threaded
+    Default-Language: Haskell2010
+    Build-Depends:
+        base   >= 4 && < 5,
         turtle
 
 benchmark bench
