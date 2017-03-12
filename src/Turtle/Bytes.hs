@@ -349,7 +349,9 @@ system p s = liftIO (do
                 feedIn restore =
                     restore (ignoreSIGPIPE (outhandle hIn s))
                     `Exception.finally` close hIn
-            Exception.mask_ (Async.withAsyncWithUnmask feedIn (\a -> Process.waitForProcess ph <* halt a) )
+            Exception.mask (\restore ->
+                Async.withAsync (feedIn restore) (\a ->
+                    restore (Process.waitForProcess ph) <* halt a ) )
         handle (Nothing , ph) = do
             Process.waitForProcess ph
 
@@ -390,7 +392,9 @@ systemStrict p s = liftIO (do
                 `Exception.finally` close hIn
 
         Async.concurrently
-            (Exception.mask_ (Async.withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
+            (Exception.mask (\restore ->
+                Async.withAsync (feedIn restore) (\a ->
+                    restore (Process.waitForProcess ph) <* halt a ) ))
             (Data.ByteString.hGetContents hOut) ) )
 
 systemStrictWithErr
@@ -428,7 +432,9 @@ systemStrictWithErr p s = liftIO (do
                 `Exception.finally` close hIn
 
         runConcurrently $ (,,)
-            <$> Concurrently (Exception.mask_ (Async.withAsyncWithUnmask feedIn (\a -> liftIO (Process.waitForProcess ph) <* halt a)))
+            <$> Concurrently (Exception.mask (\restore ->
+                    Async.withAsync (feedIn restore) (\a ->
+                        restore (Process.waitForProcess ph) <* halt a ) ))
             <*> Concurrently (Data.ByteString.hGetContents hOut)
             <*> Concurrently (Data.ByteString.hGetContents hErr) ) )
 
@@ -499,7 +505,10 @@ stream p s = do
                 liftIO (Data.ByteString.hPut hIn bytes) ) )
             `Exception.finally` close hIn
 
-    a <- using (Managed.managed (Exception.mask_ . Async.withAsyncWithUnmask feedIn))
+    a <- using
+        (Managed.managed (\k ->
+            Exception.mask (\restore ->
+                Async.withAsync (feedIn restore) k ) ))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> halt a) *> empty)
 
 streamWithErr
@@ -563,9 +572,18 @@ streamWithErr p s = do
             x1 <- loop x0 (0 :: Int)
             done x1 )
 
-    a <- using (Managed.managed (Exception.mask_ . Async.withAsyncWithUnmask feedIn    ))
-    b <- using (Managed.managed (Exception.mask_ . Async.withAsyncWithUnmask forwardOut))
-    c <- using (Managed.managed (Exception.mask_ . Async.withAsyncWithUnmask forwardErr))
+    a <- using
+        (Managed.managed (\k ->
+            Exception.mask (\restore ->
+                Async.withAsync (feedIn restore) k ) ))
+    b <- using
+        (Managed.managed (\k ->
+            Exception.mask (\restore ->
+                Async.withAsync (forwardOut restore) k ) ))
+    c <- using
+        (Managed.managed (\k ->
+            Exception.mask (\restore ->
+                Async.withAsync (forwardErr restore) k ) ))
     let l `also` r = do
             _ <- l <|> (r *> STM.retry)
             _ <- r
