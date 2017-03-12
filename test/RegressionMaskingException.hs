@@ -6,7 +6,7 @@ import qualified System.Timeout
 
 main :: IO ()
 main = do
-    m <- System.Timeout.timeout 1 (runManaged (do
+    m <- System.Timeout.timeout 1000000 (runManaged (do
         _ <- fork (shells "while true; do sleep 1; done" empty)
         return () ))
     case m of
