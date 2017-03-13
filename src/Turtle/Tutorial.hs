@@ -492,7 +492,7 @@ import Turtle
 -- @turtle@:
 --
 -- @
--- $ stack ghci
+-- \$ stack ghci
 -- Prelude> :set -XOverloadedStrings
 -- Prelude> import Turtle
 -- Prelude Turtle> `cd` \"/tmp\"
