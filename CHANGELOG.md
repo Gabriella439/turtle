@@ -1,3 +1,9 @@
+1.3.2
+
+* Fix bugs in subprocess management
+* Generalize type of `repr` to return any type that implements `IsString`
+* Add `optLine`, `argLine`, and `l` utilities to simplify working with `Line`s
+
 1.3.1
 
 * `find` no longer follows symlinks
