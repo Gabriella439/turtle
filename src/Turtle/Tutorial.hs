@@ -448,14 +448,21 @@ import Turtle
 --
 -- @
 -- Prelude Turtle> :type echo
--- echo :: `Text` -> `IO` ()
+-- echo :: `Line` -> `IO` ()
 -- @
 --
 -- The above type says that `echo` is a function whose argument is a value of
--- type `Text` and whose result is a subroutine (`IO`) with an empty return
+-- type `Line` and whose result is a subroutine (`IO`) with an empty return
 -- value (denoted @\'()\'@).
 --
--- Now we can understand the type error: `echo` expects a `Text` argument but
+-- `Line` is a wrapper around `Text` and represents a `Text` value with no
+-- internal newlines:
+--
+-- @
+-- newtype `Line` = `Line` `Text`
+-- @
+--
+-- Now we can understand the type error: `echo` expects a `Line` argument but
 -- `datefile` returns a `UTCTime`, which is not the same thing.  Unlike Bash,
 -- not everything is `Text` in Haskell and the compiler will not cast or coerce
 -- types for you.
@@ -474,16 +481,18 @@ import Turtle
 -- `print`.
 --
 -- This library provides a helper function that lets you convert any type that
--- implements `Show` into a `Text` value:
+-- implements `Show` into any other type that implements `IsString`:
 -- 
 -- @
 -- \-\- This behaves like Python's \`repr\` function
--- `repr` :: `Show` a => a -> `Text`
+-- `repr` :: (`Show` a, `IsString` b) => a -> b
 -- @
 --
 -- You could therefore implement `print` in terms of `echo` and `repr`:
 --
 -- >  print x = echo (repr x)
+--
+-- ... which works because `Line` implements `IsString`
 
 -- $shell
 --
