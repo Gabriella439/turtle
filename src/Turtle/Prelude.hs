@@ -1825,3 +1825,10 @@ header (Shell k) = Shell k'
             return (Pair x Nothing)
 
         done' (Pair x _) = done x
+
+single :: MonadIO a => Shell a -> io (Maybe a)
+single s = do
+    ls <- fold s Foldl.list
+    case ls of
+        [a] -> return (Just a)
+        _   -> return Nothing

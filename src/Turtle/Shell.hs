@@ -91,10 +91,6 @@ foldIO s f = liftIO (_foldIO s f)
 fold :: MonadIO io => Shell a -> Fold a b -> io b
 fold s f = foldIO s (Foldl.generalize f)
 
--- | Run a shell command, returning the first line of the output.
-getShellOut :: MonadIO io => Text -> io (Maybe a)
-getShellOut cmd = fold (inshell cmd empty) Foldl.head
-
 -- | Run a `Shell` to completion, discarding any unused values
 sh :: MonadIO io => Shell a -> io ()
 sh s = fold s (pure ())
