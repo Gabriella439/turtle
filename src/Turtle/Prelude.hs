@@ -1828,7 +1828,7 @@ header (Shell k) = Shell k'
 
 single :: MonadIO a => Shell a -> io (Maybe a)
 single s = do
-    ls <- fold s Foldl.list
+    ls <- fold s Contorl.Foldl.list
     case ls of
         [a] -> return (Just a)
         _   -> return Nothing
