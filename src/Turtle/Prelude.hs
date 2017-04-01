@@ -1826,7 +1826,7 @@ header (Shell k) = Shell k'
 
         done' (Pair x _) = done x
 
-single :: MonadIO a => Shell a -> io (Maybe a)
+single :: MonadIO io => Shell a -> io (Maybe a)
 single s = do
     ls <- fold s Control.Foldl.list
     case ls of
