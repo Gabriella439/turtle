@@ -1828,7 +1828,9 @@ header (Shell k) = Shell k'
 
 single :: MonadIO a => Shell a -> io (Maybe a)
 single s = do
-    ls <- fold s Contorl.Foldl.list
+    ls <- fold s Control.Foldl.list
     case ls of
         [a] -> return (Just a)
-        _   -> return Nothing
+        _   -> do
+            let msg = format ("single: expected 1 line of input but there were "%d%" lines of input") (length ls)
+            die msg
