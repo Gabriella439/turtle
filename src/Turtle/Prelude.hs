@@ -1825,3 +1825,18 @@ header (Shell k) = Shell k'
             return (Pair x Nothing)
 
         done' (Pair x _) = done x
+
+-- | Returns the result of a 'Shell' that outputs a single
+-- line:
+--
+-- > main = do
+-- >   Just directory <- single (inshell "pwd" empty)
+-- >   print directory
+single :: MonadIO io => Shell a -> io (Maybe a)
+single s = do
+    ls <- fold s Control.Foldl.list
+    case ls of
+        [a] -> return (Just a)
+        _   -> do
+            let msg = format ("single: expected 1 line of input but there were "%d%" lines of input") (length ls)
+            die msg
