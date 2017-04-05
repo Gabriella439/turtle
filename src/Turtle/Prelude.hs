@@ -1826,6 +1826,12 @@ header (Shell k) = Shell k'
 
         done' (Pair x _) = done x
 
+-- | Returns the result of a 'Shell' that outputs a single
+-- line:
+--
+-- > main = do
+-- >   Just directory <- single (inshell "pwd" empty)
+-- >   print directory
 single :: MonadIO io => Shell a -> io (Maybe a)
 single s = do
     ls <- fold s Control.Foldl.list
