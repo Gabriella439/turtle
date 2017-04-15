@@ -182,6 +182,7 @@ module Turtle.Prelude (
     , limitWhile
     , cache
     , parallel
+    , single
 
     -- * Folds
     , countChars
