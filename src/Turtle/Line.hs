@@ -18,6 +18,7 @@ import qualified Data.Text as Text
 #if __GLASGOW_HASKELL__ >= 708
 import Data.Coerce
 #endif
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.String
 #if __GLASGOW_HASKELL__ >= 710
 #else
@@ -26,6 +27,8 @@ import Data.Monoid
 import Data.Maybe
 import Data.Typeable
 import Control.Exception
+
+import qualified Data.List.NonEmpty
 
 -- | The `NewlineForbidden` exception is thrown when you construct a `Line`
 -- using an overloaded string literal or by calling `fromString` explicitly
@@ -67,12 +70,12 @@ lineToText :: Line -> Text
 lineToText (Line t) = t
 
 -- | Split text into lines. The inverse of `linesToText`.
-textToLines :: Text -> [Line]
+textToLines :: Text -> NonEmpty Line
 textToLines =
 #if __GLASGOW_HASKELL__ >= 708
-  coerce Text.lines
+  Data.List.NonEmpty.fromList . coerce (Text.splitOn "\n")
 #else
-  map unsafeTextToLine . Text.lines
+  Data.List.NonEmpty.fromList . map unsafeTextToLine . Text.splitOn "\n"
 #endif
 
 -- | Merge lines into a single text value.
@@ -89,9 +92,8 @@ linesToText =
 textToLine :: Text -> Maybe Line
 textToLine = fromSingleton . textToLines
   where
-    fromSingleton []  = Just (Line "")
-    fromSingleton [a] = Just a
-    fromSingleton _   = Nothing
+    fromSingleton (a :| []) = Just a
+    fromSingleton  _        = Nothing
 
 -- | Convert a text value into a line.
 -- Precondition (unchecked): the argument does not contain newlines.

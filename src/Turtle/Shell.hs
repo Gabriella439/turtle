@@ -164,7 +164,7 @@ instance IsString a => IsString (Shell a) where
     fromString str = pure (fromString str)
 
 -- | Convert a list to a `Shell` that emits each element of the list
-select :: [a] -> Shell a
+select :: Foldable f => f a -> Shell a
 select as = Shell (\(FoldM step begin done) -> do
     x0 <- begin
     let step' a k x = do
