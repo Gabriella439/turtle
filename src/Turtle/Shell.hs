@@ -76,6 +76,8 @@ import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), with)
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
+import Data.Foldable (Foldable)
+import qualified Data.Foldable
 import Data.Monoid
 import Data.String (IsString(..))
 import Prelude -- Fix redundant import warnings
@@ -170,4 +172,4 @@ select as = Shell (\(FoldM step begin done) -> do
     let step' a k x = do
             x' <- step x a
             k $! x'
-    foldr step' done as $! x0 )
+    Data.Foldable.foldr step' done as $! x0 )
