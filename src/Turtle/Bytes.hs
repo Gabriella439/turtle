@@ -20,7 +20,6 @@ module Turtle.Bytes (
     -- * Subprocess management
     , proc
     , shell
-    , system
     , procs
     , shells
     , inproc
@@ -31,6 +30,12 @@ module Turtle.Bytes (
     , shellStrict
     , procStrictWithErr
     , shellStrictWithErr
+
+    , system
+    , stream
+    , streamWithErr
+    , systemStrict
+    , systemStrictWithErr
     ) where
 
 import Control.Applicative
@@ -357,6 +362,10 @@ system p s = liftIO (do
 
     Exception.bracket open close' handle )
 
+{-| `systemStrict` generalizes `shellStrict` and `procStrict` by allowing you to
+    supply your own custom `CreateProcess`.  This is for advanced users who feel
+    comfortable using the lower-level @process@ API
+-}
 systemStrict
     :: MonadIO io
     => Process.CreateProcess
@@ -397,6 +406,11 @@ systemStrict p s = liftIO (do
                     restore (Process.waitForProcess ph) <* halt a ) ))
             (Data.ByteString.hGetContents hOut) ) )
 
+{-| `systemStrictWithErr` generalizes `shellStrictWithErr` and
+    `procStrictWithErr` by allowing you to supply your own custom
+    `CreateProcess`.  This is for advanced users who feel comfortable using
+    the lower-level @process@ API
+-}
 systemStrictWithErr
     :: MonadIO io
     => Process.CreateProcess
@@ -471,6 +485,10 @@ inshell
     -- ^ Chunks of bytes read from process output
 inshell cmd = stream (Process.shell (Data.Text.unpack cmd))
 
+{-| `stream` generalizes `inproc` and `inshell` by allowing you to supply your
+    own custom `CreateProcess`.  This is for advanced users who feel comfortable
+    using the lower-level @process@ API
+-}
 stream
     :: Process.CreateProcess
     -- ^ Command
@@ -511,6 +529,10 @@ stream p s = do
                 Async.withAsync (feedIn restore) k ) ))
     inhandle hOut <|> (liftIO (Process.waitForProcess ph *> halt a) *> empty)
 
+{-| `streamWithErr` generalizes `inprocWithErr` and `inshellWithErr` by allowing
+    you to supply your own custom `CreateProcess`.  This is for advanced users
+    who feel comfortable using the lower-level @process@ API
+-}
 streamWithErr
     :: Process.CreateProcess
     -- ^ Command
