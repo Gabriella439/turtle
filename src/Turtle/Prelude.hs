@@ -170,6 +170,7 @@ module Turtle.Prelude (
     , lstree
     , cat
     , grep
+    , fpgrep
     , sed
     , onFiles
     , inplace
@@ -1444,6 +1445,15 @@ grep pattern s = do
     line <- s
     _:_ <- return (match pattern (lineToText line))
     return line
+
+-- | Keep all files that match the given `Pattern`
+fpgrep :: Pattern a -> Shell FilePath -> Shell FilePath
+fpgrep pattern s = do
+  fpath <- s
+  _:_ <- return (match pattern
+                 (either id id (Filesystem.toText fpath)))
+  return fpath
+
 
 {-| Replace all occurrences of a `Pattern` with its `Text` result
 
