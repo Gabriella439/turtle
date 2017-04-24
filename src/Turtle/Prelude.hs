@@ -125,6 +125,7 @@ module Turtle.Prelude (
     , mkdir
     , mktree
     , cp
+    , cptree
     , rm
     , rmdir
     , rmtree
@@ -1022,6 +1023,21 @@ mktree path = liftIO (Filesystem.createTree path)
 -- | Copy a file
 cp :: MonadIO io => FilePath -> FilePath -> io ()
 cp oldPath newPath = liftIO (Filesystem.copyFile oldPath newPath)
+
+-- | Copy a directory tree
+cptree :: MonadIO io => FilePath -> FilePath -> io ()
+cptree oldTree newTree = sh (do
+    oldPath <- lstree oldTree
+    -- The `system-filepath` library treats a path like "/tmp" as a file and not
+    -- a directory and fails to strip it as a prefix from `/tmp/foo`.  Adding
+    -- `(</> "")` to the end of the path makes clear that the path is a
+    -- directory
+    Just suffix <- return (Filesystem.stripPrefix (oldTree </> "") oldPath)
+    let newPath = newTree </> suffix
+    isFile <- testfile newPath
+    if isFile
+        then cp oldPath newPath
+        else mktree newPath )
 
 -- | Remove a file
 rm :: MonadIO io => FilePath -> io ()
