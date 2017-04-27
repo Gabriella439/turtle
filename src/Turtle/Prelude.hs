@@ -1251,8 +1251,8 @@ which cmd = fold (whichAll cmd) Control.Foldl.head
 whichAll :: FilePath -> Shell FilePath
 whichAll cmd = do
   Just paths <- need "PATH"
-  path <- select (Text.split (== ':') paths)
-  let path' = Filesystem.fromText path </> cmd
+  path <- select (Filesystem.splitSearchPathString . Text.unpack $ paths)
+  let path' = path </> cmd
 
   True <- testfile path'
 
