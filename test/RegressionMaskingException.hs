@@ -2,8 +2,6 @@
 
 import Turtle
 
-import qualified System.Timeout
-
 -- This test fails by hanging
 main :: IO ()
 main = runManaged (do

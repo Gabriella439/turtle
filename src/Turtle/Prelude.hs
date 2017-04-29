@@ -1874,9 +1874,9 @@ header (Shell k) = Shell k'
 -- >   print directory
 single :: MonadIO io => Shell a -> io (Maybe a)
 single s = do
-    ls <- fold s Control.Foldl.list
-    case ls of
+    as <- fold s Control.Foldl.list
+    case as of
         [a] -> return (Just a)
         _   -> do
-            let msg = format ("single: expected 1 line of input but there were "%d%" lines of input") (length ls)
+            let msg = format ("single: expected 1 line of input but there were "%d%" lines of input") (length as)
             die msg
