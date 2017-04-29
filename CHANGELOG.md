@@ -1,3 +1,14 @@
+1.3.3
+
+* Bug fix: Change `textToLines` to behave like `Data.Text.splitOn "\n"`
+   instead of `Data.Text.unlines`
+    * This fixes weird behavior around handling empty strings.  `splitOn` does
+      the right thing, but `unlines` does not.  For example, this indirectly
+      fixes a regression in `sed`, which would discard empty lines
+* Bug fix: `which`/`whichAll` now behave correctly on Windows
+* Add new `cptree`/`single` utilities
+* Documentation fixes
+
 1.3.2
 
 * Fix bugs in subprocess management
