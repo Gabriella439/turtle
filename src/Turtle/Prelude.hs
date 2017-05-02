@@ -1034,9 +1034,9 @@ cptree oldTree newTree = sh (do
     -- directory
     Just suffix <- return (Filesystem.stripPrefix (oldTree </> "") oldPath)
     let newPath = newTree </> suffix
-    isFile <- testfile newPath
+    isFile <- testfile oldPath
     if isFile
-        then cp oldPath newPath
+        then mktree (Filesystem.directory newPath) >> cp oldPath newPath
         else mktree newPath )
 
 -- | Remove a file
