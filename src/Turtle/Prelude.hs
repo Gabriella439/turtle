@@ -192,6 +192,8 @@ module Turtle.Prelude (
 
     -- * Text
     , cut
+    , headerMap
+    , headerRMap
 
     -- * Subprocess management
     , proc
@@ -1686,6 +1688,25 @@ parallel = traverse fork >=> select >=> wait
 cut :: Pattern a -> Text -> [Text]
 cut pattern txt = head (match (selfless chars `sepBy` pattern) txt)
 -- This `head` should be safe ... in theory
+
+-- | Map a function that uses the header over the stream.
+headerMap :: (a -> a -> a) -> Shell a -> Shell (Maybe a)
+headerMap f s = do
+    header <- fold s Control.Foldl.head
+    case header of
+        Nothing  -> return Nothing
+        (Just h) -> cat [ return . Just $ h
+                        , fmap (Just . f h) s
+                        ]
+
+-- | Map a function that uses the header over the stream, removing the header,
+-- allowing a more flexibility.
+headerRMap :: (a -> a -> b) -> Shell a -> Shell (Maybe b)
+headerRMap f s = do
+    header <- fold s Control.Foldl.head
+    case header of
+        Nothing -> return Nothing
+        (Just h) -> fmap (Just . f h) $ s
 
 -- | Get the current time
 date :: MonadIO io => io UTCTime
