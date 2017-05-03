@@ -10,6 +10,7 @@ module Turtle.Line
   , linesToText
   , textToLine
   , unsafeTextToLine
+  , fpToLine
   , NewlineForbidden(..)
   ) where
 
@@ -27,6 +28,7 @@ import Data.Monoid
 import Data.Maybe
 import Data.Typeable
 import Control.Exception
+import Filesystem.Path.CurrentOS (FilePath, toText)
 
 import qualified Data.List.NonEmpty
 
@@ -94,6 +96,9 @@ textToLine = fromSingleton . textToLines
   where
     fromSingleton (a :| []) = Just a
     fromSingleton  _        = Nothing
+
+fpToLine :: Filesystem.Path.CurrentOS.FilePath -> Line
+fpToLine = unsafeTextToLine . either id id . toText
 
 -- | Convert a text value into a line.
 -- Precondition (unchecked): the argument does not contain newlines.
