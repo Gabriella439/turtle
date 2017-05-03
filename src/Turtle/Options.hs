@@ -12,8 +12,8 @@
 -- > import Turtle
 -- >
 -- > parser :: Parser (Text, Int)
--- > parser = (,) <$> optText "name" 'n' "Your first name"
--- >              <*> optInt  "age"  'a' "Your current age"
+-- > parser = (,) <$> optText ("name" <> shortFlag 'n') "name" "Your first name"
+-- >              <*> optInt  "age"                     "age"  "Your current age"
 -- >
 -- > main = do
 -- >     (name, age) <- options "Greeting script" parser
@@ -27,11 +27,11 @@
 -- > $ ./options --help
 -- > Greeting script
 -- >
--- > Usage: options (-n|--name NAME) (-a|--age AGE)
+-- > Usage: options (-n|--name NAME) --age AGE
 -- >
 -- > Available options:
 -- >  -h,--help                Show this help text
--- >  --name NAME              Your first name
+-- >  -n,--name NAME           Your first name
 -- >  --age AGE                Your current age
 --
 -- See the "Turtle.Tutorial" module which contains more examples on how to use
@@ -40,6 +40,9 @@
 module Turtle.Options
     ( -- * Types
       Parser
+    , FlagName
+    , shortFlag
+    , longFlag
     , ArgName(..)
     , CommandName(..)
     , ShortName
@@ -76,7 +79,8 @@ module Turtle.Options
 
 import Data.Monoid
 import Data.Foldable
-import Data.String (IsString)
+import qualified Data.Semigroup as Semigroup
+import Data.String (IsString(..))
 import Text.Read (readMaybe)
 import Data.Text (Text)
 import Data.Optional
@@ -107,11 +111,43 @@ options desc parser = liftIO
     prefs = Opts.showHelpOnError
 #endif
 
+{-| The name of a command-line flag
+
+    A flag has at least one flag name, either a short name or a long name. You
+    can define multiple flag names for a flag.
+-}
+data FlagName = FlagName
+    { flagShortName :: [ShortName]
+    , flagLongName :: [ArgName]
+    }
+
+instance Semigroup.Semigroup FlagName where
+    a <> b = FlagName
+        { flagShortName = flagShortName a <> flagShortName b
+        , flagLongName = flagLongName a <> flagLongName b
+        }
+
+instance IsString FlagName where
+    fromString xs = longFlag (fromString xs)
+
+-- | A short name for a flag
+shortFlag :: ShortName -> FlagName
+shortFlag c = FlagName
+    { flagShortName = [c]
+    , flagLongName = []
+    }
+
+-- | A long name for a flag
+longFlag :: ArgName -> FlagName
+longFlag name = FlagName
+    { flagShortName = []
+    , flagLongName = [name]
+    }
+
 {-| The name of a command-line argument
 
-    This is used to infer the long name and metavariable for the command line
-    flag.  For example, an `ArgName` of @\"name\"@ will create a @--name@ flag
-    with a @NAME@ metavariable
+    This is used as metavariable for a command line flag. For example, an
+    `ArgName` of @\"name\"@ will create a @NAME@ metavariable.
 -}
 newtype ArgName = ArgName { getArgName :: Text }
     deriving (IsString)
@@ -146,49 +182,48 @@ newtype HelpMessage = HelpMessage { getHelpMessage :: Text }
     flag is absent
 -}
 switch
-    :: ArgName
-    -> ShortName
+    :: FlagName
     -> Optional HelpMessage
     -> Parser Bool
-switch argName c helpMessage
+switch flagName helpMessage
    = Opts.switch
-   $ (Opts.long . Text.unpack . getArgName) argName
-  <> Opts.short c
+   $ foldMap (Opts.long . Text.unpack . getArgName) (flagLongName flagName)
+  <> foldMap Opts.short (flagShortName flagName)
   <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 {- | Build a flag-based option parser for any type by providing a `Text`-parsing
      function
 -}
 opt :: (Text -> Maybe a)
+    -> FlagName
     -> ArgName
-    -> ShortName
     -> Optional HelpMessage
     -> Parser a
-opt argParse argName c helpMessage
+opt argParse flagName argName helpMessage
    = Opts.option (argParseToReadM argParse)
    $ Opts.metavar (Text.unpack (Text.toUpper (getArgName argName)))
-  <> Opts.long (Text.unpack (getArgName argName))
-  <> Opts.short c
+  <> foldMap (Opts.long . Text.unpack . getArgName) (flagLongName flagName)
+  <> foldMap Opts.short (flagShortName flagName)
   <> foldMap (Opts.help . Text.unpack . getHelpMessage) helpMessage
 
 -- | Parse any type that implements `Read`
-optRead :: Read a => ArgName -> ShortName -> Optional HelpMessage -> Parser a
+optRead :: Read a => FlagName -> ArgName -> Optional HelpMessage -> Parser a
 optRead = opt (readMaybe . Text.unpack)
 
 -- | Parse an `Int` as a flag-based option
-optInt :: ArgName -> ShortName -> Optional HelpMessage -> Parser Int
+optInt :: FlagName -> ArgName -> Optional HelpMessage -> Parser Int
 optInt = optRead
 
 -- | Parse an `Integer` as a flag-based option
-optInteger :: ArgName -> ShortName -> Optional HelpMessage -> Parser Integer
+optInteger :: FlagName -> ArgName -> Optional HelpMessage -> Parser Integer
 optInteger = optRead
 
 -- | Parse a `Double` as a flag-based option
-optDouble :: ArgName -> ShortName -> Optional HelpMessage -> Parser Double
+optDouble :: FlagName -> ArgName -> Optional HelpMessage -> Parser Double
 optDouble = optRead
 
 -- | Parse a `Text` value as a flag-based option
-optText :: ArgName -> ShortName -> Optional HelpMessage -> Parser Text
+optText :: FlagName -> ArgName -> Optional HelpMessage -> Parser Text
 optText = opt Just
 
 -- | Parse a `Line` value as a flag-based option
@@ -196,7 +231,7 @@ optLine :: ArgName -> ShortName -> Optional HelpMessage -> Parser Line
 optLine = opt Turtle.Line.textToLine
 
 -- | Parse a `FilePath` value as a flag-based option
-optPath :: ArgName -> ShortName -> Optional HelpMessage -> Parser FilePath
+optPath :: FlagName -> ArgName -> Optional HelpMessage -> Parser FilePath
 optPath argName short msg = fmap fromText (optText argName short msg)
 
 {- | Build a positional argument parser for any type by providing a

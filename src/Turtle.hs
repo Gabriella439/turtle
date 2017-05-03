@@ -76,6 +76,7 @@ module Turtle (
     , module Control.Monad
     , module Control.Monad.IO.Class
     , module Data.Monoid
+    , module Data.Semigroup
     , module Control.Monad.Managed
     , module Filesystem.Path.CurrentOS
     , Fold(..)
@@ -117,7 +118,8 @@ import Control.Monad
     , unless
     )
 import Control.Monad.IO.Class (MonadIO(..))
-import Data.Monoid (Monoid(..), (<>))
+import Data.Monoid (Monoid(..))
+import Data.Semigroup (Semigroup(..))
 import Data.String (IsString(..))
 import Filesystem.Path.CurrentOS
     ( FilePath

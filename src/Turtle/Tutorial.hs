@@ -1658,9 +1658,9 @@ import Turtle
 -- > import Prelude hiding (FilePath)
 -- > 
 -- > parser :: Parser (FilePath, FilePath)
--- > parser = (,) <$> optPath "src"  's' "The source file"
--- >              <*> optPath "dest" 'd' "The destination file"
--- > 
+-- > parser = (,) <$> optPath ("src"  <> shortFlag 's') "path" "The source file"
+-- >              <*> optPath ("dest" <> shortFlag 'd') "path" "The destination file"
+-- >
 -- > main = do
 -- >     (src, dest) <- options "A simple `cp` utility" parser
 -- >     cp src dest
@@ -1668,18 +1668,18 @@ import Turtle
 -- This now lets us specify the arguments in terms of flags:
 --
 -- > $ ./cp
--- > Usage: cp.hs (-s|--src SRC) (-d|--dest DEST)
--- > 
+-- > Usage: cp.hs (-s|--src PATH) (-d|--dest PATH)
+-- >
 -- > $ ./cp --help
 -- > A simple `cp` utility
--- > 
--- > Usage: cp.hs (-s|--src SRC) (-d|--dest DEST)
--- > 
+-- >
+-- > Usage: cp.hs (-s|--src PATH) (-d|--dest PATH)
+-- >
 -- > Available options:
 -- >   -h,--help                Show this help text
--- >   -s,--src SRC             The source file
--- >   -d,--dest DEST           The destination file
--- > 
+-- >   -s,--src PATH            The source file
+-- >   -d,--dest PATH           The destination file
+-- >
 -- > $ ./cp --src file1.txt --dest file3.txt
 -- > $ cat file3.txt
 -- > Test

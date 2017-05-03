@@ -74,6 +74,8 @@ Library
         Build-Depends: Win32 >= 2.2.0.1 && < 2.4
     else
         Build-Depends: unix  >= 2.5.1.0 && < 2.8
+    if impl(ghc < 8.0)
+        Build-Depends: semigroups          < 0.19
     Exposed-Modules:
         Turtle,
         Turtle.Bytes,
