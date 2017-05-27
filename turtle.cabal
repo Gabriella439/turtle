@@ -119,6 +119,18 @@ test-suite regression-masking-exception
         base   >= 4 && < 5,
         turtle
 
+test-suite cptree
+    Type: exitcode-stdio-1.0
+    HS-Source-Dirs: test
+    Main-Is: cptree.hs
+    GHC-Options: -Wall -threaded
+    Default-Language: Haskell2010
+    Build-Depends:
+        base   >= 4 && < 5,
+        temporary,
+        system-filepath >= 0.4,
+        turtle
+
 benchmark bench
     Type: exitcode-stdio-1.0
     HS-Source-Dirs: bench
