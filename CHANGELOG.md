@@ -1,3 +1,9 @@
+1.3.4
+
+* Bug fix: `cptree` now correctly copies files instead of creating directories
+  of the same name
+* Increase upper bound on `criterion`
+
 1.3.3
 
 * Bug fix: Change `textToLines` to behave like `Data.Text.splitOn "\n"`
