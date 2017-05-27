@@ -6,18 +6,16 @@ import System.IO.Temp (withSystemTempDirectory)
 import Control.Monad (unless)
 
 check :: String -> Bool-> IO ()
-check errorMessage successs = unless successs $ error errorMessage
+check errorMessage successs = unless successs $ fail errorMessage
 
--- This test fails by hanging
 main :: IO ()
 main = withSystemTempDirectory "tempDir" (runTest . fromString)
 
 runTest :: Turtle.FilePath -> IO ()
 runTest tempDir = do
   let srcDirectory = tempDir </> "src"
-  mkdir srcDirectory
 
-  mkdir $ srcDirectory </> "directory"
+  mktree $ srcDirectory </> "directory"
   touch $ srcDirectory </> "directory" </> "file"
 
   let destDirectory = tempDir </> "dest"
