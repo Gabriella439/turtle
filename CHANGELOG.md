@@ -1,3 +1,7 @@
+1.3.5
+
+* Increase upper bound on `foldl`
+
 1.3.4
 
 * Bug fix: `cptree` now correctly copies files instead of creating directories
