@@ -6,7 +6,7 @@
 }:
 mkDerivation {
   pname = "turtle";
-  version = "1.3.3";
+  version = "1.3.6";
   src = ./.;
   libraryHaskellDepends = [
     ansi-wl-pprint async base bytestring clock directory foldl hostname
@@ -14,7 +14,7 @@ mkDerivation {
     system-fileio system-filepath temporary text time transformers unix
     unix-compat
   ];
-  testHaskellDepends = [ base doctest ];
+  testHaskellDepends = [ base doctest system-filepath temporary ];
   benchmarkHaskellDepends = [ base criterion text ];
   description = "Shell programming, Haskell-style";
   license = stdenv.lib.licenses.bsd3;
