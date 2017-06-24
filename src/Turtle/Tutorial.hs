@@ -1818,3 +1818,10 @@ import Turtle
 -- /Answer:/ Use `runManaged`, `sh`, or (`<|>`) (all resources acquired in the
 -- left stream will close before beginning the right stream).  Alternatively,
 -- use `with` to acquire a resource for a limited scope.
+--
+-- /Question:/ How do I use @turtle@ to run another shell as a subprocess?
+--
+-- /Answer:/ Use `Turtle.system` in conjunction with the `process` library,
+-- like this:
+--
+-- > Turtle.system (System.Process.proc "/bin/sh" []) empty
