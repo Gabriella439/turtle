@@ -669,9 +669,18 @@ inshell
     -- ^ Lines of standard output
 inshell cmd = stream (Process.shell (unpack cmd))
 
+waitForProcessThrows :: Process.ProcessHandle -> IO ()
+waitForProcessThrows ph = do
+    exitCode <- Process.waitForProcess ph
+    case exitCode of
+        ExitSuccess   -> return ()
+        ExitFailure _ -> Control.Exception.throwIO exitCode
+
 {-| `stream` generalizes `inproc` and `inshell` by allowing you to supply your
     own custom `CreateProcess`.  This is for advanced users who feel comfortable
     using the lower-level @process@ API
+
+    Throws an `ExitCode` exception if the command returns a non-zero exit code
 -}
 stream
     :: Process.CreateProcess
@@ -706,11 +715,13 @@ stream p s = do
     a <- using
         (managed (\k ->
             mask (\restore -> withAsync (feedIn restore) (restore . k))))
-    inhandle hOut <|> (liftIO (Process.waitForProcess ph *> halt a) *> empty)
+    inhandle hOut <|> (liftIO (waitForProcessThrows ph *> halt a) *> empty)
 
 {-| `streamWithErr` generalizes `inprocWithErr` and `inshellWithErr` by allowing
     you to supply your own custom `CreateProcess`.  This is for advanced users
     who feel comfortable using the lower-level @process@ API
+
+    Throws an `ExitCode` exception if the command returns a non-zero exit code
 -}
 streamWithErr
     :: Process.CreateProcess
@@ -783,7 +794,7 @@ streamWithErr p s = do
             _ <- r
             return ()
     let waitAll = STM.atomically (waitSTM a `also` (waitSTM b `also` waitSTM c))
-    drain <|> (liftIO (Process.waitForProcess ph *> waitAll) *> empty)
+    drain <|> (liftIO (waitForProcessThrows ph *> waitAll) *> empty)
 
 {-| Run a command using the shell, streaming @stdout@ and @stderr@ as lines of
     `Text`.  Lines from @stdout@ are wrapped in `Right` and lines from @stderr@
@@ -801,7 +812,6 @@ inprocWithErr
     -- ^ Lines of either standard output (`Right`) or standard error (`Left`)
 inprocWithErr cmd args =
     streamWithErr (Process.proc (unpack cmd) (map unpack args))
-
 
 {-| Run a command line using the shell, streaming @stdout@ and @stderr@ as lines
     of `Text`.  Lines from @stdout@ are wrapped in `Right` and lines from
