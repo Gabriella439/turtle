@@ -214,7 +214,7 @@ module Turtle.Prelude (
     , systemStrictWithErr
 
     -- * Permissions
-    , Permissions
+    , Permissions(..)
     , chmod
     , getmod
     , setmod
@@ -222,8 +222,7 @@ module Turtle.Prelude (
     , readable, nonreadable
     , writable, nonwritable
     , executable, nonexecutable
-    , searchable, nonsearchable
-    , ooo,roo,owo,oox,oos,rwo,rox,ros,owx,rwx,rws
+    , ooo,roo,owo,oox,rwo,rox,owx,rwx
 
     -- * File size
     , du
@@ -307,7 +306,7 @@ import System.Environment (
     lookupEnv,
 #endif
     getEnvironment )
-import System.Directory (Permissions)
+import qualified System.Directory
 import qualified System.Directory as Directory
 import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle, hClose)
@@ -1109,11 +1108,64 @@ touch file = do
 #endif
         else output file empty )
 
+{-| This type is the same as @"System.Directory".`System.Directory.Permissions`@
+    type except combining the `System.Directory.executable` and
+    `System.Directory.searchable` fields into a single `executable` field for
+    consistency with the Unix @chmod@.  This simplification is still entirely
+    consistent with the behavior of "System.Directory", which treats the two
+    fields as interchangeable.
+-}
+data Permissions = Permissions
+    { _readable   :: Bool
+    , _writable   :: Bool
+    , _executable :: Bool
+    } deriving (Eq, Read, Ord, Show)
+
+{-| Under the hood, "System.Directory" does not distinguish between
+    `System.Directory.executable` and `System.Directory.searchable`.  They both
+    translate to the same `System.Posix.ownerExecuteMode` permission.  That
+    means that we can always safely just set the `System.Directory.executable`
+    field and safely leave the `System.Directory.searchable` field as `False`
+    because the two fields are combined with (`||`) to determine whether to set
+    the executable bit.
+-}
+toSystemDirectoryPermissions :: Permissions -> System.Directory.Permissions
+toSystemDirectoryPermissions p =
+    ( System.Directory.setOwnerReadable   (_readable   p)
+    . System.Directory.setOwnerWritable   (_writable   p)
+    . System.Directory.setOwnerExecutable (_executable p)
+    ) System.Directory.emptyPermissions
+
+fromSystemDirectoryPermissions :: System.Directory.Permissions -> Permissions
+fromSystemDirectoryPermissions p = Permissions
+    { _readable   = System.Directory.readable p
+    , _writable   = System.Directory.writable p
+    , _executable =
+        System.Directory.executable p || System.Directory.searchable p
+    }
+
 {-| Update a file or directory's user permissions
 
-> chmod rwo        "foo.txt"  -- chmod u=rw foo.txt
-> chmod executable "foo.txt"  -- chmod u+x foo.txt
-> chmod nonwritable "foo.txt" -- chmod u-w foo.txt
+> chmod rwo         "foo.txt"  -- chmod u=rw foo.txt
+> chmod executable  "foo.txt"  -- chmod u+x foo.txt
+> chmod nonwritable "foo.txt"  -- chmod u-w foo.txt
+
+    The meaning of each permission is:
+
+    * `readable` (@+r@ for short): For files, determines whether you can read
+      from that file (such as with `input`).  For directories, determines
+      whether or not you can list the directory contents (such as with `ls`).
+      Note: if a directory is not readable then `ls` will stream an empty list
+      of contents
+
+    * `writable` (@+w@ for short): For files, determines whether you can write
+      to that file (such as with `output`).  For directories, determines whether
+      you can create a new file underneath that directory.
+
+    * `executable` (@+x@ for short): For files, determines whether or not that
+      file is executable (such as with `proc`).  For directories, determines
+      whether or not you can read or execute files underneath that directory
+      (such as with `input` or `proc`)
 -}
 chmod
     :: MonadIO io
@@ -1126,22 +1178,25 @@ chmod
 chmod modifyPermissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
     permissions <- Directory.getPermissions path'
-    let permissions' = modifyPermissions permissions
-        changed = permissions /= permissions'
-    when changed (Directory.setPermissions path' permissions')
+    let permissions' = fromSystemDirectoryPermissions permissions
+    let permissions'' = modifyPermissions permissions'
+        changed = permissions' /= permissions''
+    let permissions''' = toSystemDirectoryPermissions permissions'
+    when changed (Directory.setPermissions path' permissions''')
     return permissions' )
 
 -- | Get a file or directory's user permissions
 getmod :: MonadIO io => FilePath -> io Permissions
 getmod path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
-    Directory.getPermissions path' )
+    permissions <- Directory.getPermissions path'
+    return (fromSystemDirectoryPermissions permissions))
 
 -- | Set a file or directory's user permissions
 setmod :: MonadIO io => Permissions -> FilePath -> io ()
 setmod permissions path = liftIO (do
     let path' = deslash (Filesystem.encodeString path)
-    Directory.setPermissions path' permissions )
+    Directory.setPermissions path' (toSystemDirectoryPermissions permissions) )
 
 -- | Copy a file or directory's permissions (analogous to @chmod --reference@)
 copymod :: MonadIO io => FilePath -> FilePath -> io ()
@@ -1152,39 +1207,35 @@ copymod sourcePath targetPath = liftIO (do
 
 -- | @+r@
 readable :: Permissions -> Permissions
-readable = Directory.setOwnerReadable True
+readable p = p { _readable = True }
 
 -- | @-r@
 nonreadable :: Permissions -> Permissions
-nonreadable = Directory.setOwnerReadable False
+nonreadable p = p { _readable = False }
 
 -- | @+w@
 writable :: Permissions -> Permissions
-writable = Directory.setOwnerWritable True
+writable p = p { _writable = True }
 
 -- | @-w@
 nonwritable :: Permissions -> Permissions
-nonwritable = Directory.setOwnerWritable False
+nonwritable p = p { _writable = False }
 
 -- | @+x@
 executable :: Permissions -> Permissions
-executable = Directory.setOwnerExecutable True
+executable p = p { _executable = True }
 
 -- | @-x@
 nonexecutable :: Permissions -> Permissions
-nonexecutable = Directory.setOwnerExecutable False
-
--- | @+s@
-searchable :: Permissions -> Permissions
-searchable = Directory.setOwnerSearchable True
-
--- | @-s@
-nonsearchable :: Permissions -> Permissions
-nonsearchable = Directory.setOwnerSearchable False
+nonexecutable p = p { _executable = False }
 
 -- | @-r -w -x@
 ooo :: Permissions -> Permissions
-ooo = const Directory.emptyPermissions
+ooo _ = Permissions
+    { _readable   = False
+    , _writable   = False
+    , _executable = False
+    }
 
 -- | @+r -w -x@
 roo :: Permissions -> Permissions
@@ -1198,10 +1249,6 @@ owo = writable . ooo
 oox :: Permissions -> Permissions
 oox = executable . ooo
 
--- | @-r -w +s@
-oos :: Permissions -> Permissions
-oos = searchable . ooo
-
 -- | @+r +w -x@
 rwo :: Permissions -> Permissions
 rwo = readable . writable . ooo
@@ -1210,10 +1257,6 @@ rwo = readable . writable . ooo
 rox :: Permissions -> Permissions
 rox = readable . executable . ooo
 
--- | @+r -w +s@
-ros :: Permissions -> Permissions
-ros = readable . searchable . ooo
-
 -- | @-r +w +x@
 owx :: Permissions -> Permissions
 owx = writable . executable . ooo
@@ -1221,10 +1264,6 @@ owx = writable . executable . ooo
 -- | @+r +w +x@
 rwx :: Permissions -> Permissions
 rwx = readable . writable . executable . ooo
-
--- | @+r +w +s@
-rws :: Permissions -> Permissions
-rws = readable . writable . searchable . ooo
 
 {-| Time how long a command takes in monotonic wall clock time
 
@@ -1256,15 +1295,16 @@ whichAll cmd = do
 
   True <- testfile path'
 
-  let handler :: IOError -> IO Permissions
+  let handler :: IOError -> IO Bool
       handler e =
           if isPermissionError e || isDoesNotExistError e
-              then return Directory.emptyPermissions
+              then return False
               else throwIO e
 
-  perms <- liftIO (getmod path' `catchIOError` handler)
+  let getIsExecutable = fmap _executable (getmod path')
+  isExecutable <- liftIO (getIsExecutable `catchIOError` handler)
 
-  guard (Directory.executable perms)
+  guard isExecutable
   return path'
 
 {-| Sleep for the given duration
