@@ -626,8 +626,9 @@ streamWithErr p s = do
 
 {-| Run a command using the shell, streaming @stdout@ and @stderr@ as chunks of
     `ByteString`.  Chunks from @stdout@ are wrapped in `Right` and chunks from
-    @stderr@ are wrapped in `Left`.  This does /not/ throw an exception if the
-    command returns a non-zero exit code
+    @stderr@ are wrapped in `Left`.
+
+    Throws an `ExitCode` exception if the command returns a non-zero exit code
 -}
 inprocWithErr
     :: Text
@@ -644,11 +645,12 @@ inprocWithErr cmd args =
 
 {-| Run a command line using the shell, streaming @stdout@ and @stderr@ as
     chunks of `ByteString`.  Chunks from @stdout@ are wrapped in `Right` and
-    chunks from @stderr@ are wrapped in `Left`.  This does /not/ throw an
-    exception if the command returns a non-zero exit code
+    chunks from @stderr@ are wrapped in `Left`.
 
     This command is more powerful than `inprocWithErr`, but highly vulnerable to
     code injection if you template the command line with untrusted input
+
+    Throws an `ExitCode` exception if the command returns a non-zero exit code
 -}
 inshellWithErr
     :: Text
