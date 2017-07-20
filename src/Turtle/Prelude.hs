@@ -1884,11 +1884,11 @@ header (Shell k) = Shell k'
 -- > main = do
 -- >   Just directory <- single (inshell "pwd" empty)
 -- >   print directory
-single :: MonadIO io => Shell a -> io (Maybe a)
+single :: MonadIO io => Shell a -> io a
 single s = do
     as <- fold s Control.Foldl.list
     case as of
-        [a] -> return (Just a)
+        [a] -> return a
         _   -> do
             let msg = format ("single: expected 1 line of input but there were "%d%" lines of input") (length as)
             die msg
