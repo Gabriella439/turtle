@@ -1,3 +1,7 @@
+1.4.1
+
+* Increase upper bound on `doctest`
+
 1.4.0
 
 * BREAKING CHANGE: Remove unnecessary `Maybe` from type of `single`

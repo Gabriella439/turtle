@@ -13,6 +13,9 @@ let
     packageOverrides = pkgs: {
       haskellPackages = pkgs.haskellPackages.override {
         overrides = haskellPackagesNew: haskellPackagesOld: {
+          doctest =
+            haskellPackagesNew.callPackage ./doctest.nix { };
+
           optparse-applicative =
             pkgs.haskell.lib.dontCheck
               (haskellPackagesNew.callPackage ./optparse-applicative.nix { });
