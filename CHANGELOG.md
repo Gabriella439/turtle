@@ -1,3 +1,14 @@
+1.4.0
+
+* BREAKING CHANGE: Remove unnecessary `Maybe` from type of `single`
+* BREAKING CHANGE: Consolidate `searchable` and `executable`
+* `stream{,WithErr}` now throws an `ExitCode` on failure
+
+1.3.6
+
+* Build against `ghc-8.2`
+* Relax upper bound on `optparse-applicative` and `foldl`
+
 1.3.5
 
 * Increase upper bound on `foldl`
