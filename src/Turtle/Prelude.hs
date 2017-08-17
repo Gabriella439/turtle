@@ -172,8 +172,14 @@ module Turtle.Prelude (
     , cat
     , grep
     , sed
+    , sedPrefix
+    , sedSuffix
+    , sedEntire
     , onFiles
     , inplace
+    , inplacePrefix
+    , inplaceSuffix
+    , inplaceEntire
     , find
     , yes
     , nl
@@ -283,6 +289,7 @@ import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 import Data.Bits ((.&.))
 #endif
 import Data.IORef (newIORef, readIORef, writeIORef)
+import Data.Monoid ((<>))
 import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (POSIXTime)
@@ -1537,6 +1544,29 @@ sed pattern s = do
     message = "sed: the given pattern matches the empty string"
     matchesEmpty = not . null . flip match ""
 
+{-| Like `sed`, but the provided substitution must match the beginning of the
+    line
+-}
+sedPrefix :: Pattern Text -> Shell Line -> Shell Line
+sedPrefix pattern s = do
+    line   <- s
+    txt':_ <- return (match ((pattern <> chars) <|> chars) (lineToText line))
+    select (textToLines txt')
+
+-- | Like `sed`, but the provided substitution must match the end of the line
+sedSuffix :: Pattern Text -> Shell Line -> Shell Line
+sedSuffix pattern s = do
+    line   <- s
+    txt':_ <- return (match ((chars <> pattern) <|> chars) (lineToText line))
+    select (textToLines txt')
+
+-- | Like `sed`, but the provided substitution must match the entire line
+sedEntire :: Pattern Text -> Shell Line -> Shell Line
+sedEntire pattern s = do
+    line   <- s
+    txt':_ <- return (match (pattern <|> chars)(lineToText line))
+    select (textToLines txt')
+
 -- | Make a `Shell Text -> Shell Text` function work on `FilePath`s instead.
 -- | Ignores any paths which cannot be decoded as valid `Text`.
 onFiles :: (Shell Text -> Shell Text) -> Shell FilePath -> Shell FilePath
@@ -1548,14 +1578,33 @@ onFiles f = fmap Filesystem.fromText . f . getRights . fmap Filesystem.toText
 
 -- | Like `sed`, but operates in place on a `FilePath` (analogous to @sed -i@)
 inplace :: MonadIO io => Pattern Text -> FilePath -> io ()
-inplace pattern file = liftIO (runManaged (do
+inplace = inplaceWith sed
+
+-- | Like `sedPrefix`, but operates in place on a `FilePath`
+inplacePrefix :: MonadIO io => Pattern Text -> FilePath -> io ()
+inplacePrefix = inplaceWith sedPrefix
+
+-- | Like `sedSuffix`, but operates in place on a `FilePath`
+inplaceSuffix :: MonadIO io => Pattern Text -> FilePath -> io ()
+inplaceSuffix = inplaceWith sedSuffix
+
+-- | Like `sedEntire`, but operates in place on a `FilePath`
+inplaceEntire :: MonadIO io => Pattern Text -> FilePath -> io ()
+inplaceEntire = inplaceWith sedEntire
+
+inplaceWith
+    :: MonadIO io
+    => (Pattern Text -> Shell Line -> Shell Line)
+    -> Pattern Text
+    -> FilePath
+    -> io ()
+inplaceWith sed_ pattern file = liftIO (runManaged (do
     here              <- pwd
     (tmpfile, handle) <- mktemp here "turtle"
-    outhandle handle (sed pattern (input file))
+    outhandle handle (sed_ pattern (input file))
     liftIO (hClose handle)
     copymod file tmpfile
     mv tmpfile file ))
-
 
 -- | Search a directory recursively for all files matching the given `Pattern`
 find :: Pattern a -> FilePath -> Shell FilePath
