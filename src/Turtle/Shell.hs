@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, CPP #-}
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
 
 {-| You can think of `Shell` as @[]@ + `IO` + `Managed`.  In fact, you can embed
@@ -74,6 +74,9 @@ import Control.Applicative
 import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), with)
+#if MIN_VERSION_base(4,9,0)
+import qualified Control.Monad.Fail as Fail
+#endif
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
 import Data.Foldable (Foldable)
@@ -150,6 +153,11 @@ instance MonadManaged Shell where
         x  <- begin
         x' <- with resource (step x)
         done x' )
+
+#if MIN_VERSION_base(4,9,0)
+instance Fail.MonadFail Shell where
+    fail = Prelude.fail
+#endif
 
 instance Monoid a => Monoid (Shell a) where
     mempty  = pure mempty
