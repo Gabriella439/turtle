@@ -1,3 +1,7 @@
+1.4.3
+
+* Increase upper bound on `doctest`
+
 1.4.2
 
 * Add `sed{Prefix,Suffix,Entire}` and `inplace{Prefix,Suffix,Entire}`
