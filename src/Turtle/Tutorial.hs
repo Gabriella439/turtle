@@ -1550,7 +1550,7 @@ import Turtle
 -- >              <*> argPath "dest" "The destination file"
 -- >
 -- > main = do
--- >     (src, dest) <- options "A simple `cp` script" parser
+-- >     (src, dest) <- options "A simple `cp` utility" parser
 -- >     cp src dest
 --
 -- If you run the script without any arguments, you will get an auto-generated
