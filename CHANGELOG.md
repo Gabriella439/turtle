@@ -1,3 +1,7 @@
+1.4.4
+
+* Fix small mistake in tutorial
+
 1.4.3
 
 * Increase upper bound on `doctest`
