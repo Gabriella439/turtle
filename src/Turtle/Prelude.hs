@@ -171,6 +171,7 @@ module Turtle.Prelude (
     , lstree
     , cat
     , grep
+    , grepText
     , sed
     , sedPrefix
     , sedSuffix
@@ -282,7 +283,7 @@ import Control.Exception (Exception, bracket, bracket_, finally, mask, throwIO)
 import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
-import Control.Monad (guard, liftM, msum, when, unless, (>=>))
+import Control.Monad (guard, liftM, msum, when, unless, (>=>), mfilter)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 #ifdef mingw32_HOST_OS
@@ -1513,12 +1514,16 @@ appendonly file = using (managed (Filesystem.withTextFile file IO.AppendMode))
 cat :: [Shell a] -> Shell a
 cat = msum
 
+grepWith :: (b -> Text) -> Pattern a -> Shell b -> Shell b
+grepWith f pattern = mfilter (not . null . match pattern . f)
+
 -- | Keep all lines that match the given `Pattern`
 grep :: Pattern a -> Shell Line -> Shell Line
-grep pattern s = do
-    line <- s
-    _:_ <- return (match pattern (lineToText line))
-    return line
+grep = grepWith lineToText
+
+-- | Keep every `Text` element that matches the given `Pattern`
+grepText :: Pattern a -> Shell Text -> Shell Text
+grepText = grepWith id
 
 {-| Replace all occurrences of a `Pattern` with its `Text` result
 
