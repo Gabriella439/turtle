@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE TupleSections              #-}
 
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
@@ -191,6 +192,14 @@ module Turtle.Prelude (
     , cache
     , parallel
     , single
+    , uniq
+    , uniqOn
+    , uniqBy
+    , nub
+    , nubOn
+    , sort
+    , sortOn
+    , sortBy
 
     -- * Folds
     , countChars
@@ -280,7 +289,7 @@ import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TQueue as TQueue
 import Control.Exception (Exception, bracket, bracket_, finally, mask, throwIO)
-import Control.Foldl (Fold, FoldM(..), genericLength, handles, list, premap)
+import Control.Foldl (Fold(..), FoldM(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
 import Control.Monad (guard, liftM, msum, when, unless, (>=>), mfilter)
@@ -290,7 +299,10 @@ import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 import Data.Bits ((.&.))
 #endif
 import Data.IORef (newIORef, readIORef, writeIORef)
+import qualified Data.List as List
 import Data.Monoid ((<>))
+import Data.Ord (comparing)
+import qualified Data.Set as Set
 import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (POSIXTime)
@@ -1986,3 +1998,84 @@ single s = do
         _   -> do
             let msg = format ("single: expected 1 line of input but there were "%d%" lines of input") (length as)
             die msg
+
+-- | Filter adjacent duplicate elements:
+--
+-- >>> view (uniq (select [1,1,2,1,3]))
+-- 1
+-- 2
+-- 1
+-- 3
+uniq :: Eq a => Shell a -> Shell a
+uniq = uniqOn id
+
+-- | Filter adjacent duplicates determined after applying the function to the element:
+--
+-- >>> view (uniqOn fst (select [(1,'a'),(1,'b'),(2,'c'),(1,'d'),(3,'e')]))
+-- (1,'a')
+-- (2,'c')
+-- (1,'d')
+-- (3,'e')
+uniqOn :: Eq b => (a -> b) -> Shell a -> Shell a
+uniqOn f = uniqBy (\a a' -> f a == f a')
+
+-- | Filter adjacent duplicate elements determined via the given function:
+--
+-- >>> view (uniqBy (==) (select [1,1,2,1,3]))
+-- 1
+-- 2
+-- 1
+-- 3
+uniqBy :: (a -> a -> Bool) -> Shell a -> Shell a
+uniqBy cmp s = Shell $ \(FoldM step begin done) -> do
+  let step' (x, Just a') a | cmp a a' = return (x, Just a)
+      step' (x, _) a = (, Just a) <$> step x a
+      begin' = (, Nothing) <$> begin
+      done' (x, _) = done x
+  foldIO s (FoldM step' begin' done')
+
+-- | Return a new `Shell` that discards duplicates from the input `Shell`:
+--
+-- >>> view (nub (select [1, 1, 2, 3, 3, 4, 3]))
+-- 1
+-- 2
+-- 3
+-- 4
+nub :: Ord a => Shell a -> Shell a
+nub = nubOn id
+
+-- | Return a new `Shell` that discards duplicates determined via the given function from the input `Shell`:
+--
+-- >>> view (nubOn id (select [1, 1, 2, 3, 3, 4, 3]))
+-- 1
+-- 2
+-- 3
+-- 4
+nubOn :: Ord b => (a -> b) -> Shell a -> Shell a
+nubOn f s = Shell $ \(FoldM step begin done) -> do
+  let step' (x, bs) a | Set.member (f a) bs = return (x, bs)
+                      | otherwise = (, Set.insert (f a) bs) <$> step x a
+      begin' = (, Set.empty) <$> begin
+      done' (x, _) = done x
+  foldIO s (FoldM step' begin' done')
+
+-- | Return a list of the sorted elements of the given `Shell`, keeping duplicates:
+--
+-- >>> sort (select [1,4,2,3,3,7])
+-- [1,2,3,3,4,7]
+sort :: (Functor io, MonadIO io, Ord a) => Shell a -> io [a]
+sort = sortOn id
+
+-- | Return a list of the elements of the given `Shell`, sorted after applying the given function and keeping duplicates:
+--
+-- >>> sortOn id (select [1,4,2,3,3,7])
+-- [1,2,3,3,4,7]
+sortOn :: (Functor io, MonadIO io, Ord b) => (a -> b) -> Shell a -> io [a]
+sortOn f = sortBy (comparing f)
+
+-- | Return a list of the elements of the given `Shell`, sortesd by the given function and keeping duplicates:
+--
+-- >>> sortBy (comparing fst) (select [(1,'a'),(4,'b'),(2,'c'),(3,'d'),(3,'e'),(7,'f')])
+-- [(1,'a'),(2,'c'),(3,'d'),(3,'e'),(4,'b'),(7,'f')]
+sortBy :: (Functor io, MonadIO io) => (a -> a -> Ordering) -> Shell a -> io [a]
+sortBy f s = List.sortBy f <$> fold s list
