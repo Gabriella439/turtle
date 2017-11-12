@@ -13,10 +13,6 @@ let
     packageOverrides = pkgs: {
       haskellPackages = pkgs.haskellPackages.override {
         overrides = haskellPackagesNew: haskellPackagesOld: {
-          optparse-applicative =
-            pkgs.haskell.lib.dontCheck
-              (haskellPackagesNew.callPackage ./optparse-applicative.nix { });
-
           turtle =
             haskellPackagesNew.callPackage ./default.nix { };
         };
