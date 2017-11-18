@@ -1,3 +1,8 @@
+1.4.5
+
+* Add `grepText`, `uniq`, `nub`, `sort` to `Turtle.Prelude`
+* Increase upper bound on `unix-compat`
+
 1.4.4
 
 * Fix small mistake in tutorial
