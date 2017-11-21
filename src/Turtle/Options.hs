@@ -17,8 +17,8 @@
 -- >
 -- > main = do
 -- >     (name, age) <- options "Greeting script" parser
--- >     echo (format ("Hello there, "%s) name)
--- >     echo (format ("You are "%d%" years old") age)
+-- >     echo (repr (format ("Hello there, "%s) name))
+-- >     echo (repr (format ("You are "%d%" years old") age))
 --
 -- > $ ./options --name John --age 42
 -- > Hello there, John
