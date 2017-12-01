@@ -1,4 +1,6 @@
-{-# LANGUAGE RankNTypes, CPP #-}
+{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE RankNTypes                #-}
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
 
 {-| You can think of `Shell` as @[]@ + `IO` + `Managed`.  In fact, you can embed
@@ -47,9 +49,8 @@
     `Shell` you build must satisfy this law:
 
 > -- For every shell `s`:
-> _foldIO s (FoldM step begin done) = do
->     x  <- begin
->     x' <- _foldIO s (FoldM step (return x) return)
+> _foldShell s (FoldShell step begin done) = do
+>     x' <- _foldShell s (FoldShell step begin return)
 >     done x'
 
     ... which is a fancy way of saying that your `Shell` must call @\'begin\'@
@@ -59,7 +60,11 @@
 module Turtle.Shell (
     -- * Shell
       Shell(..)
+    , FoldShell(..)
+    , _foldIO
+    , _Shell
     , foldIO
+    , foldShell
     , fold
     , sh
     , view
@@ -72,6 +77,7 @@ module Turtle.Shell (
 
 import Control.Applicative
 import Control.Monad (MonadPlus(..), ap)
+import Control.Monad.Catch (MonadThrow(..), MonadCatch(..))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), with)
 #if MIN_VERSION_base(4,9,0)
@@ -85,12 +91,53 @@ import Data.Monoid
 import Data.String (IsString(..))
 import Prelude -- Fix redundant import warnings
 
+{-| This is similar to @`Control.Foldl.FoldM` `IO`@ except that the @begin@
+    field is pure
+
+    This small difference is necessary to implement a well-behaved `MonadCatch`
+    instance for `Shell`
+-}
+data FoldShell a b = forall x . FoldShell (x -> a -> IO x) x (x -> IO b)
+
 -- | A @(Shell a)@ is a protected stream of @a@'s with side effects
-newtype Shell a = Shell { _foldIO :: forall r . FoldM IO a r -> IO r }
+newtype Shell a = Shell { _foldShell:: forall r . FoldShell a r -> IO r }
+
+translate :: FoldM IO a b -> FoldShell a b
+translate (FoldM step begin done) = FoldShell step' Nothing done'
+  where
+    step' Nothing a = do
+        x  <- begin
+        x' <- step x a
+        return (Just x')
+    step' (Just x) a = do
+        x' <- step x a
+        return (Just x')
+
+    done' Nothing = do
+        x <- begin
+        done x
+    done' (Just x) = do
+        done x
 
 -- | Use a @`FoldM` `IO`@ to reduce the stream of @a@'s produced by a `Shell`
 foldIO :: MonadIO io => Shell a -> FoldM IO a r -> io r
 foldIO s f = liftIO (_foldIO s f)
+
+{-| Provided for backwards compatibility with versions of @turtle-1.4.*@ and
+    older
+-}
+_foldIO :: Shell a -> FoldM IO a r -> IO r
+_foldIO s foldM = _foldShell s (translate foldM)
+
+-- | Provided for ease of migration from versions of @turtle-1.4.*@ and older
+_Shell :: (forall r . FoldM IO a r -> IO r) -> Shell a
+_Shell f = Shell (f . adapt)
+  where
+    adapt (FoldShell step begin done) = FoldM step (return begin) done
+
+-- | Use a `FoldShell` to reduce the stream of @a@'s produced by a `Shell`
+foldShell :: MonadIO io => Shell a -> FoldShell a b -> io b
+foldShell s f = liftIO (_foldShell s f)
 
 -- | Use a `Fold` to reduce the stream of @a@'s produced by a `Shell`
 fold :: MonadIO io => Shell a -> Fold a b -> io b
@@ -107,34 +154,31 @@ view s = sh (do
     liftIO (print x) )
 
 instance Functor Shell where
-    fmap f s = Shell (\(FoldM step begin done) ->
+    fmap f s = Shell (\(FoldShell step begin done) ->
         let step' x a = step x (f a)
-        in  _foldIO s (FoldM step' begin done) )
+        in  _foldShell s (FoldShell step' begin done) )
 
 instance Applicative Shell where
     pure  = return
     (<*>) = ap
 
 instance Monad Shell where
-    return a = Shell (\(FoldM step begin done) -> do
-       x  <- begin
-       x' <- step x a
-       done x' )
+    return a = Shell (\(FoldShell step begin done) -> do
+       x <- step begin a
+       done x )
 
-    m >>= f = Shell (\(FoldM step0 begin0 done0) -> do
-        let step1 x a = _foldIO (f a) (FoldM step0 (return x) return)
-        _foldIO m (FoldM step1 begin0 done0) )
+    m >>= f = Shell (\(FoldShell step0 begin0 done0) -> do
+        let step1 x a = _foldShell (f a) (FoldShell step0 x return)
+        _foldShell m (FoldShell step1 begin0 done0) )
 
     fail _ = mzero
 
 instance Alternative Shell where
-    empty = Shell (\(FoldM _ begin done) -> do
-        x <- begin
-        done x )
+    empty = Shell (\(FoldShell _ begin done) -> done begin)
 
-    s1 <|> s2 = Shell (\(FoldM step begin done) -> do
-        x <- _foldIO s1 (FoldM step begin return)
-        _foldIO s2 (FoldM step (return x) done) )
+    s1 <|> s2 = Shell (\(FoldShell step begin done) -> do
+        x <- _foldShell s1 (FoldShell step begin return)
+        _foldShell s2 (FoldShell step x done) )
 
 instance MonadPlus Shell where
     mzero = empty
@@ -142,17 +186,21 @@ instance MonadPlus Shell where
     mplus = (<|>)
 
 instance MonadIO Shell where
-    liftIO io = Shell (\(FoldM step begin done) -> do
-        x  <- begin
-        a  <- io
-        x' <- step x a
-        done x' )
+    liftIO io = Shell (\(FoldShell step begin done) -> do
+        a <- io
+        x <- step begin a
+        done x )
 
 instance MonadManaged Shell where
-    using resource = Shell (\(FoldM step begin done) -> do
-        x  <- begin
-        x' <- with resource (step x)
-        done x' )
+    using resource = Shell (\(FoldShell step begin done) -> do
+        x <- with resource (step begin)
+        done x )
+
+instance MonadThrow Shell where
+    throwM e = Shell (\_ -> throwM e)
+
+instance MonadCatch Shell where
+    m `catch` k = Shell (\f-> _foldShell m f `catch` (\e -> _foldShell (k e) f))
 
 #if MIN_VERSION_base(4,9,0)
 instance Fail.MonadFail Shell where
@@ -175,9 +223,8 @@ instance IsString a => IsString (Shell a) where
 
 -- | Convert a list to a `Shell` that emits each element of the list
 select :: Foldable f => f a -> Shell a
-select as = Shell (\(FoldM step begin done) -> do
-    x0 <- begin
+select as = Shell (\(FoldShell step begin done) -> do
     let step' a k x = do
             x' <- step x a
             k $! x'
-    Data.Foldable.foldr step' done as $! x0 )
+    Data.Foldable.foldr step' done as $! begin )

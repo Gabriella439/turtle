@@ -40,7 +40,6 @@ module Turtle.Bytes (
 
 import Control.Applicative
 import Control.Concurrent.Async (Async, Concurrently(..))
-import Control.Foldl (FoldM(..))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..))
 import Data.ByteString (ByteString)
@@ -51,7 +50,7 @@ import System.Exit (ExitCode(..))
 import System.IO (Handle)
 import Turtle.Internal (ignoreSIGPIPE)
 import Turtle.Prelude (ProcFailed(..), ShellFailed(..))
-import Turtle.Shell (Shell(..), fold, sh)
+import Turtle.Shell (Shell(..), FoldShell(..), fold, sh)
 
 import qualified Control.Concurrent.Async      as Async
 import qualified Control.Concurrent.STM        as STM
@@ -89,8 +88,7 @@ input file = do
     The chunks are not necessarily aligned to line boundaries
 -}
 inhandle :: Handle -> Shell ByteString
-inhandle handle = Shell (\(FoldM step begin done) -> do
-    x0 <- begin
+inhandle handle = Shell (\(FoldShell step begin done) -> do
     let loop x = do
             eof <- System.IO.hIsEOF handle
             if eof
@@ -99,7 +97,7 @@ inhandle handle = Shell (\(FoldM step begin done) -> do
                     bytes <- Data.ByteString.hGetSome handle defaultChunkSize
                     x'    <- step x bytes
                     loop $! x'
-    loop $! x0 )
+    loop $! begin )
   where
     -- Copied from `Data.ByteString.Lazy.Internal`
     defaultChunkSize :: Int
@@ -591,8 +589,7 @@ streamWithErr p s = do
                 bytes <- inhandle hErr
                 liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Left  bytes)))) ))
             `Exception.finally` STM.atomically (TQueue.writeTQueue queue Nothing)
-    let drain = Shell (\(FoldM step begin done) -> do
-            x0 <- begin
+    let drain = Shell (\(FoldShell step begin done) -> do
             let loop x numNothing
                     | numNothing < 2 = do
                         m <- STM.atomically (TQueue.readTQueue queue)
@@ -602,7 +599,7 @@ streamWithErr p s = do
                                 x' <- step x e
                                 loop x' numNothing
                     | otherwise      = return x
-            x1 <- loop x0 (0 :: Int)
+            x1 <- loop begin (0 :: Int)
             done x1 )
 
     a <- using

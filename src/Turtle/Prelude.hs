@@ -289,7 +289,7 @@ import Control.Concurrent.MVar (newMVar, modifyMVar_)
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TQueue as TQueue
 import Control.Exception (Exception, bracket, bracket_, finally, mask, throwIO)
-import Control.Foldl (Fold(..), FoldM(..), genericLength, handles, list, premap)
+import Control.Foldl (Fold(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
 import Control.Monad (guard, liftM, msum, when, unless, (>=>), mfilter)
@@ -785,8 +785,7 @@ streamWithErr p s = do
                 line <- inhandle hErr
                 liftIO (STM.atomically (TQueue.writeTQueue queue (Just (Left  line)))) ))
             `finally` STM.atomically (TQueue.writeTQueue queue Nothing)
-    let drain = Shell (\(FoldM step begin done) -> do
-            x0 <- begin
+    let drain = Shell (\(FoldShell step begin done) -> do
             let loop x numNothing
                     | numNothing < 2 = do
                         m <- STM.atomically (TQueue.readTQueue queue)
@@ -796,7 +795,7 @@ streamWithErr p s = do
                                 x' <- step x e
                                 loop x' numNothing
                     | otherwise      = return x
-            x1 <- loop x0 (0 :: Int)
+            x1 <- loop begin (0 :: Int)
             done x1 )
 
     a <- using
@@ -945,8 +944,7 @@ reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
     @\"..\"@
 -}
 ls :: FilePath -> Shell FilePath
-ls path = Shell (\(FoldM step begin done) -> do
-    x0 <- begin
+ls path = Shell (\(FoldShell step begin done) -> do
     let path' = Filesystem.encodeString path
     canRead <- fmap
          Directory.readable
@@ -966,8 +964,8 @@ ls path = Shell (\(FoldM step begin done) -> do
                             else return x
                         more <- Win32.findNextFile h fdat
                         if more then loop $! x' else done x'
-                loop $! x0 )
-        else done x0 )
+                loop $! begin )
+        else done begin )
 #else
     if canRead
         then bracket (openDirStream path') closeDirStream (\dirp -> do
@@ -981,8 +979,8 @@ ls path = Shell (\(FoldM step begin done) -> do
                                 then step x (path </> file)
                                 else return x
                             loop $! x'
-            loop $! x0 )
-        else done x0 )
+            loop $! begin )
+        else done begin )
 #endif
 
 {-| This is used to remove the trailing slash from a path, because
@@ -1462,8 +1460,7 @@ input file = do
 
 -- | Read lines of `Text` from a `Handle`
 inhandle :: Handle -> Shell Line
-inhandle handle = Shell (\(FoldM step begin done) -> do
-    x0 <- begin
+inhandle handle = Shell (\(FoldShell step begin done) -> do
     let loop x = do
             eof <- IO.hIsEOF handle
             if eof
@@ -1472,7 +1469,7 @@ inhandle handle = Shell (\(FoldM step begin done) -> do
                     txt <- Text.hGetLine handle
                     x'  <- step x (unsafeTextToLine txt)
                     loop $! x'
-    loop $! x0 )
+    loop $! begin )
 
 -- | Stream lines of `Text` to standard output
 stdout :: MonadIO io => Shell Line -> io ()
@@ -1642,17 +1639,15 @@ yes = fmap (\_ -> "y") endless
 
 -- | Number each element of a `Shell` (starting at 0)
 nl :: Num n => Shell a -> Shell (n, a)
-nl s = Shell _foldIO'
+nl s = Shell _foldShell'
   where
-    _foldIO' (FoldM step begin done) = _foldIO s (FoldM step' begin' done')
+    _foldShell' (FoldShell step begin done) = _foldShell s (FoldShell step' begin' done')
       where
         step' (x, n) a = do
             x' <- step x (n, a)
             let n' = n + 1
             n' `seq` return (x', n')
-        begin' = do
-            x0 <- begin
-            return (x0, 0)
+        begin' = (begin, 0)
         done' (x, _) = done x
 
 data ZipState a b = Empty | HasA a | HasAB a b | Done
@@ -1663,14 +1658,12 @@ data ZipState a b = Empty | HasA a | HasAB a b | Done
     truncated
 -}
 paste :: Shell a -> Shell b -> Shell (a, b)
-paste sA sB = Shell _foldIOAB
+paste sA sB = Shell _foldShellAB
   where
-    _foldIOAB (FoldM stepAB beginAB doneAB) = do
-        x0 <- beginAB
-
+    _foldShellAB (FoldShell stepAB beginAB doneAB) = do
         tvar <- STM.atomically (STM.newTVar Empty)
 
-        let begin = return ()
+        let begin = ()
 
         let stepA () a = STM.atomically (do
                 x <- STM.readTVar tvar
@@ -1684,7 +1677,7 @@ paste sA sB = Shell _foldIOAB
                     Empty -> STM.writeTVar tvar Done
                     Done  -> return ()
                     _     -> STM.retry )
-        let foldA = FoldM stepA begin doneA
+        let foldA = FoldShell stepA begin doneA
 
         let stepB () b = STM.atomically (do
                 x <- STM.readTVar tvar
@@ -1698,10 +1691,10 @@ paste sA sB = Shell _foldIOAB
                     HasA _ -> STM.writeTVar tvar Done
                     Done   -> return ()
                     _      -> STM.retry )
-        let foldB = FoldM stepB begin doneB
+        let foldB = FoldShell stepB begin doneB
 
-        withAsync (foldIO sA foldA) (\asyncA -> do
-            withAsync (foldIO sB foldB) (\asyncB -> do
+        withAsync (_foldShell sA foldA) (\asyncA -> do
+            withAsync (_foldShell sB foldB) (\asyncB -> do
                 let loop x = do
                         y <- STM.atomically (do
                             z <- STM.readTVar tvar
@@ -1716,29 +1709,28 @@ paste sA sB = Shell _foldIOAB
                             Just ab -> do
                                 x' <- stepAB x ab
                                 loop $! x'
-                x' <- loop $! x0
+                x' <- loop $! beginAB
                 wait asyncA
                 wait asyncB
                 doneAB x' ) )
 
 -- | A `Shell` that endlessly emits @()@
 endless :: Shell ()
-endless = Shell (\(FoldM step begin _) -> do
-    x0 <- begin
+endless = Shell (\(FoldShell step begin _) -> do
     let loop x = do
             x' <- step x ()
             loop $! x'
-    loop $! x0 )
+    loop $! begin )
 
 -- | Limit a `Shell` to a fixed number of values
 limit :: Int -> Shell a -> Shell a
-limit n s = Shell (\(FoldM step begin done) -> do
+limit n s = Shell (\(FoldShell step begin done) -> do
     ref <- newIORef 0  -- I feel so dirty
     let step' x a = do
             n' <- readIORef ref
             writeIORef ref (n' + 1)
             if n' < n then step x a else return x
-    foldIO s (FoldM step' begin done) )
+    _foldShell s (FoldShell step' begin done) )
 
 {-| Limit a `Shell` to values that satisfy the predicate
 
@@ -1746,14 +1738,14 @@ limit n s = Shell (\(FoldM step begin done) -> do
     predicate
 -}
 limitWhile :: (a -> Bool) -> Shell a -> Shell a
-limitWhile predicate s = Shell (\(FoldM step begin done) -> do
+limitWhile predicate s = Shell (\(FoldShell step begin done) -> do
     ref <- newIORef True
     let step' x a = do
             b <- readIORef ref
             let b' = b && predicate a
             writeIORef ref b'
             if b' then step x a else return x
-    foldIO s (FoldM step' begin done) )
+    _foldShell s (FoldShell step' begin done) )
 
 {-| Cache a `Shell`'s output so that repeated runs of the script will reuse the
     result of previous runs.  You must supply a `FilePath` where the cached
@@ -1969,7 +1961,7 @@ data Pair a b = Pair !a !b
 header :: Shell a -> Shell (WithHeader a)
 header (Shell k) = Shell k'
   where
-    k' (FoldM step begin done) = k (FoldM step' begin' done')
+    k' (FoldShell step begin done) = k (FoldShell step' begin' done')
       where
         step' (Pair x Nothing ) a = do
             x' <- step x (Header a)
@@ -1978,9 +1970,7 @@ header (Shell k) = Shell k'
             x' <- step x (Row a b)
             return (Pair x' (Just a))
 
-        begin' = do
-            x <- begin
-            return (Pair x Nothing)
+        begin' = Pair begin Nothing
 
         done' (Pair x _) = done x
 
@@ -2027,12 +2017,12 @@ uniqOn f = uniqBy (\a a' -> f a == f a')
 -- 1
 -- 3
 uniqBy :: (a -> a -> Bool) -> Shell a -> Shell a
-uniqBy cmp s = Shell $ \(FoldM step begin done) -> do
+uniqBy cmp s = Shell $ \(FoldShell step begin done) -> do
   let step' (x, Just a') a | cmp a a' = return (x, Just a)
       step' (x, _) a = (, Just a) <$> step x a
-      begin' = (, Nothing) <$> begin
+      begin' = (begin, Nothing)
       done' (x, _) = done x
-  foldIO s (FoldM step' begin' done')
+  foldShell s (FoldShell step' begin' done')
 
 -- | Return a new `Shell` that discards duplicates from the input `Shell`:
 --
@@ -2052,12 +2042,12 @@ nub = nubOn id
 -- 3
 -- 4
 nubOn :: Ord b => (a -> b) -> Shell a -> Shell a
-nubOn f s = Shell $ \(FoldM step begin done) -> do
+nubOn f s = Shell $ \(FoldShell step begin done) -> do
   let step' (x, bs) a | Set.member (f a) bs = return (x, bs)
                       | otherwise = (, Set.insert (f a) bs) <$> step x a
-      begin' = (, Set.empty) <$> begin
+      begin' = (begin, Set.empty)
       done' (x, _) = done x
-  foldIO s (FoldM step' begin' done')
+  foldShell s (FoldShell step' begin' done')
 
 -- | Return a list of the sorted elements of the given `Shell`, keeping duplicates:
 --
