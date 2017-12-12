@@ -46,6 +46,7 @@ module Turtle.Format (
     , (%)
     , format
     , printf
+    , eprintf
     , makeFormat
 
     -- * Parameters
@@ -76,6 +77,7 @@ import Data.Word
 import Filesystem.Path.CurrentOS (FilePath, toText)
 import Numeric (showEFloat, showFFloat, showGFloat, showHex, showOct)
 import Prelude hiding ((.), id, FilePath)
+import qualified System.IO as IO
 import Turtle.Line (Line)
 
 import qualified Data.Text.IO as Text
@@ -112,6 +114,14 @@ Hello, world!
 -}
 printf :: MonadIO io => Format (io ()) r -> r
 printf fmt = fmt >>- (liftIO . Text.putStr)
+
+{-| Print a `Format` string to standard err (without a trailing newline)
+
+>>> eprintf ("Hello, "%s%"!\n") "world"
+Hello, world!
+-}
+eprintf :: MonadIO io => Format (io ()) r -> r
+eprintf fmt = fmt >>- (liftIO . Text.hPutStr IO.stderr)
 
 -- | Create your own format specifier
 makeFormat :: (a -> Text) -> Format r (a -> r)
