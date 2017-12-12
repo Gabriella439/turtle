@@ -855,12 +855,12 @@ inshellWithErr cmd = streamWithErr (Process.shell (unpack cmd))
     To print more than one line see `Turtle.Format.printf`, which also supports
     formatted output
 -}
-echo :: MonadIO io => Line -> io ()
-echo line = liftIO (Text.putStrLn (lineToText line))
+echo :: MonadIO io => Text -> io ()
+echo text = liftIO (Text.putStrLn text)
 
 -- | Print exactly one line to @stderr@
-err :: MonadIO io => Line -> io ()
-err line = liftIO (Text.hPutStrLn IO.stderr (lineToText line))
+err :: MonadIO io => Text -> io ()
+err text = liftIO (Text.hPutStrLn IO.stderr text)
 
 {-| Read in a line from @stdin@
 
@@ -1475,7 +1475,7 @@ inhandle handle = Shell (\(FoldShell step begin done) -> do
 stdout :: MonadIO io => Shell Line -> io ()
 stdout s = sh (do
     line <- s
-    liftIO (echo line) )
+    liftIO (echo $ lineToText line) )
 
 -- | Stream lines of `Text` to a file
 output :: MonadIO io => FilePath -> Shell Line -> io ()
@@ -1501,7 +1501,7 @@ append file s = sh (do
 stderr :: MonadIO io => Shell Line -> io ()
 stderr s = sh (do
     line <- s
-    liftIO (err line) )
+    liftIO (err $ lineToText line) )
 
 -- | Read in a stream's contents strictly
 strict :: MonadIO io => Shell Line -> io Text
