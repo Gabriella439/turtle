@@ -678,6 +678,8 @@ inproc cmd args = stream (Process.proc (unpack cmd) (map unpack args))
     injection if you template the command line with untrusted input
 
     The command inherits @stderr@ for the current process
+
+    Throws an `ExitCode` exception if the command returns a non-zero exit code
 -}
 inshell
     :: Text
