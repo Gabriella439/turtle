@@ -1,3 +1,13 @@
+1.5.0
+
+* BREAKING CHANGE: Add `MonadCatch` instance for `Shell`
+    * This requires a breaking change to the internal implementation of `Shell`
+    * Most breaking changes can be fixed by replacing the `Shell` constructor
+      with the newly added `_Shell` utility for ease of migration
+    * If you don't use the `Shell` constructor then this change likely does not
+      affect you
+* Add `eprintf`
+
 1.4.5
 
 * Add `grepText`, `uniq`, `nub`, `sort` to `Turtle.Prelude`
