@@ -62,6 +62,11 @@ instance Exception NewlineForbidden
 newtype Line = Line Text
   deriving (Eq, Ord, Show, Monoid)
 
+#if __GLASGOW_HASKELL__ >= 804
+instance Semigroup Line where
+  (<>) = mappend
+#endif
+
 instance IsString Line where
   fromString = fromMaybe (throw NewlineForbidden) . textToLine . fromString
 
