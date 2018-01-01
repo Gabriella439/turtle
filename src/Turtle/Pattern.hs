@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -122,6 +123,11 @@ import Prelude -- Fix redundant import warnings
 -- | A fully backtracking pattern that parses an @\'a\'@ from some `Text`
 newtype Pattern a = Pattern { runPattern :: StateT Text [] a }
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus)
+
+#if __GLASGOW_HASKELL__ >= 804
+instance Monoid a => Semigroup (Pattern a) where
+  (<>) = mappend
+#endif
 
 instance Monoid a => Monoid (Pattern a) where
     mempty  = pure mempty

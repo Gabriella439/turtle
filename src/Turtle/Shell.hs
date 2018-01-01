@@ -207,6 +207,11 @@ instance Fail.MonadFail Shell where
     fail = Prelude.fail
 #endif
 
+#if __GLASGOW_HASKELL__ >= 804
+instance Monoid a => Semigroup (Shell a) where
+  (<>) = mappend
+#endif
+
 instance Monoid a => Monoid (Shell a) where
     mempty  = pure mempty
     mappend = liftA2 mappend
