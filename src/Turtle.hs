@@ -141,6 +141,8 @@ import Filesystem.Path.CurrentOS
     , splitExtension
     , toText
     , fromText
+    , encodeString
+    , decodeString
     )
 import Control.Monad.Managed (Managed, managed, runManaged, with)
 import Control.Foldl (Fold(..), FoldM(..))
