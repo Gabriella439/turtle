@@ -146,4 +146,4 @@ benchmark bench
     if impl(ghc < 7.8)
         Build-Depends: criterion >= 0.4 && < 1.1.4.0
     else
-        Build-Depends: criterion >= 0.4 && < 1.3
+        Build-Depends: criterion >= 0.4 && < 1.4
