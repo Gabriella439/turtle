@@ -47,7 +47,7 @@
     can install a Haskell compiler if one is not already present.
     If you are curious about how these two lines work, they are described here:
 
-    <https://github.com/commercialhaskell/stack/blob/master/doc/GUIDE.md#ghcrunghc>
+    <https://github.com/commercialhaskell/stack/blob/master/doc/GUIDE.md#script-interpreter>
 
     If you want to make a Windows script independently executable outside of a
     Git Bash environment, you can either (A) compile the script into an
@@ -129,7 +129,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-resolver lts-10.2 script
 -- \ 
 --                                     -- #!\/bin\/bash
 -- {-\# LANGUAGE OverloadedStrings \#-}  --
@@ -194,7 +194,7 @@ import Turtle
 -- difference:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- >
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -211,7 +211,7 @@ import Turtle
 -- program this way instead:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -227,7 +227,7 @@ import Turtle
 -- permits definitions.  If you were to insert a statement at the top-level:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -244,7 +244,7 @@ import Turtle
 -- command:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- >
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -270,7 +270,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-resolver lts-10.2 script
 -- \ 
 --                            -- #!\/bin\/bash
 -- import Turtle              --
@@ -298,7 +298,7 @@ import Turtle
 -- within a larger subroutine:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- >
 -- >                             -- #!/bin/bash
 -- > import Turtle               --
@@ -360,7 +360,7 @@ import Turtle
 -- following script to find out what happens if we choose `echo` instead:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > import Turtle
 -- > 
@@ -567,7 +567,7 @@ import Turtle
 -- Let's illustrate this by adding types to our original script:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > import Turtle
 -- > 
@@ -605,7 +605,7 @@ import Turtle
 -- can define unadorned `Line` values at the top-level, as we saw previously:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -625,7 +625,7 @@ import Turtle
 -- Let's test this out by providing an incorrect type for @\'str\'@:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -677,7 +677,7 @@ import Turtle
 -- a string:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -713,7 +713,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-resolver lts-10.2 script
 -- \ 
 --                                              -- #!\/bin\/bash
 -- {-\# LANGUAGE OverloadedStrings \#-}           --
@@ -758,7 +758,7 @@ import Turtle
 --
 -- @
 -- #!\/usr\/bin\/env stack
--- \-\- stack \-\-install-ghc runghc \-\-package turtle
+-- \-\- stack \-\-resolver lts-10.2 script
 -- 
 -- {-\# LANGUAGE OverloadedStrings \#-}
 -- 
@@ -1031,7 +1031,7 @@ import Turtle
 -- We can use `select` to implement loops within a `Shell`:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -1178,7 +1178,7 @@ import Turtle
 -- to standard output:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- >                                     -- #!/bin/bash
 -- > {-# LANGUAGE OverloadedStrings #-}  --
@@ -1419,7 +1419,7 @@ import Turtle
 -- a `Shell`:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1445,7 +1445,7 @@ import Turtle
 -- file and directory are still cleaned up correctly:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1509,7 +1509,7 @@ import Turtle
 -- to:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1536,7 +1536,7 @@ import Turtle
 -- positional arguments for the source and destination file, you can write:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- >
 -- > -- cp.hs
 -- >
@@ -1601,7 +1601,7 @@ import Turtle
 --
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 
@@ -1650,7 +1650,7 @@ import Turtle
 -- as short-hands for the flags:
 --
 -- > #!/usr/bin/env stack
--- > -- stack --install-ghc runghc --package turtle
+-- > -- stack --resolver lts-10.2 script
 -- > 
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > 

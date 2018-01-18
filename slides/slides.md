@@ -107,7 +107,7 @@ Save this to: `example.hs`:
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -164,7 +164,7 @@ What do you think this code does?
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -192,7 +192,7 @@ main = say "Hello, world!"
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -216,7 +216,7 @@ Why do you think Haskell defaults to immutability?
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -233,7 +233,7 @@ Modify your program to to eliminate `main`:
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -262,7 +262,7 @@ Using significant whitespace:
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -303,7 +303,7 @@ main = do { echo "Line1"; echo "Line2" }
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
                            -- #!/bin/bash
 import Turtle              --
                            --
@@ -359,7 +359,7 @@ var result =
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
                             -- #!/bin/bash
 import Turtle               --
                             --
@@ -463,7 +463,7 @@ What happens if we use `print` instead of `echo`?
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
 
 import Turtle
 
@@ -718,7 +718,7 @@ Prelude Turtle> rmdir "dir2"
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
 
 import Turtle
 
@@ -882,7 +882,7 @@ swap :: (t1, t) -> (t, t1)
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -1217,7 +1217,7 @@ We can use `select` to loop within a `Shell`:
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
@@ -1318,7 +1318,7 @@ stdin :: Shell Text
 
 ```haskell
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --resolver lts-10.2 script
                                     -- #!/bin/bash
 {-# LANGUAGE OverloadedStrings #-}  --
                                     --
