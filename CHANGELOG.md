@@ -1,3 +1,10 @@
+1.5.1
+
+* GHC 8.4 support
+* Re-export `encodeString`/`decodeString`
+* Update tutorial to use `stack script`
+* Increase upper bounds on dependencies
+
 1.5.0
 
 * BREAKING CHANGE: Add `MonadCatch` instance for `Shell`
