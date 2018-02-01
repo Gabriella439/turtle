@@ -1976,11 +1976,11 @@ header (Shell k) = Shell k'
 
         done' (Pair x _) = done x
 
--- | Returns the result of a 'Shell' that outputs a single
--- line:
+-- | Returns the result of a 'Shell' that outputs a single line.
+-- Note that if no lines / more than 1 line is produced by the Shell, this function will `die` with an error message.
 --
 -- > main = do
--- >   Just directory <- single (inshell "pwd" empty)
+-- >   directory <- single (inshell "pwd" empty)
 -- >   print directory
 single :: MonadIO io => Shell a -> io a
 single s = do
