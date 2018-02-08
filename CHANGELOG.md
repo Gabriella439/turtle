@@ -1,3 +1,7 @@
+1.5.2
+
+* Increase upper bound on `async`
+
 1.5.1
 
 * GHC 8.4 support
