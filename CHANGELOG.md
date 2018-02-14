@@ -1,3 +1,7 @@
+1.5.3
+
+* Increase upper bound on `doctest`
+
 1.5.2
 
 * Increase upper bound on `async`
