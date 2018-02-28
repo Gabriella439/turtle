@@ -1,3 +1,7 @@
+1.5.4
+
+* Increase upper bound on `exceptions`
+
 1.5.3
 
 * Increase upper bound on `doctest`
