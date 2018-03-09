@@ -1,3 +1,7 @@
+1.4.6
+
+* Increase upper bound on `Win32`
+
 1.4.5
 
 * Add `grepText`, `uniq`, `nub`, `sort` to `Turtle.Prelude`
