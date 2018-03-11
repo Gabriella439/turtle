@@ -6,7 +6,7 @@
 }:
 mkDerivation {
   pname = "turtle";
-  version = "1.5.4";
+  version = "1.5.5";
   src = ./.;
   libraryHaskellDepends = [
     ansi-wl-pprint async base bytestring clock containers directory

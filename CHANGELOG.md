@@ -1,3 +1,7 @@
+1.5.5
+
+* Increase upper bound on `criterion`
+
 1.5.4
 
 * Increase upper bound on `exceptions`
