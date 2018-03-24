@@ -444,11 +444,15 @@ signed p = do
 []
 >>> match (invert "A") "B"
 [()]
+>>> match (invert "A") "AA"
+[()]
 -}
 invert :: Pattern a -> Pattern ()
-invert p = Pattern (StateT (\str -> case runStateT (runPattern p) str of
-    [] -> [((), "")]
-    _  -> [] ))
+invert p = Pattern (StateT f)
+  where
+    f str = case match p str of
+        [] -> [((), "")]
+        _  -> []
 
 {-| Match a `Char`, but return `Text`
 
