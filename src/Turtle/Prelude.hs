@@ -1675,20 +1675,18 @@ findtree pat files = do
 -}     
 cmin :: MonadIO io => UTCTime -> FilePath -> io Bool
 cmin t file =
-  (> t) .
-  posixSecondsToUTCTime .
-  modificationTime <$>
-  lstat file
+  adapt <$> lstat file
+  where
+    adapt x = posixSecondsToUTCTime (modificationTime x) > t
 
-{- | Check if a file was last modified after a given
+{- | Check if a file was last modified before a given
      timestamp
 -}     
 cmax :: MonadIO io => UTCTime -> FilePath -> io Bool
 cmax t file =
-  (< t) .
-  posixSecondsToUTCTime .
-  modificationTime <$>
-  lstat file
+  adapt <$> lstat file
+  where
+    adapt x = posixSecondsToUTCTime (modificationTime x) < t
   
 -- | A Stream of @\"y\"@s
 yes :: Shell Line
