@@ -2065,7 +2065,7 @@ sort = sortOn id
 sortOn :: (Functor io, MonadIO io, Ord b) => (a -> b) -> Shell a -> io [a]
 sortOn f = sortBy (comparing f)
 
--- | Return a list of the elements of the given `Shell`, sortesd by the given function and keeping duplicates:
+-- | Return a list of the elements of the given `Shell`, sorted by the given function and keeping duplicates:
 --
 -- >>> sortBy (comparing fst) (select [(1,'a'),(4,'b'),(2,'c'),(3,'d'),(3,'e'),(7,'f')])
 -- [(1,'a'),(2,'c'),(3,'d'),(3,'e'),(4,'b'),(7,'f')]
