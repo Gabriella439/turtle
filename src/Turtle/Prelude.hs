@@ -170,6 +170,7 @@ module Turtle.Prelude (
     , ls
     , lsif
     , lstree
+    , lsdepth
     , cat
     , grep
     , grepText
@@ -183,6 +184,7 @@ module Turtle.Prelude (
     , inplaceSuffix
     , inplaceEntire
     , find
+    , findtree
     , yes
     , nl
     , paste
@@ -269,6 +271,8 @@ module Turtle.Prelude (
     , PosixCompat.isDirectory
     , PosixCompat.isSymbolicLink
     , PosixCompat.isSocket
+    , cmin
+    , cmax
 
     -- * Headers
     , WithHeader(..)
@@ -305,7 +309,7 @@ import Data.Ord (comparing)
 import qualified Data.Set as Set
 import Data.Text (Text, pack, unpack)
 import Data.Time (NominalDiffTime, UTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (POSIXTime)
+import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime)
 import Data.Traversable
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
@@ -1005,6 +1009,29 @@ lstree path = do
         then return child <|> lstree child
         else return child
 
+
+{- | Stream the recursive descendents of a given directory
+     between a given minimum and maximum depth
+-}
+lsdepth :: Int -> Int -> FilePath -> Shell FilePath
+lsdepth mn mx path =
+  lsdepthHelper 1 mn mx path
+  where
+    lsdepthHelper :: Int -> Int -> Int -> FilePath -> Shell FilePath
+    lsdepthHelper depth l u p = 
+      if depth > u
+      then empty
+      else do
+        child <- ls p
+        isDir <- testdir child
+        if isDir
+          then if depth >= l
+               then return child <|> lsdepthHelper (depth + 1) l u child
+               else lsdepthHelper (depth + 1) l u child
+          else if depth >= l
+               then return child
+               else empty
+
 {-| Stream all recursive descendents of the given directory
 
     This skips any directories that fail the supplied predicate
@@ -1635,6 +1662,34 @@ find pattern dir = do
       file_stat <- lstat file
       return (not (PosixCompat.isSymbolicLink file_stat))
 
+-- | Filter a shell of FilePaths according to a given pattern
+findtree :: Pattern a -> Shell FilePath -> Shell FilePath
+findtree pat files = do
+  path <- files
+  Right txt <- return (Filesystem.toText path)
+  _:_ <- return (match pat txt)
+  return path
+
+{- | Check if a file was last modified after a given
+     timestamp
+-}     
+cmin :: MonadIO io => UTCTime -> FilePath -> io Bool
+cmin t file = do
+  status <- lstat file
+  return (adapt status)
+  where
+    adapt x = posixSecondsToUTCTime (modificationTime x) > t
+
+{- | Check if a file was last modified before a given
+     timestamp
+-}     
+cmax :: MonadIO io => UTCTime -> FilePath -> io Bool
+cmax t file = do
+  status <- lstat file
+  return (adapt status)
+  where
+    adapt x = posixSecondsToUTCTime (modificationTime x) < t
+  
 -- | A Stream of @\"y\"@s
 yes :: Shell Line
 yes = fmap (\_ -> "y") endless
