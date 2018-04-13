@@ -1674,8 +1674,9 @@ findtree pat files = do
      timestamp
 -}     
 cmin :: MonadIO io => UTCTime -> FilePath -> io Bool
-cmin t file =
-  adapt <$> lstat file
+cmin t file = do
+  status <- lstat file
+  return (adapt status)
   where
     adapt x = posixSecondsToUTCTime (modificationTime x) > t
 
@@ -1683,8 +1684,9 @@ cmin t file =
      timestamp
 -}     
 cmax :: MonadIO io => UTCTime -> FilePath -> io Bool
-cmax t file =
-  adapt <$> lstat file
+cmax t file = do
+  status <- lstat file
+  return (adapt status)
   where
     adapt x = posixSecondsToUTCTime (modificationTime x) < t
   
