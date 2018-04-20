@@ -57,7 +57,7 @@ Library
         containers           >= 0.5.0.0 && < 0.6 ,
         directory            >= 1.0.7   && < 1.4 ,
         exceptions           >= 0.4     && < 0.11,
-        foldl                >= 1.1     && < 1.4 ,
+        foldl                >= 1.1     && < 1.5 ,
         hostname                           < 1.1 ,
         managed              >= 1.0.3   && < 1.1 ,
         process              >= 1.0.1.1 && < 1.7 ,
