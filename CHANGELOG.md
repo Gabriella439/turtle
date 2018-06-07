@@ -1,3 +1,11 @@
+1.5.8
+
+* Bug fix: `invert` no longer rejects inputs where a prefix matches the inverted
+  pattern
+    * See: https://github.com/Gabriel439/Haskell-Turtle-Library/pull/297
+* Add lsdepth, findtree, cmin, and cmax
+* Increase upper bound on `temporary` and `foldl`
+
 1.5.7
 
 * Increase upper bound on `doctest`
