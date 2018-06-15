@@ -351,6 +351,7 @@ import System.Posix (
     readDirStream,
     closeDirStream,
     touchFile )
+import System.Posix.Files (createSymbolicLink)      
 #endif
 import Prelude hiding (FilePath)
 
@@ -1086,21 +1087,12 @@ cp :: MonadIO io => FilePath -> FilePath -> io ()
 cp oldPath newPath = liftIO (Filesystem.copyFile oldPath newPath)
 
 #if !defined(mingw32_HOST_OS)
-{-| Create a symlink from one @FilePath@ to another,
-  uses @ln -s <f1> <f2>@ under the hood. Only available on non-windows systems.
-  Fails if the link cannot be made.
--}
+-- | Create a symlink from one @FilePath@ to another
 symlink :: MonadIO io => FilePath -> FilePath -> io ()
-symlink a b = do
-  res <- proc "ln"
-              ["-s"
-              , format fp a
-              , format fp b
-              ]
-              empty
-  case res of
-    ExitSuccess -> return ()
-    ExitFailure _ -> fail "symlinking failed"              
+symlink a b = liftIO $ createSymbolicLink (fp2fp a) (fp2fp b)
+  where
+    fp2fp = unpack . format fp 
+  
 #endif
 
 -- | Copy a directory tree
