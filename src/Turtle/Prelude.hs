@@ -127,6 +127,9 @@ module Turtle.Prelude (
     , mktree
     , cp
     , cptree
+#if !defined(mingw32_HOST_OS)
+    , symlink
+#endif
     , rm
     , rmdir
     , rmtree
@@ -348,12 +351,13 @@ import System.Posix (
     readDirStream,
     closeDirStream,
     touchFile )
+import System.Posix.Files (createSymbolicLink)      
 #endif
 import Prelude hiding (FilePath)
 
 import Turtle.Pattern (Pattern, anyChar, chars, match, selfless, sepBy)
 import Turtle.Shell
-import Turtle.Format (Format, format, makeFormat, d, w, (%))
+import Turtle.Format (Format, format, makeFormat, d, w, (%), fp)
 import Turtle.Internal (ignoreSIGPIPE)
 import Turtle.Line
 
@@ -1081,6 +1085,15 @@ mktree path = liftIO (Filesystem.createTree path)
 -- | Copy a file
 cp :: MonadIO io => FilePath -> FilePath -> io ()
 cp oldPath newPath = liftIO (Filesystem.copyFile oldPath newPath)
+
+#if !defined(mingw32_HOST_OS)
+-- | Create a symlink from one @FilePath@ to another
+symlink :: MonadIO io => FilePath -> FilePath -> io ()
+symlink a b = liftIO $ createSymbolicLink (fp2fp a) (fp2fp b)
+  where
+    fp2fp = unpack . format fp 
+  
+#endif
 
 -- | Copy a directory tree
 cptree :: MonadIO io => FilePath -> FilePath -> io ()
