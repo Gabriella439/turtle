@@ -1,3 +1,7 @@
+1.5.9
+
+* Add `symlink`
+
 1.5.8
 
 * Bug fix: `invert` no longer rejects inputs where a prefix matches the inverted
