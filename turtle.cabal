@@ -99,7 +99,7 @@ test-suite tests
     Default-Language: Haskell2010
     Build-Depends:
         base    >= 4   && < 5   ,
-        doctest >= 0.7 && < 0.16
+        doctest >= 0.7 && < 0.17
 
 test-suite regression-broken-pipe
     Type: exitcode-stdio-1.0
