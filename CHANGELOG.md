@@ -1,3 +1,7 @@
+1.5.10
+
+* Increase upper bound on `doctest` and `criterion`
+
 1.5.9
 
 * Add `symlink`
