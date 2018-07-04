@@ -1,1 +1,1 @@
-(import ./release.nix).turtle.env
+(import ./default.nix).shell
