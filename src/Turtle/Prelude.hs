@@ -734,12 +734,12 @@ stream p s = do
     mvar <- liftIO (newMVar False)
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (hClose handle)
+                unless finalized (ignoreSIGPIPE (hClose handle))
                 return True )
 
     (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
-        feedIn restore = restore (outhandle hIn s) `finally` close hIn
+        feedIn restore = restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
     a <- using
         (managed (\k ->
@@ -775,12 +775,12 @@ streamWithErr p s = do
     mvar <- liftIO (newMVar False)
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (hClose handle)
+                unless finalized (ignoreSIGPIPE (hClose handle))
                 return True )
 
     (hIn, hOut, hErr, ph) <- using (managed (bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
-        feedIn restore = restore (outhandle hIn s) `finally` close hIn
+        feedIn restore = restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
     queue <- liftIO TQueue.newTQueueIO
     let forwardOut :: (forall a. IO a -> IO a) -> IO ()
