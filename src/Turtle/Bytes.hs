@@ -519,15 +519,15 @@ stream p s = do
     mvar <- liftIO (MVar.newMVar False)
     let close handle = do
             MVar.modifyMVar_ mvar (\finalized -> do
-                Control.Monad.unless finalized (System.IO.hClose handle)
+                Control.Monad.unless finalized (ignoreSIGPIPE (System.IO.hClose handle))
                 return True )
 
     (hIn, hOut, ph) <- using (Managed.managed (Exception.bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
         feedIn restore =
-            restore (sh (do
+            restore (ignoreSIGPIPE (sh (do
                 bytes <- s
-                liftIO (Data.ByteString.hPut hIn bytes) ) )
+                liftIO (Data.ByteString.hPut hIn bytes) ) ) )
             `Exception.finally` close hIn
 
     a <- using
@@ -565,15 +565,15 @@ streamWithErr p s = do
     mvar <- liftIO (MVar.newMVar False)
     let close handle = do
             MVar.modifyMVar_ mvar (\finalized -> do
-                Control.Monad.unless finalized (System.IO.hClose handle)
+                Control.Monad.unless finalized (ignoreSIGPIPE (System.IO.hClose handle))
                 return True )
 
     (hIn, hOut, hErr, ph) <- using (Managed.managed (Exception.bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
         feedIn restore =
-            restore (sh (do
+            restore (ignoreSIGPIPE (sh (do
                 bytes <- s
-                liftIO (Data.ByteString.hPut hIn bytes) ) )
+                liftIO (Data.ByteString.hPut hIn bytes) ) ) )
             `Exception.finally` close hIn
 
     queue <- liftIO TQueue.newTQueueIO
