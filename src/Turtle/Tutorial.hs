@@ -1053,6 +1053,34 @@ import Turtle
 -- > (2,3)
 -- > (2,4)
 --
+-- This is because `Shell` behaves like a list comprehension, running each
+-- following command once for each element in the stream.  This implies that
+-- an `Shell` stream that produces 0 elements will short-circuit and prevent
+-- subsequent commands from being run.
+--
+-- > -- This stream emits 0 elements but still has side effects
+-- > inner :: Shell a
+-- > inner = do
+-- >     x <- select [1, 2]
+-- >     y <- select [3, 4]
+-- >     liftIO (print (x, y))
+-- >     empty
+-- > 
+-- > outer :: Shell ()
+-- > outer = do
+-- >     inner
+-- >     liftIO (echo "This step will never run")
+--
+-- If you want to run a `Shell` stream just for its side effects, wrap the
+-- `Shell` with `sh`.  This ensures that you don't alter the surrounding
+-- `Shell`'s control flow by unintentionally running subsequent commands zero
+-- times or multiple times:
+--
+-- > outer :: Shell ()
+-- > outer = do
+-- >     sh inner
+-- >     liftIO (echo "Now this step will exactly once")
+--
 -- This uses the `sh` utility instead of `view`.  The only difference is that
 -- `sh` doesn't print any values (since `print` is doing that already):
 --
