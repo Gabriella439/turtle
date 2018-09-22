@@ -1,3 +1,12 @@
+1.5.11
+
+* Don't forward broken pipe exceptions when using `inproc`
+    * See: https://github.com/Gabriel439/Haskell-Turtle-Library/pull/321
+* Increase upper bound on `stm`
+    * See: https://github.com/Gabriel439/Haskell-Turtle-Library/pull/321
+* Tutorial improvements:
+    * See: https://github.com/Gabriel439/Haskell-Turtle-Library/pull/322
+
 1.5.10
 
 * Increase upper bound on `doctest` and `criterion`
