@@ -1,6 +1,5 @@
 { rev                             # The Git revision of nixpkgs to fetch
-, sha256                          # The SHA256 of the downloaded data
-, outputSha256 ? null             # The SHA256 fixed-output hash
+, sha256                          # The SHA256 hash of the unpacked archive
 , system ? builtins.currentSystem # This is overridable if necessary
 }:
 
@@ -10,15 +9,15 @@ if (0 <= builtins.compareVersions builtins.nixVersion "1.12")
 then (
   builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
-    sha256 = outputSha256;
+    inherit sha256;
   })
 
 # This hack should at least work for Nix 1.11
 else (
   (rec {
     tarball = import <nix/fetchurl.nix> {
-      url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
-      inherit sha256;
+      url    = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+      sha256 = null;
     };
 
     builtin-paths = import <nix/config.nix>;
@@ -41,9 +40,9 @@ else (
       tar       = builtins.storePath builtin-paths.tar;
       gzip      = builtins.storePath builtin-paths.gzip;
       coreutils = builtins.storePath builtin-paths.coreutils;
-    } // (if null == outputSha256 then { } else {
+    } // (if null == sha256 then { } else {
       outputHashMode = "recursive";
       outputHashAlgo = "sha256";
-      outputHash = outputSha256;
+      outputHash = sha256;
     }));
   }).nixpkgs)
