@@ -1,3 +1,7 @@
+1.5.12
+
+* Increase upper bound on `containers`
+
 1.5.11
 
 * Don't forward broken pipe exceptions when using `inproc`
