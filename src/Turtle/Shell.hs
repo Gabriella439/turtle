@@ -66,6 +66,7 @@ module Turtle.Shell (
     , foldIO
     , foldShell
     , fold
+    , reduce
     , sh
     , view
 
@@ -142,6 +143,16 @@ foldShell s f = liftIO (_foldShell s f)
 -- | Use a `Fold` to reduce the stream of @a@'s produced by a `Shell`
 fold :: MonadIO io => Shell a -> Fold a b -> io b
 fold s f = foldIO s (Foldl.generalize f)
+
+-- | Flipped version of 'fold'. Useful for reducing a stream of data
+--
+-- ==== __Example__
+-- Sum a `Shell` of numbers:
+--
+-- >>> select [1, 2, 3] & reduce Fold.sum
+-- 6
+reduce :: MonadIO io => Fold a b -> Shell a -> io b
+reduce = flip fold
 
 -- | Run a `Shell` to completion, discarding any unused values
 sh :: MonadIO io => Shell a -> io ()
