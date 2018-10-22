@@ -1,3 +1,8 @@
+1.5.13
+
+* Re-export `(<&>)` from `Data.Functor` and add `reduce` utility
+    * See: https://github.com/Gabriel439/Haskell-Turtle-Library/pull/332
+
 1.5.12
 
 * Increase upper bound on `containers`
