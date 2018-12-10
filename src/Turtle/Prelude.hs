@@ -1253,9 +1253,9 @@ chmod modifyPermissions path = liftIO (do
     let permissions' = fromSystemDirectoryPermissions permissions
     let permissions'' = modifyPermissions permissions'
         changed = permissions' /= permissions''
-    let permissions''' = toSystemDirectoryPermissions permissions'
+    let permissions''' = toSystemDirectoryPermissions permissions''
     when changed (Directory.setPermissions path' permissions''')
-    return permissions' )
+    return permissions'' )
 
 -- | Get a file or directory's user permissions
 getmod :: MonadIO io => FilePath -> io Permissions
