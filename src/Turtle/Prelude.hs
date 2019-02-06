@@ -1098,17 +1098,39 @@ symlink a b = liftIO $ createSymbolicLink (fp2fp a) (fp2fp b)
 -- | Copy a directory tree
 cptree :: MonadIO io => FilePath -> FilePath -> io ()
 cptree oldTree newTree = sh (do
-    oldPath <- lstree oldTree
+    let isNotSymbolicLink path = do
+            fileStatus <- lstat path
+
+            return (not (PosixCompat.isSymbolicLink fileStatus))
+
+    oldPath <- lsif isNotSymbolicLink oldTree
+
     -- The `system-filepath` library treats a path like "/tmp" as a file and not
     -- a directory and fails to strip it as a prefix from `/tmp/foo`.  Adding
     -- `(</> "")` to the end of the path makes clear that the path is a
     -- directory
     Just suffix <- return (Filesystem.stripPrefix (oldTree </> "") oldPath)
+
     let newPath = newTree </> suffix
+
     isFile <- testfile oldPath
-    if isFile
-        then mktree (Filesystem.directory newPath) >> cp oldPath newPath
-        else mktree newPath )
+
+    fileStatus <- lstat oldPath
+
+    if PosixCompat.isSymbolicLink fileStatus
+        then do
+            oldTarget <- liftIO (PosixCompat.readSymbolicLink (Filesystem.encodeString oldPath))
+
+            mktree (Filesystem.directory newPath)
+
+            liftIO (PosixCompat.createSymbolicLink oldTarget (Filesystem.encodeString newPath))
+        else if isFile
+        then do
+            mktree (Filesystem.directory newPath)
+
+            cp oldPath newPath
+        else do
+            mktree newPath )
 
 -- | Remove a file
 rm :: MonadIO io => FilePath -> io ()
