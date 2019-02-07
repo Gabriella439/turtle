@@ -1098,10 +1098,8 @@ symlink a b = liftIO $ createSymbolicLink (fp2fp a) (fp2fp b)
 -- | Copy a directory tree
 cptree :: MonadIO io => FilePath -> FilePath -> io ()
 cptree oldTree newTree = sh (do
-    let isNotSymbolicLink path = do
-            fileStatus <- lstat path
-
-            return (not (PosixCompat.isSymbolicLink fileStatus))
+    let isNotSymbolicLink =
+          fmap (not . PosixCompat.isSymbolicLink) . lstat
 
     oldPath <- lsif isNotSymbolicLink oldTree
 
