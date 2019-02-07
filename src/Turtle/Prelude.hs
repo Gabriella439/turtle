@@ -130,6 +130,7 @@ module Turtle.Prelude (
 #if !defined(mingw32_HOST_OS)
     , symlink
 #endif
+    , isNotSymbolicLink
     , rm
     , rmdir
     , rmtree
@@ -1095,12 +1096,18 @@ symlink a b = liftIO $ createSymbolicLink (fp2fp a) (fp2fp b)
   
 #endif
 
+{-| Returns `True` if the given `FilePath` is not a symbolic link
+
+    This comes in handy in conjunction with `lsif`:
+
+    > lsif isNotSymbolicLink
+-}
+isNotSymbolicLink :: MonadIO io => FilePath -> io Bool
+isNotSymbolicLink = fmap (not . PosixCompat.isSymbolicLink) . lstat
+
 -- | Copy a directory tree
 cptree :: MonadIO io => FilePath -> FilePath -> io ()
 cptree oldTree newTree = sh (do
-    let isNotSymbolicLink =
-          fmap (not . PosixCompat.isSymbolicLink) . lstat
-
     oldPath <- lsif isNotSymbolicLink oldTree
 
     -- The `system-filepath` library treats a path like "/tmp" as a file and not
