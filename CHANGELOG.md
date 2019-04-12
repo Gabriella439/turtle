@@ -1,3 +1,9 @@
+1.5.14
+
+* Fix `cptree` to copy symlinks instead of descending into them
+    * See: https://github.com/Gabriel439/Haskell-Turtle-Library/pull/344
+* Build against newer versions of `Win32` package
+
 1.5.13
 
 * Fix `chmod` bug
