@@ -1490,10 +1490,10 @@ import Turtle
 
 -- $monadio
 --
--- If you are sick of having type `liftIO` everywhere, you can omit it.  This
--- is because all subroutines in @turtle@ are overloaded using the `MonadIO`
--- type class, like our original `pwd` command where we first encountered the
--- the `MonadIO` type:
+-- If you are sick of having to type `liftIO` everywhere, you can omit it.
+-- This is because all subroutines in @turtle@ are overloaded using the
+-- `MonadIO` type class, like our original `pwd` command where we first
+-- encountered the the `MonadIO` type:
 --
 -- @
 -- Prelude Turtle> :type pwd
