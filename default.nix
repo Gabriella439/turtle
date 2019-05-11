@@ -1,12 +1,9 @@
 let
-  fetchNixpkgs = import ./nix/fetchNixpkgs.nix;
+  nixpkgs = builtins.fetchTarball {
+    url = "https://github.com/NixOs/nixpkgs/archive/312a059bef8b29b4db4e73dc02ff441cab7bb26d.tar.gz";
 
-  nixpkgs = fetchNixpkgs {
-    rev = "804060ff9a79ceb0925fe9ef79ddbf564a225d47";
-
-    sha256 = "0ga345hgw6v2kzyhvf5kw96hf60mx5pbd9c4qj5q4nan4lr7nkxn";
+    sha256 = "1j52yvkhw1inp6ilpqy81xv1bbwgwqjn0v9647whampkqgn6dxhk";
   };
-
   readDirectory = import ./nix/readDirectory.nix;
 
   config = {
