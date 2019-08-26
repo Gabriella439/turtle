@@ -81,9 +81,7 @@ import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.Catch (MonadThrow(..), MonadCatch(..))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), with)
-#if MIN_VERSION_base(4,9,0)
 import qualified Control.Monad.Fail as Fail
-#endif
 import Control.Foldl (Fold(..), FoldM(..))
 import qualified Control.Foldl as Foldl
 import Data.Foldable (Foldable)
@@ -182,7 +180,9 @@ instance Monad Shell where
         let step1 x a = _foldShell (f a) (FoldShell step0 x return)
         _foldShell m (FoldShell step1 begin0 done0) )
 
-    fail _ = mzero
+#if!(MIN_VERSION_base(4,13,0))
+    fail = Fail.fail
+#endif
 
 instance Alternative Shell where
     empty = Shell (\(FoldShell _ begin done) -> done begin)
@@ -213,10 +213,8 @@ instance MonadThrow Shell where
 instance MonadCatch Shell where
     m `catch` k = Shell (\f-> _foldShell m f `catch` (\e -> _foldShell (k e) f))
 
-#if MIN_VERSION_base(4,9,0)
 instance Fail.MonadFail Shell where
-    fail = Prelude.fail
-#endif
+    fail _ = mzero
 
 #if __GLASGOW_HASKELL__ >= 804
 instance Monoid a => Semigroup (Shell a) where
