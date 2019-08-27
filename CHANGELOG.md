@@ -1,3 +1,8 @@
+Next
+
+* Always expose a `MonadFail` instance, relying on the `fail` package
+  where needed. Related GHC 8.8 preparedness.
+
 1.5.14
 
 * Fix `cptree` to copy symlinks instead of descending into them

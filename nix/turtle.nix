@@ -1,7 +1,7 @@
 { mkDerivation, ansi-wl-pprint, async, base, bytestring, clock
-, containers, criterion, directory, doctest, exceptions, foldl
-, hostname, managed, optional-args, optparse-applicative, process
-, semigroups, stdenv, stm, system-fileio, system-filepath
+, containers, criterion, directory, doctest, exceptions, fail
+, foldl, hostname, managed, optional-args, optparse-applicative
+, process, semigroups, stdenv, stm, system-fileio, system-filepath
 , temporary, text, time, transformers, unix, unix-compat
 }:
 mkDerivation {
@@ -14,7 +14,9 @@ mkDerivation {
     optparse-applicative process semigroups stm system-fileio
     system-filepath temporary text time transformers unix unix-compat
   ];
-  testHaskellDepends = [ base doctest system-filepath temporary ];
+  testHaskellDepends = [
+    base doctest fail system-filepath temporary
+  ];
   benchmarkHaskellDepends = [ base criterion text ];
   description = "Shell programming, Haskell-style";
   license = stdenv.lib.licenses.bsd3;
