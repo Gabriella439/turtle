@@ -4,6 +4,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE BangPatterns               #-}
 
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
@@ -214,6 +215,7 @@ module Turtle.Prelude (
 
     -- * Text
     , cut
+    , toLines
 
     -- * Subprocess management
     , proc
@@ -300,7 +302,7 @@ import Control.Exception (Exception, bracket, bracket_, finally, mask, throwIO)
 import Control.Foldl (Fold(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
-import Control.Monad (guard, liftM, msum, when, unless, (>=>), mfilter)
+import Control.Monad (guard, liftM, msum, when, unless, (>=>), mfilter, join)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 #ifdef mingw32_HOST_OS
@@ -1893,6 +1895,29 @@ parallel = traverse fork >=> select >=> wait
 cut :: Pattern a -> Text -> [Text]
 cut pattern txt = head (match (selfless chars `sepBy` pattern) txt)
 -- This `head` should be safe ... in theory
+
+-- | Safe Shell Text to Shell Line.
+toLines :: Shell Text.Text -> Shell Line
+toLines = fmap unsafeTextToLine . join . reduce (Fold step initial extract)
+  where
+    extract (!lineAcc, stream) = stream <|> return lineAcc
+    initial = (mempty, empty)
+    step acc "" = acc
+    step (!lineAcc, stream) x
+      | splitNum < 1 = (lineAcc, stream)
+      | splitNum == 1 = (lineAcc <> x, stream)
+      | splitNum > 1 = ( last split
+                       , stream
+                     <|> (select
+                         . ((lineAcc <> head split) :)
+                         . tail
+                         . init
+                         $ split
+                         )
+                       )
+      where
+        split = Text.splitOn "\n" x
+        splitNum = length split
 
 -- | Get the current time
 date :: MonadIO io => io UTCTime
