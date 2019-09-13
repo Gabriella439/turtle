@@ -2184,13 +2184,6 @@ JKL
 toLines :: Shell Text -> Shell Line
 toLines (Shell k) = Shell k'
   where
-    -- step :: x -> Line -> IO x
-    -- begin :: x
-    -- done :: x -> IO r
-    --
-    -- step' :: y -> Text -> IO y
-    -- begin :: y
-    -- done :: y -> IO r
     k' (FoldShell step begin done) =
         k (FoldShell step' begin' done')
       where
