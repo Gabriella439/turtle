@@ -206,6 +206,7 @@ module Turtle.Prelude (
     , sort
     , sortOn
     , sortBy
+    , toLines
 
     -- * Folds
     , countChars
@@ -300,7 +301,7 @@ import Control.Exception (Exception, bracket, bracket_, finally, mask, throwIO)
 import Control.Foldl (Fold(..), genericLength, handles, list, premap)
 import qualified Control.Foldl
 import qualified Control.Foldl.Text
-import Control.Monad (guard, liftM, msum, when, unless, (>=>), mfilter)
+import Control.Monad (foldM, guard, liftM, msum, when, unless, (>=>), mfilter)
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..), managed, managed_, runManaged)
 #ifdef mingw32_HOST_OS
@@ -308,6 +309,8 @@ import Data.Bits ((.&.))
 #endif
 import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.List as List
+import Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NonEmpty
 import Data.Monoid ((<>))
 import Data.Ord (comparing)
 import qualified Data.Set as Set
@@ -354,7 +357,7 @@ import System.Posix (
     touchFile )
 import System.Posix.Files (createSymbolicLink)      
 #endif
-import Prelude hiding (FilePath)
+import Prelude hiding (FilePath, lines)
 
 import Turtle.Pattern (Pattern, anyChar, chars, match, selfless, sepBy)
 import Turtle.Shell
@@ -2166,3 +2169,46 @@ sortOn f = sortBy (comparing f)
 -- [(1,'a'),(2,'c'),(3,'d'),(3,'e'),(4,'b'),(7,'f')]
 sortBy :: (Functor io, MonadIO io) => (a -> a -> Ordering) -> Shell a -> io [a]
 sortBy f s = List.sortBy f <$> fold s list
+
+{-| Group an arbitrary stream of `Text` into newline-delimited `Line`s
+
+>>> stdout (toLines ("ABC" <|> "DEF" <|> "GHI")
+ABCDEFGHI
+>>> stdout (toLines empty)  -- Note that this always emits at least 1 `Line`
+
+>>> stdout (toLines ("ABC\nDEF" <|> "" <|> "GHI\nJKL"))
+ABC
+DEFGHI
+JKL
+-}
+toLines :: Shell Text -> Shell Line
+toLines (Shell k) = Shell k'
+  where
+    -- step :: x -> Line -> IO x
+    -- begin :: x
+    -- done :: x -> IO r
+    --
+    -- step' :: y -> Text -> IO y
+    -- begin :: y
+    -- done :: y -> IO r
+    k' (FoldShell step begin done) =
+        k (FoldShell step' begin' done')
+      where
+        step' (Pair x prefix) text = do
+            let suffix :| lines = Turtle.Line.textToLines text
+
+            let line = prefix <> suffix
+
+            let lines' = line :| lines
+
+            x' <- foldM step x (NonEmpty.init lines')
+
+            let prefix' = NonEmpty.last lines'
+
+            return (Pair x' prefix')
+
+        begin' = (Pair begin "")
+
+        done' (Pair x prefix) = do
+            x' <- step x prefix
+            done x'
