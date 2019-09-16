@@ -1,18 +1,20 @@
 { mkDerivation, ansi-wl-pprint, async, base, bytestring, clock
 , containers, criterion, directory, doctest, exceptions, fail
 , foldl, hostname, managed, optional-args, optparse-applicative
-, process, semigroups, stdenv, stm, system-fileio, system-filepath
-, temporary, text, time, transformers, unix, unix-compat
+, process, semigroups, stdenv, stm, streaming-commons
+, system-fileio, system-filepath, temporary, text, time
+, transformers, unix, unix-compat
 }:
 mkDerivation {
   pname = "turtle";
   version = "1.5.14";
-  src = ./..;
+  src = ./.;
   libraryHaskellDepends = [
     ansi-wl-pprint async base bytestring clock containers directory
     exceptions foldl hostname managed optional-args
-    optparse-applicative process semigroups stm system-fileio
-    system-filepath temporary text time transformers unix unix-compat
+    optparse-applicative process semigroups stm streaming-commons
+    system-fileio system-filepath temporary text time transformers unix
+    unix-compat
   ];
   testHaskellDepends = [
     base doctest fail system-filepath temporary

@@ -16,6 +16,8 @@ module Turtle.Bytes (
     , append
     , stderr
     , strict
+    , compress
+    , decompress
     , toUTF8
 
     -- * Subprocess management
@@ -44,6 +46,7 @@ import Control.Concurrent.Async (Async, Concurrently(..))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..))
 import Data.ByteString (ByteString)
+import Data.Streaming.Zlib (Popper, PopperRes(..))
 import Data.Text (Text)
 import Data.Text.Encoding (Decoding(..))
 import Filesystem.Path (FilePath)
@@ -63,6 +66,7 @@ import qualified Control.Foldl
 import qualified Control.Monad
 import qualified Control.Monad.Managed         as Managed
 import qualified Data.ByteString
+import qualified Data.Streaming.Zlib           as Zlib
 import qualified Data.Text
 import qualified Data.Text.Encoding            as Encoding
 import qualified Data.Text.Encoding.Error      as Encoding.Error
@@ -661,6 +665,65 @@ inshellWithErr
     -> Shell (Either ByteString ByteString)
     -- ^ Chunks of either output (`Right`) or error (`Left`)
 inshellWithErr cmd = streamWithErr (Process.shell (Data.Text.unpack cmd))
+
+-- | Internal utility used by both `compress` and `decompress`
+fromPopper :: Popper -> Shell ByteString
+fromPopper popper = loop
+  where
+    loop = do
+        result <- liftIO popper
+
+        case result of
+            PRDone ->
+                empty
+            PRNext compressedByteString ->
+                return compressedByteString <|> loop
+            PRError exception ->
+                liftIO (Exception.throwIO exception)
+
+{-| Compress a stream using @zlib@ (just like the @gzip@ command)
+
+>>> select [ "ABC", "DEF" ] & compress 0 & decompress & view
+"ABCDEF"
+-}
+compress
+    :: Int
+    -- ^ Compression level
+    -> Shell ByteString
+    -- ^
+    -> Shell ByteString
+compress compressionLevel bytestrings = do
+    deflate <- liftIO (Zlib.initDeflate compressionLevel Zlib.defaultWindowBits)
+
+    let loop = do
+            bytestring <- bytestrings
+
+            popper <- liftIO (Zlib.feedDeflate deflate bytestring)
+
+            fromPopper popper
+
+    let wrapUp = do
+            let popper = liftIO (Zlib.finishDeflate deflate)
+
+            fromPopper popper
+
+    loop <|> wrapUp
+
+-- | Decompress a stream using @zlib@ (just like the @gzip@ command)
+decompress :: Shell ByteString -> Shell ByteString
+decompress bytestrings = do
+    inflate <- liftIO (Zlib.initInflate Zlib.defaultWindowBits)
+
+    let loop = do
+            bytestring <- bytestrings
+
+            popper <- liftIO (Zlib.feedInflate inflate bytestring)
+
+            fromPopper popper
+
+    let wrapUp = liftIO (Zlib.finishInflate inflate)
+
+    loop <|> wrapUp
 
 {-| Decode a stream of bytes as UTF8 `Text`
 
