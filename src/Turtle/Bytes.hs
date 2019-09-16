@@ -16,6 +16,7 @@ module Turtle.Bytes (
     , append
     , stderr
     , strict
+    , toUTF8
 
     -- * Subprocess management
     , proc
@@ -44,6 +45,7 @@ import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..))
 import Data.ByteString (ByteString)
 import Data.Text (Text)
+import Data.Text.Encoding (Decoding(..))
 import Filesystem.Path (FilePath)
 import Prelude hiding (FilePath)
 import System.Exit (ExitCode(..))
@@ -62,6 +64,8 @@ import qualified Control.Monad
 import qualified Control.Monad.Managed         as Managed
 import qualified Data.ByteString
 import qualified Data.Text
+import qualified Data.Text.Encoding            as Encoding
+import qualified Data.Text.Encoding.Error      as Encoding.Error
 import qualified Foreign
 import qualified System.IO
 import qualified System.Process                as Process
@@ -657,3 +661,30 @@ inshellWithErr
     -> Shell (Either ByteString ByteString)
     -- ^ Chunks of either output (`Right`) or error (`Left`)
 inshellWithErr cmd = streamWithErr (Process.shell (Data.Text.unpack cmd))
+
+{-| Decode a stream of bytes as UTF8 `Text`
+
+    NOTE: This function will throw a pure exception (i.e. an `error`) if UTF8
+    decoding fails (mainly due to limitations in the @text@ package's stream
+    decoding API)
+-}
+toUTF8 :: Shell ByteString -> Shell Text
+toUTF8 (Shell k) = Shell k'
+  where
+    k' (FoldShell step begin done) =
+        k (FoldShell step' begin' done')
+      where
+        begin' =
+            (mempty, Encoding.streamDecodeUtf8With Encoding.Error.strictDecode, begin)
+
+        step' (prefix, decoder, x) suffix = do
+            let bytes = prefix <> suffix
+
+            let Some text prefix' decoder' = decoder bytes 
+
+            x' <- step x text
+
+            return (prefix', decoder', x')
+
+        done' (_, _, x) = do
+            done x
