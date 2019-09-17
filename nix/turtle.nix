@@ -8,7 +8,7 @@
 mkDerivation {
   pname = "turtle";
   version = "1.5.14";
-  src = ./.;
+  src = ./..;
   libraryHaskellDepends = [
     ansi-wl-pprint async base bytestring clock containers directory
     exceptions foldl hostname managed optional-args
