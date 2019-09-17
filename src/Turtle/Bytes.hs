@@ -19,6 +19,7 @@ module Turtle.Bytes (
     , compress
     , decompress
     , WindowBits(..)
+    , Zlib.defaultWindowBits
     , toUTF8
 
     -- * Subprocess management
@@ -684,7 +685,7 @@ fromPopper popper = loop
 
 {-| Compress a stream using @zlib@ (just like the @gzip@ command)
 
->>> select [ "ABC", "DEF" ] & compress 0 & decompress & view
+>>> select [ "ABC", "DEF" ] & compress 0 defaultWindowBits & decompress defaultWindowBits & view
 "ABCDEF"
 -}
 compress
