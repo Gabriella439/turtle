@@ -18,6 +18,7 @@ module Turtle.Bytes (
     , strict
     , compress
     , decompress
+    , WindowBits(..)
     , toUTF8
 
     -- * Subprocess management
@@ -46,7 +47,7 @@ import Control.Concurrent.Async (Async, Concurrently(..))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..))
 import Data.ByteString (ByteString)
-import Data.Streaming.Zlib (Popper, PopperRes(..))
+import Data.Streaming.Zlib (Popper, PopperRes(..), WindowBits(..))
 import Data.Text (Text)
 import Data.Text.Encoding (Decoding(..))
 import Filesystem.Path (FilePath)
@@ -689,11 +690,13 @@ fromPopper popper = loop
 compress
     :: Int
     -- ^ Compression level
+    -> WindowBits
+    -- ^
     -> Shell ByteString
     -- ^
     -> Shell ByteString
-compress compressionLevel bytestrings = do
-    deflate <- liftIO (Zlib.initDeflate compressionLevel Zlib.defaultWindowBits)
+compress compressionLevel windowBits bytestrings = do
+    deflate <- liftIO (Zlib.initDeflate compressionLevel windowBits)
 
     let loop = do
             bytestring <- bytestrings
@@ -710,9 +713,9 @@ compress compressionLevel bytestrings = do
     loop <|> wrapUp
 
 -- | Decompress a stream using @zlib@ (just like the @gzip@ command)
-decompress :: Shell ByteString -> Shell ByteString
-decompress bytestrings = do
-    inflate <- liftIO (Zlib.initInflate Zlib.defaultWindowBits)
+decompress :: WindowBits -> Shell ByteString -> Shell ByteString
+decompress windowBits bytestrings = do
+    inflate <- liftIO (Zlib.initInflate windowBits)
 
     let loop = do
             bytestring <- bytestrings
