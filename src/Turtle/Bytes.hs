@@ -16,6 +16,10 @@ module Turtle.Bytes (
     , append
     , stderr
     , strict
+    , compress
+    , decompress
+    , WindowBits(..)
+    , Zlib.defaultWindowBits
     , toUTF8
 
     -- * Subprocess management
@@ -44,6 +48,7 @@ import Control.Concurrent.Async (Async, Concurrently(..))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..))
 import Data.ByteString (ByteString)
+import Data.Streaming.Zlib (Inflate, Popper, PopperRes(..), WindowBits(..))
 import Data.Text (Text)
 import Data.Text.Encoding (Decoding(..))
 import Filesystem.Path (FilePath)
@@ -63,6 +68,7 @@ import qualified Control.Foldl
 import qualified Control.Monad
 import qualified Control.Monad.Managed         as Managed
 import qualified Data.ByteString
+import qualified Data.Streaming.Zlib           as Zlib
 import qualified Data.Text
 import qualified Data.Text.Encoding            as Encoding
 import qualified Data.Text.Encoding.Error      as Encoding.Error
@@ -661,6 +667,108 @@ inshellWithErr
     -> Shell (Either ByteString ByteString)
     -- ^ Chunks of either output (`Right`) or error (`Left`)
 inshellWithErr cmd = streamWithErr (Process.shell (Data.Text.unpack cmd))
+
+-- | Internal utility used by both `compress` and `decompress`
+fromPopper :: Popper -> Shell ByteString
+fromPopper popper = loop
+  where
+    loop = do
+        result <- liftIO popper
+
+        case result of
+            PRDone ->
+                empty
+            PRNext compressedByteString ->
+                return compressedByteString <|> loop
+            PRError exception ->
+                liftIO (Exception.throwIO exception)
+
+{-| Compress a stream using @zlib@
+
+    Note that this can decompress streams that are the concatenation of
+    multiple compressed streams (just like @gzip@)
+
+>>> let compressed = select [ "ABC", "DEF" ] & compress 0 defaultWindowBits
+>>> compressed & decompress defaultWindowBits & view
+"ABCDEF"
+>>> (compressed <|> compressed) & decompress defaultWindowBits & view
+"ABCDEF"
+"ABCDEF"
+-}
+compress
+    :: Int
+    -- ^ Compression level
+    -> WindowBits
+    -- ^
+    -> Shell ByteString
+    -- ^
+    -> Shell ByteString
+compress compressionLevel windowBits bytestrings = do
+    deflate <- liftIO (Zlib.initDeflate compressionLevel windowBits)
+
+    let loop = do
+            bytestring <- bytestrings
+
+            popper <- liftIO (Zlib.feedDeflate deflate bytestring)
+
+            fromPopper popper
+
+    let wrapUp = do
+            let popper = liftIO (Zlib.finishDeflate deflate)
+
+            fromPopper popper
+
+    loop <|> wrapUp
+
+data DecompressionState = Uninitialized | Decompressing Inflate
+
+-- | Decompress a stream using @zlib@ (just like the @gzip@ command)
+decompress :: WindowBits -> Shell ByteString -> Shell ByteString
+decompress windowBits (Shell k) = Shell k'
+  where
+    k' (FoldShell step begin done) = k (FoldShell step' begin' done')
+      where
+        begin' = (begin, Uninitialized)
+
+        step' (x0, Uninitialized) compressedByteString = do
+            inflate <- Zlib.initInflate windowBits
+
+            step' (x0, Decompressing inflate) compressedByteString
+        step' (x0, Decompressing inflate) compressedByteString = do
+            popper <- Zlib.feedInflate inflate compressedByteString
+
+            let loop x = do
+                    result <- popper
+
+                    case result of
+                        PRDone -> do
+                            compressedByteString' <- Zlib.getUnusedInflate inflate
+
+                            if Data.ByteString.null compressedByteString'
+                                then return (x, Decompressing inflate)
+                                else do
+                                    decompressedByteString <- Zlib.finishInflate inflate
+
+                                    x' <- step x decompressedByteString
+
+                                    step' (x', Uninitialized) compressedByteString'
+                        PRNext decompressedByteString -> do
+                            x' <- step x decompressedByteString
+
+                            loop x'
+                        PRError exception -> do
+                            Exception.throwIO exception
+
+            loop x0
+
+        done' (x0, Uninitialized) = do
+            done x0
+        done' (x0, Decompressing inflate) = do
+            decompressedByteString <- Zlib.finishInflate inflate
+
+            x0' <- step x0 decompressedByteString
+
+            done' (x0', Uninitialized)
 
 {-| Decode a stream of bytes as UTF8 `Text`
 
