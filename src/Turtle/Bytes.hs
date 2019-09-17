@@ -20,6 +20,7 @@ module Turtle.Bytes (
     , decompress
     , WindowBits(..)
     , Zlib.defaultWindowBits
+    , fromUTF8
     , toUTF8
 
     -- * Subprocess management
@@ -796,3 +797,7 @@ toUTF8 (Shell k) = Shell k'
 
         done' (_, _, x) = do
             done x
+
+-- | Encode a stream of bytes as UTF8 `Text`
+fromUTF8 :: Shell Text -> Shell ByteString
+fromUTF8 = fmap Encoding.encodeUtf8
