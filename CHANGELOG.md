@@ -1,5 +1,8 @@
-Next
+1.5.15
 
+* Add `toLines`
+* Add `Turtle.Bytes.{fromUTF8,toUTF8}`
+* Add `Turtle.Bytes.{compress,decompress}`
 * Always expose a `MonadFail` instance, relying on the `fail` package
   where needed. Related GHC 8.8 preparedness.
 
