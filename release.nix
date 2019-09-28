@@ -1,5 +1,17 @@
 let
-  default = import ./default.nix;
+  ghc822 = import ./default.nix { compiler = "ghc822"; };
+
+  default = import ./default.nix { };
 
 in
-  { inherit (default) turtle; }
+  { turtle =
+      default.aggregate
+        { name = "turtle";
+
+          constituents = [
+            ghc822.turtle
+
+            default.turtle
+          ];
+        };
+  }
