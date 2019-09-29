@@ -49,6 +49,7 @@ import Control.Concurrent.Async (Async, Concurrently(..))
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Managed (MonadManaged(..))
 import Data.ByteString (ByteString)
+import Data.Monoid
 import Data.Streaming.Zlib (Inflate, Popper, PopperRes(..), WindowBits(..))
 import Data.Text (Text)
 import Data.Text.Encoding (Decoding(..))
