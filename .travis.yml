@@ -1,2 +1,2 @@
 language: nix
-script: nix-build release.nix
+script: NIX_PATH= nix-build release.nix

@@ -6,22 +6,23 @@ let
 
     sha256 = "1j52yvkhw1inp6ilpqy81xv1bbwgwqjn0v9647whampkqgn6dxhk";
   };
+
   readDirectory = import ./nix/readDirectory.nix;
-
-  overrides =
-    let
-      manualOverrides = haskellPackagesNew: haskellPackagesOld: {
-      };
-
-    in
-      pkgs.lib.composeExtensions (readDirectory ./nix) manualOverrides;
 
   config = {
     packageOverrides = pkgs: {
       haskell = pkgs.haskell // {
         packages = pkgs.haskell.packages // {
           "${compiler}" = pkgs.haskell.packages."${compiler}".override {
-            inherit overrides;
+            overrides =
+              let
+                manualOverrides = haskellPackagesNew: haskellPackagesOld: {
+                  system-fileio =
+                    pkgs.haskell.lib.dontCheck haskellPackagesOld.system-fileio;
+                };
+
+              in
+                pkgs.lib.composeExtensions (readDirectory ./nix) manualOverrides;
           };
         };
       };

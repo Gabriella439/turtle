@@ -6,7 +6,7 @@ let
 in
   { turtle =
       default.aggregate
-        { name = "turtle";
+        { name = "all";
 
           constituents = [
             ghc822.turtle
