@@ -1,3 +1,7 @@
+1.5.16
+
+* Add `cptreeL`
+
 1.5.15
 
 * Add `toLines`
