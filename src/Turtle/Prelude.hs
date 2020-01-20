@@ -127,6 +127,7 @@ module Turtle.Prelude (
     , mktree
     , cp
     , cptree
+    , cptreeL
 #if !defined(mingw32_HOST_OS)
     , symlink
 #endif
@@ -1108,7 +1109,7 @@ symlink a b = liftIO $ createSymbolicLink (fp2fp a) (fp2fp b)
 isNotSymbolicLink :: MonadIO io => FilePath -> io Bool
 isNotSymbolicLink = fmap (not . PosixCompat.isSymbolicLink) . lstat
 
--- | Copy a directory tree
+-- | Copy a directory tree and preserve symbolic links
 cptree :: MonadIO io => FilePath -> FilePath -> io ()
 cptree oldTree newTree = sh (do
     oldPath <- lsif isNotSymbolicLink oldTree
@@ -1139,6 +1140,18 @@ cptree oldTree newTree = sh (do
             cp oldPath newPath
         else do
             mktree newPath )
+
+-- | Copy a directory tree and dereference symbolic links
+cptreeL :: MonadIO io => FilePath -> FilePath -> io ()
+cptreeL oldTree newTree = sh (do
+    oldPath <- lstree oldTree
+    Just suffix <- return (Filesystem.stripPrefix (oldTree </> "") oldPath)
+    let newPath = newTree </> suffix
+    isFile <- testfile oldPath
+    if isFile
+        then mktree (Filesystem.directory newPath) >> cp oldPath newPath
+        else mktree newPath )
+
 
 -- | Remove a file
 rm :: MonadIO io => FilePath -> io ()
