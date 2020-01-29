@@ -116,6 +116,9 @@ module Turtle.Tutorial (
     -- * Conclusion
     -- $conclusion
 
+    -- * Nix scripts
+    -- $nix
+
     -- * FAQ
     -- $faq
     ) where
@@ -1796,6 +1799,31 @@ import Turtle
 -- still benefit from adding more utilities for better parity with the Unix
 -- ecosystem.  Pull requests to add new utilities are highly welcome!
 
+-- $nix
+--
+-- You can also turn `turtle` scripts into runnable scripts using Nix, like
+-- this:
+--
+-- > #! /usr/bin/env nix-shell
+-- > #! nix-shell -i runghc --packages "ghc.withPackages (x: [ x.turtle ])"
+-- > 
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > 
+-- > import Turtle
+-- > 
+-- > main = echo "Hello, world!"
+--
+-- ... or create an auto-reloading script like this:
+--
+-- > #! /usr/bin/env nix-shell
+-- > #! nix-shell -i "ghcid -T main" --packages ghcid "ghc.withPackages (x: [ x.turtle ])"
+-- > 
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > 
+-- > import Turtle
+-- > 
+-- > main = echo "Hello, world!"
+
 -- $faq
 --
 -- These are the most frequently asked questions from new users:
@@ -1853,3 +1881,4 @@ import Turtle
 -- like this:
 --
 -- > Turtle.system (System.Process.proc "/bin/sh" []) empty
+
