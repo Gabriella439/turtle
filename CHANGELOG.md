@@ -1,3 +1,8 @@
+1.5.17
+
+* Add `optionsExt`: Extended version of `options` with header, footer,
+  porgram-description and version information in `--help` flag
+
 1.5.16
 
 * Add `cptreeL`
