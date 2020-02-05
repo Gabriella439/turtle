@@ -71,6 +71,7 @@ module Turtle.Options
     , subcommand
     , subcommandGroup
     , options
+    , optionsExt
 
     ) where
 
@@ -107,6 +108,30 @@ options desc parser = liftIO
     prefs = Opts.showHelpOnError
 #endif
 
+{-| Parse the given options from the command line and add additional information
+
+    Extended version of @options@ with program version header and footer information
+-}
+optionsExt :: MonadIO io => Header -> Footer  -> Description ->  Version -> Parser a -> io a
+optionsExt header footer desc version parser = liftIO
+    $ Opts.customExecParser (Opts.prefs prefs)
+    $ Opts.info (Opts.helper <*> versionOption <*> parser)
+                (Opts.headerDoc (Just (getHeader header)) <>
+                 Opts.footerDoc (Just (getFooter footer)) <>
+                 Opts.progDescDoc (Just (getDescription desc)))
+  where
+    versionOption =
+      Opts.infoOption
+        (Text.unpack version)
+        (Opts.long "version" <> Opts.help "Show version")
+    prefs :: Opts.PrefsMod
+#if MIN_VERSION_optparse_applicative(0,13,0)
+    prefs = Opts.showHelpOnError <> Opts.showHelpOnEmpty
+#else
+    prefs = Opts.showHelpOnError
+#endif
+
+
 {-| The name of a command-line argument
 
     This is used to infer the long name and metavariable for the command line
@@ -135,6 +160,21 @@ newtype CommandName = CommandName { getCommandName :: Text }
 newtype Description = Description { getDescription :: Doc }
     deriving (IsString)
 
+{-| Header of the program
+
+    This description will appear in the header of the @--help@ output
+-}
+newtype Header = Header { getHeader :: Doc }
+    deriving (IsString)
+{-| Footer of the program
+
+    This description will appear in the footer of the @--help@ output
+-}
+newtype Footer = Fotter { getFooter :: Doc }
+    deriving (IsString)
+
+-- | Program Version
+type Version = Text
 {-| A helpful message explaining what a flag does
 
     This will appear in the @--help@ output
