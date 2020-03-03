@@ -121,6 +121,7 @@ module Turtle.Prelude (
     , cd
     , pwd
     , home
+    , readlink
     , realpath
     , mv
     , mkdir
@@ -942,6 +943,14 @@ pwd = liftIO Filesystem.getWorkingDirectory
 -- | Get the home directory
 home :: MonadIO io => io FilePath
 home = liftIO Filesystem.getHomeDirectory
+
+-- | Get the path pointed to by a symlink
+readlink :: MonadIO io => FilePath -> io FilePath
+readlink =
+      fmap Filesystem.decodeString
+    . liftIO
+    . System.Directory.getSymbolicLinkTarget
+    . Filesystem.encodeString
 
 -- | Canonicalize a path
 realpath :: MonadIO io => FilePath -> io FilePath
