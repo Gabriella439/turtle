@@ -7,7 +7,6 @@ License-File: LICENSE
 Copyright: 2015 Gabriel Gonzalez
 Author: Gabriel Gonzalez
 Maintainer: Gabriel439@gmail.com
-Tested-With: GHC == 7.10.2, GHC == 8.0.1
 Bug-Reports: https://github.com/Gabriel439/Haskell-Turtle-Library/issues
 Synopsis: Shell programming, Haskell-style
 Description: @turtle@ is a reimplementation of the Unix command line environment
@@ -55,7 +54,7 @@ Library
         bytestring           >= 0.9.1.8 && < 0.11,
         clock                >= 0.4.1.2 && < 0.9 ,
         containers           >= 0.5.0.0 && < 0.7 ,
-        directory            >= 1.0.7   && < 1.4 ,
+        directory            >= 1.3.1.0 && < 1.4 ,
         exceptions           >= 0.4     && < 0.11,
         foldl                >= 1.1     && < 1.5 ,
         hostname                           < 1.1 ,
