@@ -2,6 +2,7 @@
 
 * Add `optionsExt`: Extended version of `options` with header, footer,
   porgram-description and version information in `--help` flag
+* Add `readlink`
 
 1.5.16
 
