@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns              #-}
 {-# LANGUAGE CPP                       #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes                #-}
@@ -101,21 +102,23 @@ data FoldShell a b = forall x . FoldShell (x -> a -> IO x) x (x -> IO b)
 -- | A @(Shell a)@ is a protected stream of @a@'s with side effects
 newtype Shell a = Shell { _foldShell:: forall r . FoldShell a r -> IO r }
 
+data Maybe' a = Just' !a | Nothing'
+
 translate :: FoldM IO a b -> FoldShell a b
-translate (FoldM step begin done) = FoldShell step' Nothing done'
+translate (FoldM step begin done) = FoldShell step' Nothing' done'
   where
-    step' Nothing a = do
+    step' Nothing' a = do
         x  <- begin
         x' <- step x a
-        return (Just x')
-    step' (Just x) a = do
+        return $! Just' x'
+    step' (Just' x) a = do
         x' <- step x a
-        return (Just x')
+        return $! Just' x'
 
-    done' Nothing = do
+    done' Nothing' = do
         x <- begin
         done x
-    done' (Just x) = do
+    done' (Just' x) = do
         done x
 
 -- | Use a @`FoldM` `IO`@ to reduce the stream of @a@'s produced by a `Shell`
