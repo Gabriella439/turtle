@@ -1,3 +1,7 @@
+1.5.18
+
+* Fix space leak
+
 1.5.17
 
 * Add `optionsExt`: Extended version of `options` with header, footer,
