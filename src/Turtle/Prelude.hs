@@ -2038,8 +2038,6 @@ pattern GB { gigabytes } <- (\(MB x) -> x `div` 1000 -> gigabytes)
 
 >>> format sz (TB 42)
 "42.0 TB"
->>> let MB n = GB 1 in n
-1000
 >>> let GB n = TB 1 in n
 1000
 -}
