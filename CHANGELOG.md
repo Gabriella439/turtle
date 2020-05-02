@@ -1,3 +1,7 @@
+1.5.19
+
+* Add pattern synonyms for `Size`
+
 1.5.18
 
 * Fix space leak
