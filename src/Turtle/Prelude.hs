@@ -4,6 +4,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 -- | This module provides a large suite of utilities that resemble Unix
 --  utilities.
@@ -251,7 +253,7 @@ module Turtle.Prelude (
 
     -- * File size
     , du
-    , Size
+    , Size(B, KB, MB, GB, TB, KiB, MiB, GiB, TiB)
     , sz
     , bytes
     , kilobytes
@@ -1618,7 +1620,7 @@ cat :: [Shell a] -> Shell a
 cat = msum
 
 grepWith :: (b -> Text) -> Pattern a -> Shell b -> Shell b
-grepWith f pattern = mfilter (not . null . match pattern . f)
+grepWith f pattern' = mfilter (not . null . match pattern' . f)
 
 -- | Keep all lines that match the given `Pattern`
 grep :: Pattern a -> Shell Line -> Shell Line
@@ -1641,12 +1643,12 @@ grepText = grepWith id
     necessarily incomplete.
 -}
 sed :: Pattern Text -> Shell Line -> Shell Line
-sed pattern s = do
-    when (matchesEmpty pattern) (die message)
-    let pattern' = fmap Text.concat
-            (many (pattern <|> fmap Text.singleton anyChar))
+sed pattern' s = do
+    when (matchesEmpty pattern') (die message)
+    let pattern'' = fmap Text.concat
+            (many (pattern' <|> fmap Text.singleton anyChar))
     line   <- s
-    txt':_ <- return (match pattern' (lineToText line))
+    txt':_ <- return (match pattern'' (lineToText line))
     select (textToLines txt')
   where
     message = "sed: the given pattern matches the empty string"
@@ -1656,23 +1658,23 @@ sed pattern s = do
     line
 -}
 sedPrefix :: Pattern Text -> Shell Line -> Shell Line
-sedPrefix pattern s = do
+sedPrefix pattern' s = do
     line   <- s
-    txt':_ <- return (match ((pattern <> chars) <|> chars) (lineToText line))
+    txt':_ <- return (match ((pattern' <> chars) <|> chars) (lineToText line))
     select (textToLines txt')
 
 -- | Like `sed`, but the provided substitution must match the end of the line
 sedSuffix :: Pattern Text -> Shell Line -> Shell Line
-sedSuffix pattern s = do
+sedSuffix pattern' s = do
     line   <- s
-    txt':_ <- return (match ((chars <> pattern) <|> chars) (lineToText line))
+    txt':_ <- return (match ((chars <> pattern') <|> chars) (lineToText line))
     select (textToLines txt')
 
 -- | Like `sed`, but the provided substitution must match the entire line
 sedEntire :: Pattern Text -> Shell Line -> Shell Line
-sedEntire pattern s = do
+sedEntire pattern' s = do
     line   <- s
-    txt':_ <- return (match (pattern <|> chars)(lineToText line))
+    txt':_ <- return (match (pattern' <|> chars)(lineToText line))
     select (textToLines txt')
 
 -- | Make a `Shell Text -> Shell Text` function work on `FilePath`s instead.
@@ -1706,20 +1708,20 @@ inplaceWith
     -> Pattern Text
     -> FilePath
     -> io ()
-inplaceWith sed_ pattern file = liftIO (runManaged (do
+inplaceWith sed_ pattern' file = liftIO (runManaged (do
     here              <- pwd
     (tmpfile, handle) <- mktemp here "turtle"
-    outhandle handle (sed_ pattern (input file))
+    outhandle handle (sed_ pattern' (input file))
     liftIO (hClose handle)
     copymod file tmpfile
     mv tmpfile file ))
 
 -- | Search a directory recursively for all files matching the given `Pattern`
 find :: Pattern a -> FilePath -> Shell FilePath
-find pattern dir = do
+find pattern' dir = do
     path <- lsif isNotSymlink dir
     Right txt <- return (Filesystem.toText path)
-    _:_       <- return (match pattern txt)
+    _:_       <- return (match pattern' txt)
     return path
   where
     isNotSymlink :: FilePath -> IO Bool
@@ -1916,7 +1918,7 @@ parallel = traverse fork >=> select >=> wait
 
 -- | Split a line into chunks delimited by the given `Pattern`
 cut :: Pattern a -> Text -> [Text]
-cut pattern txt = head (match (selfless chars `sepBy` pattern) txt)
+cut pattern' txt = head (match (selfless chars `sepBy` pattern') txt)
 -- This `head` should be safe ... in theory
 
 -- | Get the current time
@@ -1982,41 +1984,149 @@ sz = makeFormat (\(Size numBytes) ->
         then format (d%"."%d%" GB") remainingGigabytes remainingMegabytes
         else format (d%"."%d%" TB") numTerabytes       remainingGigabytes )
 
+{-| Construct a 'Size' from an integer in bytes
+
+>>> format sz (B 42)
+"42 B"
+-}
+pattern B :: Integral n => n -> Size
+pattern B { bytes } <- (fromInteger . _bytes -> bytes)
+  where
+    B = fromIntegral
+{-# COMPLETE B #-}
+
+{-| Construct a 'Size' from an integer in kilobytes
+
+>>> format sz (KB 42)
+"42.0 KB"
+>>> let B n = KB 1 in n
+1000
+-}
+pattern KB :: Integral n => n -> Size
+pattern KB { kilobytes } <- (\(B x) -> x `div` 1000 -> kilobytes)
+  where
+    KB = B . (* 1000)
+{-# COMPLETE KB #-}
+
+{-| Construct a 'Size' from an integer in megabytes
+
+>>> format sz (MB 42)
+"42.0 MB"
+>>> let KB n = MB 1 in n
+1000
+-}
+pattern MB :: Integral n => n -> Size
+pattern MB { megabytes } <- (\(KB x) -> x `div` 1000 -> megabytes)
+  where
+    MB = KB . (* 1000)
+{-# COMPLETE MB #-}
+
+{-| Construct a 'Size' from an integer in gigabytes
+
+>>> format sz (GB 42)
+"42.0 GB"
+>>> let MB n = GB 1 in n
+1000
+-}
+pattern GB :: Integral n => n -> Size
+pattern GB { gigabytes } <- (\(MB x) -> x `div` 1000 -> gigabytes)
+  where
+    GB = MB . (* 1000)
+{-# COMPLETE GB #-}
+
+{-| Construct a 'Size' from an integer in terabytes
+
+>>> format sz (TB 42)
+"42.0 TB"
+>>> let MB n = GB 1 in n
+1000
+>>> let GB n = TB 1 in n
+1000
+-}
+pattern TB :: Integral n => n -> Size
+pattern TB { terabytes } <- (\(GB x) -> x `div` 1000 -> terabytes)
+  where
+    TB = GB . (* 1000)
+{-# COMPLETE TB #-}
+
+{-| Construct a 'Size' from an integer in kibibytes
+
+>>> format sz (KiB 42)
+"43.8 KB"
+>>> let B n = KiB 1 in n
+1024
+-}
+pattern KiB :: Integral n => n -> Size
+pattern KiB { kibibytes } <- (\(B x) -> x `div` 1024 -> kibibytes)
+  where
+    KiB = B . (* 1024)
+{-# COMPLETE KiB #-}
+
+{-| Construct a 'Size' from an integer in mebibytes
+
+>>> format sz (MiB 42)
+"44.40 MB"
+>>> let KiB n = MiB 1 in n
+1024
+-}
+pattern MiB :: Integral n => n -> Size
+pattern MiB { mebibytes } <- (\(KiB x) -> x `div` 1024 -> mebibytes)
+  where
+    MiB = KiB . (* 1024)
+{-# COMPLETE MiB #-}
+
+{-| Construct a 'Size' from an integer in gibibytes
+
+>>> format sz (GiB 42)
+"45.97 GB"
+>>> let MiB n = GiB 1 in n
+1024
+-}
+pattern GiB :: Integral n => n -> Size
+pattern GiB { gibibytes } <- (\(MiB x) -> x `div` 1024 -> gibibytes)
+  where
+    GiB = MiB . (* 1024)
+{-# COMPLETE GiB #-}
+
+{-| Construct a 'Size' from an integer in tebibytes
+
+>>> format sz (TiB 42)
+"46.179 TB"
+>>> let GiB n = TiB 1 in n
+1024
+-}
+pattern TiB :: Integral n => n -> Size
+pattern TiB { tebibytes } <- (\(GiB x) -> x `div` 1024 -> tebibytes)
+  where
+    TiB = GiB . (* 1024)
+{-# COMPLETE TiB #-}
+
 -- | Extract a size in bytes
 bytes :: Integral n => Size -> n
-bytes = fromInteger . _bytes
 
 -- | @1 kilobyte = 1000 bytes@
 kilobytes :: Integral n => Size -> n
-kilobytes = (`div` 1000) . bytes
 
 -- | @1 megabyte = 1000 kilobytes@
 megabytes :: Integral n => Size -> n
-megabytes = (`div` 1000) . kilobytes
 
 -- | @1 gigabyte = 1000 megabytes@
 gigabytes :: Integral n => Size -> n
-gigabytes = (`div` 1000) . megabytes
 
 -- | @1 terabyte = 1000 gigabytes@
 terabytes :: Integral n => Size -> n
-terabytes = (`div` 1000) . gigabytes
 
 -- | @1 kibibyte = 1024 bytes@
 kibibytes :: Integral n => Size -> n
-kibibytes = (`div` 1024) . bytes
 
 -- | @1 mebibyte = 1024 kibibytes@
 mebibytes :: Integral n => Size -> n
-mebibytes = (`div` 1024) . kibibytes
 
 -- | @1 gibibyte = 1024 mebibytes@
 gibibytes :: Integral n => Size -> n
-gibibytes = (`div` 1024) . mebibytes
 
 -- | @1 tebibyte = 1024 gibibytes@
 tebibytes :: Integral n => Size -> n
-tebibytes = (`div` 1024) . gibibytes
 
 {-| Count the number of characters in the stream (like @wc -c@)
 
