@@ -7,30 +7,39 @@ let
     sha256 = "1j52yvkhw1inp6ilpqy81xv1bbwgwqjn0v9647whampkqgn6dxhk";
   };
 
-  readDirectory = import ./nix/readDirectory.nix;
+  config = {};
 
-  config = {
-    packageOverrides = pkgs: {
-      haskell = pkgs.haskell // {
-        packages = pkgs.haskell.packages // {
-          "${compiler}" = pkgs.haskell.packages."${compiler}".override {
-            overrides =
-              let
-                manualOverrides = haskellPackagesNew: haskellPackagesOld: {
-                  system-fileio =
-                    pkgs.haskell.lib.dontCheck haskellPackagesOld.system-fileio;
-                };
+  overlay = pkgsNew: pkgsOld: {
+    haskell = pkgsOld.haskell // {
+      packages = pkgsOld.haskell.packages // {
+        "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
+          overrides =
+            let
+              packageSources = pkgsNew.haskell.lib.packageSourceOverrides {
+                "fail" = "4.9.0.0";
 
-              in
-                pkgs.lib.composeExtensions (readDirectory ./nix) manualOverrides;
-          };
-        };
+                "turtle" = ./.;
+              };
+
+              manualOverrides = haskellPackagesNew: haskellPackagesOld: {
+                system-fileio =
+                  pkgsNew.haskell.lib.dontCheck haskellPackagesOld.system-fileio;
+              };
+
+              default = old.overrides or (_: _: {});
+
+            in
+              pkgsNew.lib.fold pkgsNew.lib.composeExtensions default [
+                packageSources
+                manualOverrides
+              ];
+        });
       };
     };
   };
 
   pkgs =
-    import nixpkgs { inherit config; };
+    import nixpkgs { inherit config; overlays = [ overlay ]; };
 
 in
   { inherit (pkgs.haskell.packages."${compiler}") turtle;
