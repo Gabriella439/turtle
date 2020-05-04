@@ -1725,6 +1725,15 @@ inplaceWith sed_ pattern' file = liftIO (runManaged (do
     mv tmpfile file ))
 
 -- | Search a directory recursively for all files matching the given `Pattern`
+-- Note: The `Pattern` matches against the full path of a file as opposed to
+-- just the base name as in GNU find. For example:
+--
+-- > find "foo.txt" "./bar" 
+--
+-- will return only a single filepath: @./bar/foo.txt@. To search for a
+-- filename in a similar manner to GNU find do something similar to:
+--
+-- > find (suffix $ "/" *> "foo.txt") "./bar"
 find :: Pattern a -> FilePath -> Shell FilePath
 find pattern' dir = do
     path <- lsif isNotSymlink dir
