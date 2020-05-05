@@ -896,7 +896,11 @@ arguments :: MonadIO io => io [Text]
 arguments = liftIO (fmap (map pack) getArgs)
 
 #if __GLASGOW_HASKELL__ >= 710
--- | Set or modify an environment variable
+{-| Set or modify an environment variable
+
+    Note: This will change the current environment for all of your program's
+    threads since this modifies the global state of the process
+-}
 export :: MonadIO io => Text -> Text -> io ()
 export key val = liftIO (setEnv (unpack key) (unpack val))
 
@@ -919,7 +923,11 @@ env = liftIO (fmap (fmap toTexts) getEnvironment)
   where
     toTexts (key, val) = (pack key, pack val)
 
--- | Change the current directory
+{-| Change the current directory
+
+    Note: This will change the current directory for all of your program's
+    threads since this modifies the global state of the process
+-}
 cd :: MonadIO io => FilePath -> io ()
 cd path = liftIO (Filesystem.setWorkingDirectory path)
 
