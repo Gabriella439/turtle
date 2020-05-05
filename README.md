@@ -75,6 +75,12 @@ greatly assist scripting:
 
 * *Modern:* Supports `text` and `system-filepath`
 
+## Caveats
+
+Unlike `shelly`, this package does not use a monad transformer to keep track of
+state like the current working directory or environment variables.  Instead, all
+state changes are made to the process's global state.
+
 ## Development Status
 
 [![Build Status](https://travis-ci.org/Gabriel439/Haskell-Turtle-Library.png)](https://travis-ci.org/Gabriel439/Haskell-Turtle-Library)
