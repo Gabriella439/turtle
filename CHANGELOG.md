@@ -1,3 +1,8 @@
+1.5.20
+
+* Build against `doctest-0.17`
+* Only depend on `semigroups` for GHC < 8.0
+
 1.5.19
 
 * Add pattern synonyms for `Size`
