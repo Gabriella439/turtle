@@ -60,7 +60,6 @@ Library
         hostname                           < 1.1 ,
         managed              >= 1.0.3   && < 1.1 ,
         process              >= 1.0.1.1 && < 1.7 ,
-        semigroups           >= 0.5.0   && < 0.20,
         system-filepath      >= 0.3.1   && < 0.5 ,
         system-fileio        >= 0.2.1   && < 0.4 ,
         stm                                < 2.6 ,
@@ -77,7 +76,8 @@ Library
     else
         Build-Depends: unix  >= 2.5.1.0 && < 2.8
     if !impl(ghc >= 8.0)
-        Build-Depends: fail  >= 4.9.0.0 && < 4.10
+        Build-Depends: fail        >= 4.9.0.0 && < 4.10,
+                       semigroups  >= 0.5.0   && < 0.20
     Exposed-Modules:
         Turtle,
         Turtle.Bytes,
@@ -131,10 +131,11 @@ test-suite cptree
     Default-Language: Haskell2010
     Build-Depends:
         base   >= 4 && < 5,
-        fail,
         temporary,
         system-filepath >= 0.4,
         turtle
+    if !impl(ghc >= 8.0)
+        Build-Depends: fail
 
 benchmark bench
     Type: exitcode-stdio-1.0
