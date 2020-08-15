@@ -1,10 +1,10 @@
-{ compiler ? "ghc864" }:
+{ compiler ? "ghc865" }:
 
 let
   nixpkgs = builtins.fetchTarball {
-    url = "https://github.com/NixOs/nixpkgs/archive/312a059bef8b29b4db4e73dc02ff441cab7bb26d.tar.gz";
+    url = "https://github.com/NixOs/nixpkgs/archive/d8e0ade97ad89cd7ea4452e41b4abcaf7e04a8b7.tar.gz";
 
-    sha256 = "1j52yvkhw1inp6ilpqy81xv1bbwgwqjn0v9647whampkqgn6dxhk";
+    sha256 = "1rm6z9cch0kld1742inpsch06n97qik30a3njglvq52l8g9xw2jj";
   };
 
   config = {};
@@ -16,14 +16,15 @@ let
           overrides =
             let
               packageSources = pkgsNew.haskell.lib.packageSourceOverrides {
-                "fail" = "4.9.0.0";
-
                 "turtle" = ./.;
               };
 
               manualOverrides = haskellPackagesNew: haskellPackagesOld: {
                 system-fileio =
                   pkgsNew.haskell.lib.dontCheck haskellPackagesOld.system-fileio;
+
+                optparse-applicative =
+                  haskellPackagesNew.optparse-applicative_0_16_0_0;
               };
 
               default = old.overrides or (_: _: {});
