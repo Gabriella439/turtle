@@ -284,7 +284,7 @@ argParseToReadM f = do
     s <- Opts.readerAsk
     case f (Text.pack s) of
         Just a -> return a
-        Nothing -> Opts.readerAbort Opts.ShowHelpText
+        Nothing -> Opts.readerAbort (Opts.ShowHelpText Nothing)
 
 {-| Create a sub-command that parses `CommandName` and then parses the rest
     of the command-line arguments
