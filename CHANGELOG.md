@@ -1,3 +1,7 @@
+1.5.21
+
+* Build against `optparse-applicative-0.16.0.0`
+
 1.5.20
 
 * Build against `doctest-0.17`
