@@ -1854,7 +1854,11 @@ endless = Shell (\(FoldShell step begin _) -> do
             loop $! x'
     loop $! begin )
 
--- | Limit a `Shell` to a fixed number of values
+{-| Limit a `Shell` to a fixed number of values
+
+    NOTE: This is not lazy and will still consume the entire input stream.
+    There is no way to implement a lazy version of this utility.
+-}
 limit :: Int -> Shell a -> Shell a
 limit n s = Shell (\(FoldShell step begin done) -> do
     ref <- newIORef 0  -- I feel so dirty
