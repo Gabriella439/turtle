@@ -18,10 +18,6 @@ let
                 "turtle" = ./.;
               };
 
-              directoryOverrides = pkgsNew.haskell.lib.packagesFromDirectory {
-                directory = ./nix;
-              };
-
               manualOverrides = haskellPackagesNew: haskellPackagesOld: {
                 optparse-applicative =
                   haskellPackagesNew.optparse-applicative_0_16_1_0;
@@ -32,7 +28,6 @@ let
             in
               pkgsNew.lib.fold pkgsNew.lib.composeExtensions default [
                 packageSources
-                directoryOverrides
                 manualOverrides
               ];
         });
