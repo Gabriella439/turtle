@@ -1,3 +1,8 @@
+1.5.22
+
+* Add new `update` utility
+* Improve documentation for `limit`
+
 1.5.21
 
 * Build against `optparse-applicative-0.16.0.0`
