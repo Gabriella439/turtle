@@ -191,6 +191,7 @@ module Turtle.Prelude (
     , inplacePrefix
     , inplaceSuffix
     , inplaceEntire
+    , update
     , find
     , findtree
     , yes
@@ -1696,32 +1697,36 @@ onFiles f = fmap Filesystem.fromText . f . getRights . fmap Filesystem.toText
 
 -- | Like `sed`, but operates in place on a `FilePath` (analogous to @sed -i@)
 inplace :: MonadIO io => Pattern Text -> FilePath -> io ()
-inplace = inplaceWith sed
+inplace = update . sed
 
 -- | Like `sedPrefix`, but operates in place on a `FilePath`
 inplacePrefix :: MonadIO io => Pattern Text -> FilePath -> io ()
-inplacePrefix = inplaceWith sedPrefix
+inplacePrefix = update . sedPrefix
 
 -- | Like `sedSuffix`, but operates in place on a `FilePath`
 inplaceSuffix :: MonadIO io => Pattern Text -> FilePath -> io ()
-inplaceSuffix = inplaceWith sedSuffix
+inplaceSuffix = update . sedSuffix
 
 -- | Like `sedEntire`, but operates in place on a `FilePath`
 inplaceEntire :: MonadIO io => Pattern Text -> FilePath -> io ()
-inplaceEntire = inplaceWith sedEntire
+inplaceEntire = update . sedEntire
 
-inplaceWith
-    :: MonadIO io
-    => (Pattern Text -> Shell Line -> Shell Line)
-    -> Pattern Text
-    -> FilePath
-    -> io ()
-inplaceWith sed_ pattern' file = liftIO (runManaged (do
-    here              <- pwd
+{-| Update a file in place using a `Shell` transformation
+
+    For example, this is used to implement the @inplace*@ family of utilities
+-}
+update :: MonadIO io => (Shell Line -> Shell Line) -> FilePath -> io ()
+update f file = liftIO (runManaged (do
+    here <- pwd
+
     (tmpfile, handle) <- mktemp here "turtle"
-    outhandle handle (sed_ pattern' (input file))
+
+    outhandle handle (f (input file))
+
     liftIO (hClose handle)
+
     copymod file tmpfile
+
     mv tmpfile file ))
 
 -- | Search a directory recursively for all files matching the given `Pattern`
