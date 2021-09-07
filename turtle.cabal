@@ -39,8 +39,22 @@ Description: @turtle@ is a reimplementation of the Unix command line environment
     then you should also check out the @Shelly@ library which provides similar
     functionality.
 Category: System
+
+Tested-With:
+  GHC == 9.0.1
+  GHC == 8.10.4
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
+  GHC == 7.8.4
+  GHC == 7.6.3
+
 Extra-Source-Files:
     CHANGELOG.md
+
 Source-Repository head
     Type: git
     Location: https://github.com/Gabriel439/Haskell-Turtle-Library
