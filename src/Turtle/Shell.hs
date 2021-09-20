@@ -257,7 +257,7 @@ fromIO io =
                     case m of
                         Just a -> do
                             x' <- step x a
-                            loop x
+                            loop x'
                         Nothing -> do
                             done x
 
