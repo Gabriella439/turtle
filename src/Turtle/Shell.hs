@@ -75,6 +75,7 @@ module Turtle.Shell (
     , select
     , liftIO
     , using
+    , fromIO
     ) where
 
 import Control.Applicative
@@ -245,3 +246,20 @@ select as = Shell (\(FoldShell step begin done) -> do
             x' <- step x a
             k $! x'
     Data.Foldable.foldr step' done as $! begin )
+
+-- | Convert an `IO` action that returns a `Maybe` into a `Shell`
+fromIO :: IO (Maybe a) -> Shell a
+fromIO io =
+    Shell
+        (\(FoldShell step begin done) -> do
+            let loop x = do
+                    m <- io
+                    case m of
+                        Just a -> do
+                            x' <- step x a
+                            loop x'
+                        Nothing -> do
+                            done x
+
+            loop begin
+        )
