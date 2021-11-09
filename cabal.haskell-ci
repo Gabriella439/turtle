@@ -1,3 +1,2 @@
 installed: -all
 tests: >= 8.4
-benchmarks: < 9.2

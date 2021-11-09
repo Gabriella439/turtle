@@ -2,7 +2,7 @@
 module Main where
 
 import qualified Data.Text as Text
-import Criterion.Main
+import Test.Tasty.Bench
 import Turtle
 
 boundedNaive :: Int -> Int -> Pattern a -> Pattern [a]
