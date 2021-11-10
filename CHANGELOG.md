@@ -1,3 +1,8 @@
+1.5.23
+
+* Add `fromIO` utility
+* Build against GHC 9.0 / 9.2
+
 1.5.22
 
 * Add new `update` utility
