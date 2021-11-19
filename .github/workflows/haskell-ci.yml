@@ -61,11 +61,6 @@ jobs:
             compilerVersion: 8.2.2
             setup-method: hvr-ppa
             allow-failure: false
-          - compiler: ghc-8.0.2
-            compilerKind: ghc
-            compilerVersion: 8.0.2
-            setup-method: hvr-ppa
-            allow-failure: false
       fail-fast: false
     steps:
       - name: apt
