@@ -1,9 +1,9 @@
-{ compiler ? "ghc865" }:
+{ compiler ? "ghc8107" }:
 
 let
   nixpkgs = builtins.fetchTarball {
-    url    = "https://github.com/NixOS/nixpkgs/archive/ae66c3e40486c0e88a6cefc8d275c248fc6a696c.tar.gz";
-    sha256 = "1gw4kdlkmxyil8capnagv41hqmh31hkibidjgy3bxhlljr8xgfkc";
+    url    = "https://github.com/NixOS/nixpkgs/archive/391f93a83c3a486475d60eb4a569bb6afbf306ad.tar.gz";
+    sha256 = "0s5f7j2akh3g0013880jfbigdaac1z76r9dv46yw6k254ba2r6nq";
   };
 
   config = {};
@@ -19,8 +19,6 @@ let
               };
 
               manualOverrides = haskellPackagesNew: haskellPackagesOld: {
-                optparse-applicative =
-                  haskellPackagesNew.optparse-applicative_0_16_1_0;
               };
 
               default = old.overrides or (_: _: {});
