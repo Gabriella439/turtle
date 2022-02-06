@@ -48,6 +48,7 @@ module Turtle.Format (
     , printf
     , eprintf
     , makeFormat
+    , makePrinter
 
     -- * Parameters
     , w
@@ -107,13 +108,23 @@ instance (a ~ b) => IsString (Format a b) where
 format :: Format Text r -> r
 format fmt = fmt >>- id
 
+{-| Create your own formatted printer function
+
+Can be useful for making custom "printf" and/or "eprintf" functions that would
+use some logger function instead of stdout/stderr within some logger monad.
+
+>>> makePrinter (liftIO . Data.Text.putStr)
+-}
+makePrinter :: (Text -> m ()) -> Format (m ()) r -> r
+makePrinter = flip (>>-)
+
 {-| Print a `Format` string to standard output (without a trailing newline)
 
 >>> printf ("Hello, "%s%"!\n") "world"
 Hello, world!
 -}
 printf :: MonadIO io => Format (io ()) r -> r
-printf fmt = fmt >>- (liftIO . Text.putStr)
+printf = makePrinter (liftIO . Text.putStr)
 
 {-| Print a `Format` string to standard err (without a trailing newline)
 
@@ -121,7 +132,7 @@ printf fmt = fmt >>- (liftIO . Text.putStr)
 Hello, world!
 -}
 eprintf :: MonadIO io => Format (io ()) r -> r
-eprintf fmt = fmt >>- (liftIO . Text.hPutStr IO.stderr)
+eprintf = makePrinter (liftIO . Text.hPutStr IO.stderr)
 
 -- | Create your own format specifier
 makeFormat :: (a -> Text) -> Format r (a -> r)
