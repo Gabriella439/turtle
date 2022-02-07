@@ -42,7 +42,7 @@
 
 module Turtle.Format (
     -- * Format
-      Format
+      Format (..)
     , (%)
     , format
     , printf
