@@ -110,7 +110,7 @@ format fmt = fmt >>- id
 
 {-| Create your own formatted printer function
 
-Can be useful for making custom "printf" and/or "eprintf" functions that would
+Can be useful for making custom 'printf' and/or 'eprintf' functions that would
 use some logger function instead of stdout/stderr within some logger monad.
 
 > printf = makePrinter (liftIO . Data.Text.putStr)
