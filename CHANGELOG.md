@@ -1,3 +1,7 @@
+1.5.24
+
+* Expose `Format` constructor
+
 1.5.23
 
 * Add `fromIO` utility
