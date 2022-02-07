@@ -113,7 +113,7 @@ format fmt = fmt >>- id
 Can be useful for making custom "printf" and/or "eprintf" functions that would
 use some logger function instead of stdout/stderr within some logger monad.
 
->>> makePrinter (liftIO . Data.Text.putStr)
+> printf = makePrinter (liftIO . Data.Text.putStr)
 -}
 makePrinter :: (Text -> m ()) -> Format (m ()) r -> r
 makePrinter = flip (>>-)
