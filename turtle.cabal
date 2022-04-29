@@ -42,7 +42,7 @@ Category: System
 
 Tested-With:
   GHC == 9.2.1
-  GHC == 9.0.1
+  GHC == 9.0.2
   GHC == 8.10.7
   GHC == 8.8.4
   GHC == 8.6.5
@@ -85,7 +85,7 @@ Library
         optional-args        >= 1.0     && < 2.0 ,
         unix-compat          >= 0.4     && < 0.6
     if os(windows)
-        Build-Depends: Win32 >= 2.2.0.1 && < 2.9
+        Build-Depends: Win32 >= 2.12
     else
         Build-Depends: unix  >= 2.5.1.0 && < 2.8
 
