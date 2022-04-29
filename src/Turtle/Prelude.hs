@@ -1237,7 +1237,7 @@ touch file = do
                 Nothing
             (creationTime, _, _) <- Win32.getFileTime handle
             systemTime <- Win32.getSystemTimeAsFileTime
-            Win32.setFileTime handle creationTime systemTime systemTime
+            Win32.setFileTime handle (Just creationTime) (Just systemTime) (Just systemTime)
 #else
         then touchFile (Filesystem.encodeString file)
 #endif

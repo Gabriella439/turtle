@@ -3,3 +3,5 @@ dist
 cabal.sandbox.config
 .stack-work
 tags
+dist-newstyle
+stack.yaml.lock
