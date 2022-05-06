@@ -1,3 +1,7 @@
+1.5.25
+
+* Build against latest version of `Win32` package
+
 1.5.24
 
 * Expose `Format` constructor
