@@ -111,8 +111,8 @@ module Turtle.Prelude (
       echo
     , err
     , readline
-    , Filesystem.readTextFile
-    , Filesystem.writeTextFile
+    , Internal.readTextFile
+    , Internal.writeTextFile
     , arguments
 #if __GLASGOW_HASKELL__ >= 710
     , export
@@ -326,9 +326,6 @@ import Data.Traversable
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 import Data.Typeable (Typeable)
-import qualified Filesystem
-import Filesystem.Path.CurrentOS (FilePath, (</>))
-import qualified Filesystem.Path.CurrentOS as Filesystem
 import GHC.IO.Exception (IOErrorType(UnsupportedOperation))
 import Network.HostName (getHostName)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
@@ -342,8 +339,9 @@ import System.Environment (
     lookupEnv,
 #endif
     getEnvironment )
-import qualified System.Directory
 import qualified System.Directory as Directory
+import System.FilePath ((</>))
+import qualified System.FilePath as FilePath
 import System.Exit (ExitCode(..), exitWith)
 import System.IO (Handle, hClose)
 import qualified System.IO as IO
@@ -362,12 +360,12 @@ import System.Posix (
     touchFile )
 import System.Posix.Files (createSymbolicLink)      
 #endif
-import Prelude hiding (FilePath, lines)
+import Prelude hiding (lines)
 
 import Turtle.Pattern (Pattern, anyChar, chars, match, selfless, sepBy)
 import Turtle.Shell
 import Turtle.Format (Format, format, makeFormat, d, w, (%), fp)
-import Turtle.Internal (ignoreSIGPIPE)
+import qualified Turtle.Internal as Internal
 import Turtle.Line
 
 {-| Run a command using @execvp@, retrieving the exit code
@@ -567,7 +565,7 @@ system p s = liftIO (do
     mvar <- newMVar False
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (ignoreSIGPIPE (hClose handle))
+                unless finalized (Internal.ignoreSIGPIPE (hClose handle))
                 return True )
     let close' (Just hIn, ph) = do
             close hIn
@@ -578,7 +576,7 @@ system p s = liftIO (do
     let handle (Just hIn, ph) = do
             let feedIn :: (forall a. IO a -> IO a) -> IO ()
                 feedIn restore =
-                    restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
+                    restore (Internal.ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
             mask (\restore ->
                 withAsync (feedIn restore) (\a ->
                     restore (Process.waitForProcess ph) `finally` halt a) )
@@ -616,13 +614,13 @@ systemStrict p s = liftIO (do
     mvar <- newMVar False
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (ignoreSIGPIPE (hClose handle))
+                unless finalized (Internal.ignoreSIGPIPE (hClose handle))
                 return True )
 
     bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
             feedIn restore =
-                restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
+                restore (Internal.ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
         concurrently
             (mask (\restore ->
@@ -659,13 +657,13 @@ systemStrictWithErr p s = liftIO (do
     mvar <- newMVar False
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (ignoreSIGPIPE (hClose handle))
+                unless finalized (Internal.ignoreSIGPIPE (hClose handle))
                 return True )
 
     bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph) (\(hIn, hOut, hErr, ph) -> do
         let feedIn :: (forall a. IO a -> IO a) -> IO ()
             feedIn restore =
-                restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
+                restore (Internal.ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
         runConcurrently $ (,,)
             <$> Concurrently (mask (\restore ->
@@ -743,12 +741,12 @@ stream p s = do
     mvar <- liftIO (newMVar False)
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (ignoreSIGPIPE (hClose handle))
+                unless finalized (Internal.ignoreSIGPIPE (hClose handle))
                 return True )
 
     (hIn, hOut, ph) <- using (managed (bracket open (\(hIn, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
-        feedIn restore = restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
+        feedIn restore = restore (Internal.ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
     a <- using
         (managed (\k ->
@@ -784,12 +782,12 @@ streamWithErr p s = do
     mvar <- liftIO (newMVar False)
     let close handle = do
             modifyMVar_ mvar (\finalized -> do
-                unless finalized (ignoreSIGPIPE (hClose handle))
+                unless finalized (Internal.ignoreSIGPIPE (hClose handle))
                 return True )
 
     (hIn, hOut, hErr, ph) <- using (managed (bracket open (\(hIn, _, _, ph) -> close hIn >> Process.terminateProcess ph)))
     let feedIn :: (forall a. IO a -> IO a) -> IO ()
-        feedIn restore = restore (ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
+        feedIn restore = restore (Internal.ignoreSIGPIPE (outhandle hIn s)) `finally` close hIn
 
     queue <- liftIO TQueue.newTQueueIO
     let forwardOut :: (forall a. IO a -> IO a) -> IO ()
@@ -930,7 +928,7 @@ env = liftIO (fmap (fmap toTexts) getEnvironment)
     threads since this modifies the global state of the process
 -}
 cd :: MonadIO io => FilePath -> io ()
-cd path = liftIO (Filesystem.setWorkingDirectory path)
+cd path = liftIO (Directory.setCurrentDirectory path)
 
 {-| Change the current directory. Once the current 'Shell' is done, it returns
 back to the original directory.
@@ -949,23 +947,19 @@ pushd path = do
 
 -- | Get the current directory
 pwd :: MonadIO io => io FilePath
-pwd = liftIO Filesystem.getWorkingDirectory
+pwd = liftIO Directory.getCurrentDirectory
 
 -- | Get the home directory
 home :: MonadIO io => io FilePath
-home = liftIO Filesystem.getHomeDirectory
+home = liftIO Directory.getHomeDirectory
 
 -- | Get the path pointed to by a symlink
 readlink :: MonadIO io => FilePath -> io FilePath
-readlink =
-      fmap Filesystem.decodeString
-    . liftIO
-    . System.Directory.getSymbolicLinkTarget
-    . Filesystem.encodeString
+readlink path = liftIO (Directory.getSymbolicLinkTarget path)
 
 -- | Canonicalize a path
 realpath :: MonadIO io => FilePath -> io FilePath
-realpath path = liftIO (Filesystem.canonicalizePath path)
+realpath path = liftIO (Directory.canonicalizePath path)
 
 #ifdef mingw32_HOST_OS
 fILE_ATTRIBUTE_REPARSE_POINT :: Win32.FileAttributeOrFlag
@@ -980,7 +974,7 @@ reparsePoint attr = fILE_ATTRIBUTE_REPARSE_POINT .&. attr /= 0
 -}
 ls :: FilePath -> Shell FilePath
 ls path = Shell (\(FoldShell step begin done) -> do
-    let path' = Filesystem.encodeString path
+    let path' = path
     canRead <- fmap
          Directory.readable
         (Directory.getPermissions (deslash path'))
@@ -1005,12 +999,11 @@ ls path = Shell (\(FoldShell step begin done) -> do
     if canRead
         then bracket (openDirStream path') closeDirStream (\dirp -> do
             let loop x = do
-                    file' <- readDirStream dirp
-                    case file' of
+                    file <- readDirStream dirp
+                    case file of
                         "" -> done x
                         _  -> do
-                            let file = Filesystem.decodeString file'
-                            x' <- if (file' /= "." && file' /= "..")
+                            x' <- if (file /= "." && file /= "..")
                                 then step x (path </> file)
                                 else return x
                             loop $! x'
@@ -1086,11 +1079,11 @@ lsif predicate path = do
     but the operation will not be atomic
 -}
 mv :: MonadIO io => FilePath -> FilePath -> io ()
-mv oldPath newPath = liftIO $ catchIOError (Filesystem.rename oldPath newPath)
+mv oldPath newPath = liftIO $ catchIOError (Directory.renameFile oldPath newPath)
    (\ioe -> if ioeGetErrorType ioe == UnsupportedOperation -- certainly EXDEV
                 then do
-                    Filesystem.copyFile oldPath newPath
-                    Filesystem.removeFile oldPath
+                    Directory.copyFile oldPath newPath
+                    Directory.removeFile oldPath
                 else ioError ioe)
 
 {-| Create a directory
@@ -1098,18 +1091,18 @@ mv oldPath newPath = liftIO $ catchIOError (Filesystem.rename oldPath newPath)
     Fails if the directory is present
 -}
 mkdir :: MonadIO io => FilePath -> io ()
-mkdir path = liftIO (Filesystem.createDirectory False path)
+mkdir path = liftIO (Directory.createDirectory path)
 
 {-| Create a directory tree (equivalent to @mkdir -p@)
 
     Does not fail if the directory is present
 -}
 mktree :: MonadIO io => FilePath -> io ()
-mktree path = liftIO (Filesystem.createTree path)
+mktree path = liftIO (Directory.createDirectoryIfMissing True path)
 
 -- | Copy a file
 cp :: MonadIO io => FilePath -> FilePath -> io ()
-cp oldPath newPath = liftIO (Filesystem.copyFile oldPath newPath)
+cp oldPath newPath = liftIO (Directory.copyFile oldPath newPath)
 
 #if !defined(mingw32_HOST_OS)
 -- | Create a symlink from one @FilePath@ to another
@@ -1138,7 +1131,7 @@ cptree oldTree newTree = sh (do
     -- a directory and fails to strip it as a prefix from `/tmp/foo`.  Adding
     -- `(</> "")` to the end of the path makes clear that the path is a
     -- directory
-    Just suffix <- return (Filesystem.stripPrefix (oldTree </> "") oldPath)
+    Just suffix <- return (Internal.stripPrefix (oldTree ++ "/") oldPath)
 
     let newPath = newTree </> suffix
 
@@ -1148,14 +1141,14 @@ cptree oldTree newTree = sh (do
 
     if PosixCompat.isSymbolicLink fileStatus
         then do
-            oldTarget <- liftIO (PosixCompat.readSymbolicLink (Filesystem.encodeString oldPath))
+            oldTarget <- liftIO (PosixCompat.readSymbolicLink oldPath)
 
-            mktree (Filesystem.directory newPath)
+            mktree (FilePath.takeDirectory newPath)
 
-            liftIO (PosixCompat.createSymbolicLink oldTarget (Filesystem.encodeString newPath))
+            liftIO (PosixCompat.createSymbolicLink oldTarget newPath)
         else if isFile
         then do
-            mktree (Filesystem.directory newPath)
+            mktree (FilePath.takeDirectory newPath)
 
             cp oldPath newPath
         else do
@@ -1165,21 +1158,21 @@ cptree oldTree newTree = sh (do
 cptreeL :: MonadIO io => FilePath -> FilePath -> io ()
 cptreeL oldTree newTree = sh (do
     oldPath <- lstree oldTree
-    Just suffix <- return (Filesystem.stripPrefix (oldTree </> "") oldPath)
+    Just suffix <- return (Internal.stripPrefix (oldTree ++ "/") oldPath)
     let newPath = newTree </> suffix
     isFile <- testfile oldPath
     if isFile
-        then mktree (Filesystem.directory newPath) >> cp oldPath newPath
+        then mktree (FilePath.takeDirectory newPath) >> cp oldPath newPath
         else mktree newPath )
 
 
 -- | Remove a file
 rm :: MonadIO io => FilePath -> io ()
-rm path = liftIO (Filesystem.removeFile path)
+rm path = liftIO (Directory.removeFile path)
 
 -- | Remove a directory
 rmdir :: MonadIO io => FilePath -> io ()
-rmdir path = liftIO (Filesystem.removeDirectory path)
+rmdir path = liftIO (Directory.removeDirectory path)
 
 {-| Remove a directory tree (equivalent to @rm -r@)
 
@@ -1203,11 +1196,11 @@ rmtree path0 = liftIO (sh (loop path0))
 
 -- | Check if a file exists
 testfile :: MonadIO io => FilePath -> io Bool
-testfile path = liftIO (Filesystem.isFile path)
+testfile path = liftIO (Directory.doesFileExist path)
 
 -- | Check if a directory exists
 testdir :: MonadIO io => FilePath -> io Bool
-testdir path = liftIO (Filesystem.isDirectory path)
+testdir path = liftIO (Directory.doesDirectoryExist path)
 
 -- | Check if a path exists
 testpath :: MonadIO io => FilePath -> io Bool
@@ -1239,13 +1232,13 @@ touch file = do
             systemTime <- Win32.getSystemTimeAsFileTime
             Win32.setFileTime handle (Just creationTime) (Just systemTime) (Just systemTime)
 #else
-        then touchFile (Filesystem.encodeString file)
+        then touchFile file
 #endif
         else output file empty )
 
-{-| This type is the same as @"System.Directory".`System.Directory.Permissions`@
-    type except combining the `System.Directory.executable` and
-    `System.Directory.searchable` fields into a single `executable` field for
+{-| This type is the same as @"System.Directory".`Directory.Permissions`@
+    type except combining the `Directory.executable` and
+    `Directory.searchable` fields into a single `executable` field for
     consistency with the Unix @chmod@.  This simplification is still entirely
     consistent with the behavior of "System.Directory", which treats the two
     fields as interchangeable.
@@ -1257,26 +1250,26 @@ data Permissions = Permissions
     } deriving (Eq, Read, Ord, Show)
 
 {-| Under the hood, "System.Directory" does not distinguish between
-    `System.Directory.executable` and `System.Directory.searchable`.  They both
+    `Directory.executable` and `Directory.searchable`.  They both
     translate to the same `System.Posix.ownerExecuteMode` permission.  That
-    means that we can always safely just set the `System.Directory.executable`
-    field and safely leave the `System.Directory.searchable` field as `False`
+    means that we can always safely just set the `Directory.executable`
+    field and safely leave the `Directory.searchable` field as `False`
     because the two fields are combined with (`||`) to determine whether to set
     the executable bit.
 -}
-toSystemDirectoryPermissions :: Permissions -> System.Directory.Permissions
+toSystemDirectoryPermissions :: Permissions -> Directory.Permissions
 toSystemDirectoryPermissions p =
-    ( System.Directory.setOwnerReadable   (_readable   p)
-    . System.Directory.setOwnerWritable   (_writable   p)
-    . System.Directory.setOwnerExecutable (_executable p)
-    ) System.Directory.emptyPermissions
+    ( Directory.setOwnerReadable   (_readable   p)
+    . Directory.setOwnerWritable   (_writable   p)
+    . Directory.setOwnerExecutable (_executable p)
+    ) Directory.emptyPermissions
 
-fromSystemDirectoryPermissions :: System.Directory.Permissions -> Permissions
+fromSystemDirectoryPermissions :: Directory.Permissions -> Permissions
 fromSystemDirectoryPermissions p = Permissions
-    { _readable   = System.Directory.readable p
-    , _writable   = System.Directory.writable p
+    { _readable   = Directory.readable p
+    , _writable   = Directory.writable p
     , _executable =
-        System.Directory.executable p || System.Directory.searchable p
+        Directory.executable p || Directory.searchable p
     }
 
 {-| Update a file or directory's user permissions
@@ -1311,7 +1304,7 @@ chmod
     -> io Permissions
     -- ^ Updated permissions
 chmod modifyPermissions path = liftIO (do
-    let path' = deslash (Filesystem.encodeString path)
+    let path' = deslash path
     permissions <- Directory.getPermissions path'
     let permissions' = fromSystemDirectoryPermissions permissions
     let permissions'' = modifyPermissions permissions'
@@ -1323,21 +1316,21 @@ chmod modifyPermissions path = liftIO (do
 -- | Get a file or directory's user permissions
 getmod :: MonadIO io => FilePath -> io Permissions
 getmod path = liftIO (do
-    let path' = deslash (Filesystem.encodeString path)
+    let path' = deslash path
     permissions <- Directory.getPermissions path'
     return (fromSystemDirectoryPermissions permissions))
 
 -- | Set a file or directory's user permissions
 setmod :: MonadIO io => Permissions -> FilePath -> io ()
 setmod permissions path = liftIO (do
-    let path' = deslash (Filesystem.encodeString path)
+    let path' = deslash path
     Directory.setPermissions path' (toSystemDirectoryPermissions permissions) )
 
 -- | Copy a file or directory's permissions (analogous to @chmod --reference@)
 copymod :: MonadIO io => FilePath -> FilePath -> io ()
 copymod sourcePath targetPath = liftIO (do
-    let sourcePath' = deslash (Filesystem.encodeString sourcePath)
-        targetPath' = deslash (Filesystem.encodeString targetPath)
+    let sourcePath' = deslash sourcePath
+        targetPath' = deslash targetPath
     Directory.copyPermissions sourcePath' targetPath' )
 
 -- | @+r@
@@ -1425,7 +1418,7 @@ which cmd = fold (whichAll cmd) Control.Foldl.head
 whichAll :: FilePath -> Shell FilePath
 whichAll cmd = do
   Just paths <- need "PATH"
-  path <- select (Filesystem.splitSearchPathString . Text.unpack $ paths)
+  path <- select (fmap Text.unpack (Text.splitOn ":" paths))
   let path' = path </> cmd
 
   True <- testfile path'
@@ -1498,10 +1491,8 @@ mktempdir
     -- ^ Directory name template
     -> managed FilePath
 mktempdir parent prefix = using (do
-    let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
-    dir' <- managed (withTempDirectory parent' prefix')
-    return (Filesystem.decodeString dir'))
+    managed (withTempDirectory parent prefix'))
 
 {-| Create a temporary file underneath the given directory
 
@@ -1520,11 +1511,10 @@ mktemp
     -- ^ File name template
     -> managed (FilePath, Handle)
 mktemp parent prefix = using (do
-    let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
     (file', handle) <- managed (\k ->
-        withTempFile parent' prefix' (\file' handle -> k (file', handle)) )
-    return (Filesystem.decodeString file', handle) )
+        withTempFile parent prefix' (\file' handle -> k (file', handle)) )
+    return (file', handle) )
 
 {-| Create a temporary file underneath the given directory
 
@@ -1538,12 +1528,11 @@ mktempfile
     -- ^ File name template
     -> managed FilePath
 mktempfile parent prefix = using (do
-    let parent' = Filesystem.encodeString parent
     let prefix' = unpack prefix
     (file', handle) <- managed (\k ->
-        withTempFile parent' prefix' (\file' handle -> k (file', handle)) )
+        withTempFile parent prefix' (\file' handle -> k (file', handle)) )
     liftIO (hClose handle)
-    return (Filesystem.decodeString file') )
+    return file' )
 
 -- | Fork a thread, acquiring an `Async` value
 fork :: MonadManaged managed => IO a -> managed (Async a)
@@ -1614,15 +1603,15 @@ strict s = liftM linesToText (fold s list)
 
 -- | Acquire a `Managed` read-only `Handle` from a `FilePath`
 readonly :: MonadManaged managed => FilePath -> managed Handle
-readonly file = using (managed (Filesystem.withTextFile file IO.ReadMode))
+readonly file = using (managed (IO.withFile file IO.ReadMode))
 
 -- | Acquire a `Managed` write-only `Handle` from a `FilePath`
 writeonly :: MonadManaged managed => FilePath -> managed Handle
-writeonly file = using (managed (Filesystem.withTextFile file IO.WriteMode))
+writeonly file = using (managed (IO.withFile file IO.WriteMode))
 
 -- | Acquire a `Managed` append-only `Handle` from a `FilePath`
 appendonly :: MonadManaged managed => FilePath -> managed Handle
-appendonly file = using (managed (Filesystem.withTextFile file IO.AppendMode))
+appendonly file = using (managed (IO.withFile file IO.AppendMode))
 
 -- | Combine the output of multiple `Shell`s, in order
 cat :: [Shell a] -> Shell a
@@ -1689,11 +1678,7 @@ sedEntire pattern' s = do
 -- | Make a `Shell Text -> Shell Text` function work on `FilePath`s instead.
 -- | Ignores any paths which cannot be decoded as valid `Text`.
 onFiles :: (Shell Text -> Shell Text) -> Shell FilePath -> Shell FilePath
-onFiles f = fmap Filesystem.fromText . f . getRights . fmap Filesystem.toText
-  where
-    getRights :: forall a. Shell (Either a Text) -> Shell Text
-    getRights s = s >>= either (const empty) return
-
+onFiles f = fmap Text.unpack . f . fmap Text.pack
 
 -- | Like `sed`, but operates in place on a `FilePath` (analogous to @sed -i@)
 inplace :: MonadIO io => Pattern Text -> FilePath -> io ()
@@ -1733,8 +1718,11 @@ update f file = liftIO (runManaged (do
 find :: Pattern a -> FilePath -> Shell FilePath
 find pattern' dir = do
     path <- lsif isNotSymlink dir
-    Right txt <- return (Filesystem.toText path)
-    _:_       <- return (match pattern' txt)
+
+    let txt = Text.pack path
+
+    _:_ <- return (match pattern' txt)
+
     return path
   where
     isNotSymlink :: FilePath -> IO Bool
@@ -1746,8 +1734,11 @@ find pattern' dir = do
 findtree :: Pattern a -> Shell FilePath -> Shell FilePath
 findtree pat files = do
   path <- files
-  Right txt <- return (Filesystem.toText path)
+
+  let txt = Text.pack path
+
   _:_ <- return (match pat txt)
+
   return path
 
 {- | Check if a file was last modified after a given
@@ -1944,7 +1935,7 @@ date = liftIO getCurrentTime
 
 -- | Get the time a file was last modified
 datefile :: MonadIO io => FilePath -> io UTCTime
-datefile path = liftIO (Filesystem.getModified path)
+datefile path = liftIO (Directory.getModificationTime path)
 
 -- | Get the size of a file or a directory
 du :: MonadIO io => FilePath -> io Size
@@ -1956,9 +1947,9 @@ du path = liftIO (do
             let sizes = do
                     child <- lstree path
                     True  <- testfile child
-                    liftIO (Filesystem.getSize child)
+                    liftIO (Directory.getFileSize child)
             fold sizes Control.Foldl.sum
-        else Filesystem.getSize path
+        else Directory.getFileSize path
     return (Size size) )
 
 {-| An abstract file size
@@ -2174,7 +2165,7 @@ countLines = genericLength
 
 -- | Get the status of a file
 stat :: MonadIO io => FilePath -> io PosixCompat.FileStatus
-stat = liftIO . PosixCompat.getFileStatus . Filesystem.encodeString
+stat = liftIO . PosixCompat.getFileStatus
 
 -- | Size of the file in bytes. Does not follow symlinks
 fileSize :: PosixCompat.FileStatus -> Size
@@ -2194,7 +2185,7 @@ statusChangeTime = realToFrac . PosixCompat.statusChangeTime
 
 -- | Get the status of a file, but don't follow symbolic links
 lstat :: MonadIO io => FilePath -> io PosixCompat.FileStatus
-lstat = liftIO . PosixCompat.getSymbolicLinkStatus . Filesystem.encodeString
+lstat = liftIO . PosixCompat.getSymbolicLinkStatus
 
 data WithHeader a
     = Header a

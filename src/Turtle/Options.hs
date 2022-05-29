@@ -83,9 +83,7 @@ import Data.Text (Text)
 import Data.Optional
 import Control.Applicative
 import Control.Monad.IO.Class
-import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Options.Applicative (Parser)
-import Prelude hiding (FilePath)
 import Text.PrettyPrint.ANSI.Leijen (Doc, displayS, renderCompact)
 import Turtle.Line (Line)
 
@@ -237,7 +235,7 @@ optLine = opt Turtle.Line.textToLine
 
 -- | Parse a `FilePath` value as a flag-based option
 optPath :: ArgName -> ShortName -> Optional HelpMessage -> Parser FilePath
-optPath argName short msg = fmap fromText (optText argName short msg)
+optPath argName short msg = fmap Text.unpack (optText argName short msg)
 
 {- | Build a positional argument parser for any type by providing a
     `Text`-parsing function
@@ -277,7 +275,7 @@ argLine = arg Turtle.Line.textToLine
 
 -- | Parse a `FilePath` as a positional argument
 argPath :: ArgName -> Optional HelpMessage -> Parser FilePath
-argPath argName msg = fmap fromText (argText argName msg)
+argPath argName msg = fmap Text.unpack (argText argName msg)
 
 argParseToReadM :: (Text -> Maybe a) -> Opts.ReadM a
 argParseToReadM f = do

@@ -74,9 +74,8 @@ import Data.String (IsString(..))
 import Data.Text (Text, pack)
 import Data.Time (UTCTime)
 import Data.Word
-import Filesystem.Path.CurrentOS (FilePath, toText)
 import Numeric (showEFloat, showFFloat, showGFloat, showHex, showOct)
-import Prelude hiding ((.), id, FilePath)
+import Prelude hiding ((.), id)
 import qualified System.IO as IO
 import Turtle.Line (Line)
 
@@ -215,9 +214,9 @@ s = makeFormat id
 l :: Format r (Line -> r)
 l = makeFormat Turtle.Line.lineToText
 
--- | `Format` a `Filesystem.Path.CurrentOS.FilePath` into `Text`
+-- | `Format` a `FilePath` into `Text`
 fp :: Format r (FilePath -> r)
-fp = makeFormat (\fpath -> either id id (toText fpath))
+fp = makeFormat pack
 
 -- | `Format` a `UTCTime` into `Text`
 utc :: Format r (UTCTime -> r)

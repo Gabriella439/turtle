@@ -47,8 +47,6 @@
 --
 --  "Control.Monad.Managed.Safe" provides `Managed` resources
 --
---  "Filesystem.Path.CurrentOS" provides `FilePath`-manipulation utilities
---
 --  Additionally, you might also want to import the following modules qualified:
 --
 --  * "Options.Applicative" from @optparse-applicative@ for command-line option
@@ -61,8 +59,6 @@
 --  * "Data.Text" (for `Text`-manipulation utilities)
 --
 --  * "Data.Text.IO" (for reading and writing `Text`)
---
---  * "Filesystem.Path.CurrentOS" (for the remaining `FilePath` utilities)
 
 module Turtle (
     -- * Modules
@@ -77,7 +73,8 @@ module Turtle (
     , module Control.Monad.IO.Class
     , module Data.Monoid
     , module Control.Monad.Managed
-    , module Filesystem.Path.CurrentOS
+    , module System.FilePath
+    , module Turtle.Internal
     , Fold(..)
     , FoldM(..)
     , Text
@@ -120,37 +117,30 @@ import Control.Monad
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Monoid (Monoid(..), (<>))
 import Data.String (IsString(..))
-import Filesystem.Path.CurrentOS
-    ( FilePath
-    , root
+import Control.Monad.Managed (Managed, managed, runManaged, with)
+import Control.Foldl (Fold(..), FoldM(..))
+import Data.Text (Text)
+import Data.Time (NominalDiffTime, UTCTime)
+import System.FilePath (FilePath, dropExtension, hasExtension, (</>), (<.>))
+import System.IO (Handle)
+import System.Exit (ExitCode(..))
+import Turtle.Internal
+    ( root
     , directory
-    , parent
     , filename
     , dirname
     , basename
     , absolute
     , relative
-    , (</>)
-    , commonPrefix
     , stripPrefix
-    , collapse
     , splitDirectories
     , extension
-    , hasExtension
-    , (<.>)
-    , dropExtension
     , splitExtension
     , toText
     , fromText
     , encodeString
     , decodeString
     )
-import Control.Monad.Managed (Managed, managed, runManaged, with)
-import Control.Foldl (Fold(..), FoldM(..))
-import Data.Text (Text)
-import Data.Time (NominalDiffTime, UTCTime)
-import System.IO (Handle)
-import System.Exit (ExitCode(..))
 import Prelude hiding (FilePath)
 
 #if __GLASGOW_HASKELL__ >= 710

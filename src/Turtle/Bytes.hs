@@ -53,8 +53,6 @@ import Data.Monoid
 import Data.Streaming.Zlib (Inflate, Popper, PopperRes(..), WindowBits(..))
 import Data.Text (Text)
 import Data.Text.Encoding (Decoding(..))
-import Filesystem.Path (FilePath)
-import Prelude hiding (FilePath)
 import System.Exit (ExitCode(..))
 import System.IO (Handle)
 import Turtle.Internal (ignoreSIGPIPE)

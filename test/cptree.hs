@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Turtle
-import Filesystem.Path.CurrentOS ()
 import System.IO.Temp (withSystemTempDirectory)
 import qualified Control.Monad.Fail as Fail
 import Control.Monad (unless)
