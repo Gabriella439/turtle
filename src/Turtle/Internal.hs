@@ -32,6 +32,7 @@ toText = Right . Text.pack
 -- | Convert `Text` to a `FilePath`
 fromText :: Text -> FilePath
 fromText = Text.unpack
+{-# DEPRECATED fromText "Use Data.Text.unpack instead" #-}
 
 -- | Convert a `String` to a `FilePath`
 decodeString :: String -> FilePath
