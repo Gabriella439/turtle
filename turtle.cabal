@@ -145,6 +145,19 @@ test-suite cptree
         filepath >= 0.4,
         turtle
 
+test-suite system-filepath-tests
+    Type: exitcode-stdio-1.0
+    HS-Source-Dirs: test
+    Main-Is: system-filepath.hs
+    GHC-Options: -Wall -threaded
+    Default-Language: Haskell2010
+    Build-Depends:
+        base,
+        filepath,
+        tasty >=1.4 && <1.5,
+        tasty-hunit >=0.10 && <0.11,
+        turtle
+
 benchmark bench
     Type: exitcode-stdio-1.0
     HS-Source-Dirs: bench
