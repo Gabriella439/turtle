@@ -128,8 +128,6 @@ import System.FilePath
     , isAbsolute
     , isRelative
     , splitPath
-    , takeBaseName
-    , takeFileName
     , (</>)
     , (<.>)
     )

@@ -102,8 +102,11 @@ directory path
 
 -- | Retrieves the `FilePath`'s filename component
 filename :: FilePath -> FilePath
-filename = FilePath.takeFileName
-{-# DEPRECATED filename "Use System.FilePath.takeFileName instead" #-}
+filename path
+    | result == "." || result == ".." = ""
+    | otherwise                       = result
+  where
+    result = FilePath.takeFileName path
 
 -- | Retrieve a `FilePath`'s directory name
 dirname :: FilePath -> FilePath
@@ -128,8 +131,14 @@ dirname path = loop (FilePath.splitPath path)
 
 -- | Retrieve a `FilePath`'s basename component
 basename :: FilePath -> String
-basename = FilePath.takeBaseName
-{-# DEPRECATED basename "Use System.FilePath.takeBaseName instead" #-}
+basename path =
+    case name of
+        '.' : _ -> name
+        _ ->
+            case splitExtensions name of
+                (base, _) -> base
+  where
+    name = filename path
 
 -- | Test whether a path is absolute
 absolute :: FilePath -> Bool

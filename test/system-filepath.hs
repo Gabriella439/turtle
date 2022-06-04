@@ -44,6 +44,8 @@ test_Directory = testCase "directory" $ do
 test_Filename :: TestTree
 test_Filename = testCase "filename" $ do
     "" @=? filename ""
+    "" @=? filename "."
+    "" @=? filename ".."
     "" @=? filename "/"
     "" @=? filename "/foo/"
     "bar" @=? filename "/foo/bar"
@@ -64,6 +66,12 @@ test_Dirname = testCase "dirname" $ do
 
 test_Basename :: TestTree
 test_Basename = testCase "basename" $ do
+    "" @=? basename ".."
+    "" @=? basename "/"
+    "" @=? basename "."
+    ".txt" @=? basename ".txt"
+    "foo" @=? basename "foo.txt"
+    "bar" @=? basename "foo/bar.txt"
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
     "bar" @=? basename "c:\\foo\\bar"
