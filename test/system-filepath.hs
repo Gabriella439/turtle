@@ -62,9 +62,6 @@ test_Dirname = testCase "dirname" $ do
     let dirnameExts q = snd (splitExtensions (dirname q))
     ["d"] @=? dirnameExts "foo.d/bar"
 
-    -- reparsing preserves good/bad encoding state
-    ["\xB1", "\x76A"] @=? dirnameExts "foo.\xB1.\xDD\xAA/bar"
-
 test_Basename :: TestTree
 test_Basename = testCase "basename" $ do
 
