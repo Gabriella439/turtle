@@ -127,7 +127,6 @@ test_StripPrefix = testCase "stripPrefix" $ do
     Nothing @=? stripPrefix "/foo/bar/baz" "/foo"
     Nothing @=? stripPrefix "/foo/baz/" "/foo/bar/qux"
     Nothing @=? stripPrefix "/foo/bar/baz" "/foo/bar/qux"
-    Nothing @=? stripPrefix "/foo/bar/baz" "/foo/bar/qux"
 
 test_SplitDirectories :: TestTree
 test_SplitDirectories = testCase "splitDirectories" $ do
