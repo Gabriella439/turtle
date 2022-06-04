@@ -54,7 +54,7 @@ stripPrefix prefix path = do
   where
     prefixComponents = splitExt (FilePath.splitPath prefix)
 
-    splitExt [ component ] = base : map ("." <>) exts
+    splitExt [ component ] = base : map ("." ++) exts
       where
         (base, exts) = splitExtensions component
     splitExt [ ] =
@@ -84,7 +84,7 @@ directory path
     | prefix == "" && suffix == ".." =
         "../"
     | otherwise =
-        trailingSlash (FilePath.takeDirectory prefix) <> suffix
+        trailingSlash (FilePath.takeDirectory prefix) ++ suffix
   where
     (prefix, suffix) = trailingParent path
       where
