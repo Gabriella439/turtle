@@ -136,6 +136,7 @@ import Turtle.Internal
     , splitDirectories
     , extension
     , splitExtension
+    , splitExtensions
     , toText
     , fromText
     , encodeString

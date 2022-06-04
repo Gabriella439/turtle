@@ -1,5 +1,6 @@
 module Turtle.Internal where
 
+import Control.Applicative ((<|>))
 import Control.Exception (handle, throwIO)
 import Data.Text (Text)
 import Foreign.C.Error (Errno(..), ePIPE)
@@ -51,9 +52,17 @@ stripPrefix prefix path = do
 
     return (FilePath.joinPath suffix)
   where
-    prefixComponents = FilePath.splitPath prefix
+    prefixComponents = splitExt (FilePath.splitPath prefix)
 
-    pathComponents = FilePath.splitPath path
+    splitExt [ component ] = base : map ("." <>) exts
+      where
+        (base, exts) = splitExtensions component
+    splitExt [ ] =
+        [ ]
+    splitExt (component : components) =
+        component : splitExt components
+
+    pathComponents = splitExt (FilePath.splitPath path)
 
 -- | Read in a file as `Text`
 readTextFile :: FilePath -> IO Text
@@ -71,8 +80,25 @@ root = fst . FilePath.splitDrive
 
 -- | Retrieves the `FilePath`'s directory
 directory :: FilePath -> FilePath
-directory = FilePath.takeDirectory
-{-# DEPRECATED directory "Use System.FilePath.takeDirectory instead" #-}
+directory path
+    | prefix == "" && suffix == ".." =
+        "../"
+    | otherwise =
+        trailingSlash (FilePath.takeDirectory prefix) <> suffix
+  where
+    (prefix, suffix) = trailingParent path
+      where
+        trailingParent ".."     = (""      , "..")
+        trailingParent [ a, b ] = ([ a, b ], ""  )
+        trailingParent [ a ]    = ([ a ]   , ""  )
+        trailingParent [ ]      = ([ ]     , ""  )
+        trailingParent (c : cs) = (c : p, s)
+          where
+            ~(p, s) = trailingParent cs
+
+    trailingSlash ""       = "/"
+    trailingSlash "/"      = "/"
+    trailingSlash (c : cs) = c : trailingSlash cs
 
 -- | Retrieves the `FilePath`'s filename component
 filename :: FilePath -> FilePath
@@ -81,12 +107,24 @@ filename = FilePath.takeFileName
 
 -- | Retrieve a `FilePath`'s directory name
 dirname :: FilePath -> FilePath
-dirname path = FilePath.joinPath (loop (FilePath.splitPath path))
+dirname path = loop (FilePath.splitPath path)
   where
-    loop [ x, _ ] = [ x ]
-    loop [ _ ]    = [ ]
-    loop [ ]      = [ ]
-    loop (_ : xs) = loop xs
+    loop [ x, y ] =
+        case deslash y <|> deslash x of
+            Just name -> name
+            Nothing   -> ""
+    loop [ x ] =
+        case deslash x of
+            Just name -> name
+            Nothing   -> ""
+    loop [ ] =
+        ""
+    loop (_ : xs) =
+        loop xs
+
+    deslash ""       = Nothing
+    deslash "/"      = Just ""
+    deslash (c : cs) = fmap (c :) (deslash cs)
 
 -- | Retrieve a `FilePath`'s basename component
 basename :: FilePath -> String
@@ -110,18 +148,32 @@ splitDirectories = FilePath.splitPath
 
 -- | Get a `FilePath`'s last extension, or `Nothing` if it has no extension
 extension :: FilePath -> Maybe String
-extension path
-    | suffix == "" = Nothing
-    | otherwise    = Just suffix
+extension path =
+    case suffix of
+        '.' : ext -> Just ext
+        _         -> Nothing
   where
     suffix = FilePath.takeExtension path
-{-# DEPRECATED extension "Use System.FilePath.takeExtension instead" #-}
 
 -- | Split a `FilePath` on its extension
 splitExtension :: FilePath -> (String, Maybe String)
-splitExtension path
-    | suffix == "" = (prefix, Nothing)
-    | otherwise    = (prefix, Just suffix)
+splitExtension path =
+    case suffix of
+        '.' : ext -> (prefix, Just ext)
+        _         -> (prefix, Nothing)
   where
     (prefix, suffix) = FilePath.splitExtension path
-{-# DEPRECATED splitExtension "Use System.FilePath.splitExtension instead" #-}
+
+-- | Split a `FilePath` on its extensions
+splitExtensions :: FilePath -> (String, [String])
+splitExtensions path0 = (prefix0, reverse exts0)
+  where
+    (prefix0, exts0) = loop path0
+
+    loop path = case splitExtension path of
+        (prefix, Just ext) ->
+            (base, ext : exts)
+          where
+            (base, exts) = loop prefix
+        (base, Nothing) ->
+            (base, [])

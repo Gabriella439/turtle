@@ -3,7 +3,6 @@
 
 module Main (main) where
 
-import System.FilePath (splitExtensions)
 import Test.Tasty
 import Test.Tasty.HUnit
 import Turtle
@@ -60,7 +59,7 @@ test_Dirname = testCase "dirname" $ do
     "bar" @=? dirname "foo/bar/baz.txt"
 
     -- the directory name will be re-parsed to a file name.
-    let dirnameExts q = extensions (dirname q)
+    let dirnameExts q = snd (splitExtensions (dirname q))
     ["d"] @=? dirnameExts "foo.d/bar"
 
     -- reparsing preserves good/bad encoding state
@@ -144,7 +143,7 @@ test_SplitDirectories = testCase "splitDirectories" $ do
     ["ab/", "cd/"] @=? splitDirectories "ab/cd/"
     ["ab/", "cd.txt"] @=? splitDirectories "ab/cd.txt"
     ["ab/", "cd/", ".txt"] @=? splitDirectories "ab/cd/.txt"
-    ["ab/", ".", "cd"] @=? splitDirectories "ab/./cd"
+    ["ab/", "./", "cd"] @=? splitDirectories "ab/./cd"
 
 test_SplitExtension :: TestTree
 test_SplitExtension = testCase "splitExtension" $ do
@@ -156,8 +155,3 @@ test_SplitExtension = testCase "splitExtension" $ do
     ("foo.a/bar", Nothing) @=? splitExtension "foo.a/bar"
     ("foo.a/bar", Just "b") @=? splitExtension "foo.a/bar.b"
     ("foo.a/bar.b", Just "c") @=? splitExtension "foo.a/bar.b.c"
-
-extensions :: FilePath -> [String]
-extensions p = case splitExtensions p of
-    (p', "") -> [p']
-    (p', q ) -> extensions p' ++ [q]
