@@ -121,7 +121,18 @@ import Control.Monad.Managed (Managed, managed, runManaged, with)
 import Control.Foldl (Fold(..), FoldM(..))
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
-import System.FilePath (FilePath, dropExtension, hasExtension, (</>), (<.>))
+import System.FilePath
+    ( FilePath
+    , dropExtension
+    , hasExtension
+    , isAbsolute
+    , isRelative
+    , splitPath
+    , takeBaseName
+    , takeFileName
+    , (</>)
+    , (<.>)
+    )
 import System.IO (Handle)
 import System.Exit (ExitCode(..))
 import Turtle.Internal
