@@ -143,6 +143,7 @@ import Turtle.Internal
     , absolute
     , relative
     , stripPrefix
+    , collapse
     , splitDirectories
     , extension
     , splitExtension

@@ -65,6 +65,11 @@ stripPrefix prefix path = do
 
     pathComponents = splitExt (FilePath.splitPath path)
 
+-- | Normalise a path
+collapse :: FilePath -> FilePath
+collapse = FilePath.normalise
+{-# DEPRECATED collapse "Use System.FilePath.normalise instead" #-}
+
 -- | Read in a file as `Text`
 readTextFile :: FilePath -> IO Text
 readTextFile = Text.IO.readFile
