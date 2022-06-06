@@ -11,6 +11,7 @@ main :: IO ()
 main = defaultMain $ testGroup "system-filepath tests"
     [ test_Root
     , test_Directory
+    , test_Parent
     , test_StripPrefix
     , test_Filename
     , test_Dirname
@@ -40,6 +41,30 @@ test_Directory = testCase "directory" $ do
     "../foo/" @=? directory "../foo/"
     "./" @=? directory "foo"
     "foo/" @=? directory "foo/bar"
+
+test_Parent :: TestTree
+test_Parent = testCase "parent" $ do
+    -- The behavior in the presence of `.` / `..` is messed up, but that's how
+    -- the old system-filepath package worked, so we're preserving that for
+    -- backwards compatibility (for now)
+    "./" @=? parent ""
+    "./" @=? parent "."
+    "./" @=? parent ".."
+    "/" @=? parent "/.."
+    "/" @=? parent "/."
+    "./" @=? parent "./."
+    "./" @=? parent "./.."
+    "../" @=? parent "../.."
+    "../" @=? parent "../."
+
+    "/" @=? parent "/"
+    "./" @=? parent "foo"
+    "./" @=? parent "./foo"
+    "./foo/" @=? parent "foo/bar"
+    "./foo/" @=? parent "foo/bar/"
+    "./foo/" @=? parent "./foo/bar"
+    "/" @=? parent "/foo"
+    "/foo/" @=? parent "/foo/bar"
 
 test_Filename :: TestTree
 test_Filename = testCase "filename" $ do

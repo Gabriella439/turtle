@@ -5,6 +5,7 @@ import Control.Exception (handle, throwIO)
 import Data.Text (Text)
 import Foreign.C.Error (Errno(..), ePIPE)
 import GHC.IO.Exception (IOErrorType(..), IOException(..))
+import System.FilePath ((</>))
 
 import qualified Data.List as List
 import qualified Data.Text as Text
@@ -77,6 +78,27 @@ writeTextFile = Text.IO.writeFile
 -- | Retrieves the `FilePath`'s root
 root :: FilePath -> FilePath
 root = fst . FilePath.splitDrive
+
+-- | Retrieves the `FilePath`'s parent directory
+parent :: FilePath -> FilePath
+parent path = prefix </> suffix
+  where
+    (drive, rest) = FilePath.splitDrive path
+
+    components = loop (FilePath.splitPath rest)
+
+    prefix =
+        case components of
+            "./"  : _ -> drive
+            "../" : _ -> drive
+            _ | null drive -> "./"
+              | otherwise  -> drive
+
+    suffix = FilePath.joinPath components
+
+    loop [ _ ]    = [ ]
+    loop [ ]      = [ ]
+    loop (c : cs) = c : loop cs
 
 -- | Retrieves the `FilePath`'s directory
 directory :: FilePath -> FilePath
