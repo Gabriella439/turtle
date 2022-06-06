@@ -127,7 +127,6 @@ import System.FilePath
     , hasExtension
     , isAbsolute
     , isRelative
-    , splitPath
     , (</>)
     , (<.>)
     )
@@ -142,6 +141,7 @@ import Turtle.Internal
     , basename
     , absolute
     , relative
+    , commonPrefix
     , stripPrefix
     , collapse
     , splitDirectories
