@@ -29,7 +29,7 @@ Description: @turtle@ is a reimplementation of the Unix command line environment
     .
     * Formatting: Type-safe @printf@-style text formatting
     .
-    * Modern: Supports @text@ and @system-filepath@
+    * Modern: Supports @text@
     .
     Read "Turtle.Tutorial" for a detailed tutorial or "Turtle.Prelude" for a
     quick-start guide
@@ -69,12 +69,11 @@ Library
         containers           >= 0.5.0.0 && < 0.7 ,
         directory            >= 1.3.1.0 && < 1.4 ,
         exceptions           >= 0.4     && < 0.11,
+        filepath             >= 1.4.1.2 && < 1.5 ,
         foldl                >= 1.1     && < 1.5 ,
         hostname                           < 1.1 ,
         managed              >= 1.0.3   && < 1.1 ,
         process              >= 1.0.1.1 && < 1.7 ,
-        system-filepath      >= 0.3.1   && < 0.5 ,
-        system-fileio        >= 0.2.1   && < 0.4 ,
         stm                                < 2.6 ,
         streaming-commons                  < 0.3 ,
         temporary                          < 1.4 ,
@@ -143,7 +142,20 @@ test-suite cptree
     Build-Depends:
         base   >= 4 && < 5,
         temporary,
-        system-filepath >= 0.4,
+        filepath >= 0.4,
+        turtle
+
+test-suite system-filepath-tests
+    Type: exitcode-stdio-1.0
+    HS-Source-Dirs: test
+    Main-Is: system-filepath.hs
+    GHC-Options: -Wall -threaded
+    Default-Language: Haskell2010
+    Build-Depends:
+        base,
+        filepath,
+        tasty >=1.4 && <1.5,
+        tasty-hunit >=0.10 && <0.11,
         turtle
 
 benchmark bench
