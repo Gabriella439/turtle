@@ -12,7 +12,9 @@ main = defaultMain $ testGroup "system-filepath tests"
     [ test_Root
     , test_Directory
     , test_Parent
+    , test_CommonPrefix
     , test_StripPrefix
+    , test_Collapse
     , test_Filename
     , test_Dirname
     , test_Basename
@@ -81,6 +83,7 @@ test_Dirname = testCase "dirname" $ do
     "" @=? dirname ""
     "" @=? dirname "/"
     "" @=? dirname "foo"
+    ".." @=? dirname ".."
     "foo" @=? dirname "foo/bar"
     "bar" @=? dirname "foo/bar/"
     "bar" @=? dirname "foo/bar/baz.txt"
@@ -143,6 +146,14 @@ test_Relative = testCase "relative" $ do
     myAssert "foo/bar"
 #endif
 
+test_CommonPrefix :: TestTree
+test_CommonPrefix = testCase "commonPrefix" $ do
+    "" @=? commonPrefix []
+    "./" @=? commonPrefix [".", "."]
+    "" @=? commonPrefix [".", ".."]
+    "foo/" @=? commonPrefix ["foo/bar", "foo/baz"]
+    "" @=? commonPrefix ["foo/", "bar/"]
+
 test_StripPrefix :: TestTree
 test_StripPrefix = testCase "stripPrefix" $ do
     Just "" @=? stripPrefix "" ""
@@ -161,9 +172,22 @@ test_StripPrefix = testCase "stripPrefix" $ do
     Nothing @=? stripPrefix "/foo/baz/" "/foo/bar/qux"
     Nothing @=? stripPrefix "/foo/bar/baz" "/foo/bar/qux"
 
+test_Collapse :: TestTree
+test_Collapse = testCase "collapse" $ do
+    -- This behavior differs from the old `system-filepath` package, but this
+    -- behavior is more correct in the presence of symlinks
+    "foo/../bar" @=? collapse "foo/../bar"
+
+    "foo/bar" @=? collapse "foo/bar"
+    "foo/bar" @=? collapse "foo/./bar"
+
 test_SplitDirectories :: TestTree
 test_SplitDirectories = testCase "splitDirectories" $ do
     [] @=? splitDirectories ""
+    ["./"] @=? splitDirectories "."
+    ["../"] @=? splitDirectories ".."
+    ["foo/", "../"] @=? splitDirectories "foo/.."
+    ["foo/", "./"] @=? splitDirectories "foo/."
     ["/"] @=? splitDirectories "/"
     ["/", "a"] @=? splitDirectories "/a"
     ["/", "ab/", "cd"] @=? splitDirectories "/ab/cd"

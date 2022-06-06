@@ -46,6 +46,23 @@ encodeString :: FilePath -> String
 encodeString = id
 {-# DEPRECATED encodeString "Use id instead" #-}
 
+-- | Find the greatest common prefix between a list of `FilePath`s
+commonPrefix :: [FilePath] -> FilePath
+commonPrefix [ ] = mempty
+commonPrefix (path : paths) = foldr longestPathPrefix path paths
+  where
+    longestPathPrefix left right =
+        FilePath.joinPath (longestPrefix leftComponents rightComponents)
+      where
+        leftComponents = splitExt (splitDirectories left)
+
+        rightComponents = splitExt (splitDirectories right)
+
+longestPrefix :: Eq a => [a] -> [a] -> [a]
+longestPrefix (l : ls) (r : rs)
+    | l == r = l : longestPrefix ls rs
+longestPrefix _ _ = [ ]
+
 -- | Remove a prefix from a path
 stripPrefix :: FilePath -> FilePath -> Maybe FilePath
 stripPrefix prefix path = do
@@ -53,17 +70,19 @@ stripPrefix prefix path = do
 
     return (FilePath.joinPath suffix)
   where
-    prefixComponents = splitExt (FilePath.splitPath prefix)
+    prefixComponents = splitExt (splitDirectories prefix)
 
-    splitExt [ component ] = base : map ("." ++) exts
-      where
-        (base, exts) = splitExtensions component
-    splitExt [ ] =
-        [ ]
-    splitExt (component : components) =
-        component : splitExt components
+    pathComponents = splitExt (splitDirectories path)
 
-    pathComponents = splitExt (FilePath.splitPath path)
+-- Internal helper function for `stripPrefix` and `commonPrefix`
+splitExt :: [FilePath] -> [FilePath]
+splitExt [ component ] = base : map ("." ++) exts
+  where
+    (base, exts) = splitExtensions component
+splitExt [ ] =
+    [ ]
+splitExt (component : components) =
+    component : splitExt components
 
 -- | Normalise a path
 collapse :: FilePath -> FilePath
@@ -90,7 +109,7 @@ parent path = prefix </> suffix
   where
     (drive, rest) = FilePath.splitDrive path
 
-    components = loop (FilePath.splitPath rest)
+    components = loop (splitDirectories rest)
 
     prefix =
         case components of
@@ -137,7 +156,7 @@ filename path
 
 -- | Retrieve a `FilePath`'s directory name
 dirname :: FilePath -> FilePath
-dirname path = loop (FilePath.splitPath path)
+dirname path = loop (splitDirectories path)
   where
     loop [ x, y ] =
         case deslash y <|> deslash x of
@@ -179,8 +198,12 @@ relative = FilePath.isRelative
 
 -- | Split a `FilePath` into its components
 splitDirectories :: FilePath -> [FilePath]
-splitDirectories = FilePath.splitPath
-{-# DEPRECATED splitDirectories "Use System.FilePath.splitPath instead" #-}
+splitDirectories path = loop (FilePath.splitPath path)
+  where
+    loop [ ]      = [ ]
+    loop [ ".." ] = [ "../" ]
+    loop [ "." ]  = [ "./" ]
+    loop (c : cs) = c : loop cs
 
 -- | Get a `FilePath`'s last extension, or `Nothing` if it has no extension
 extension :: FilePath -> Maybe String
