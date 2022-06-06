@@ -136,6 +136,7 @@ import System.Exit (ExitCode(..))
 import Turtle.Internal
     ( root
     , directory
+    , parent
     , filename
     , dirname
     , basename
