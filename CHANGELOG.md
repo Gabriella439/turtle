@@ -1,3 +1,71 @@
+1.6.0
+
+* BREAKING CHANGE: Switch to the `FilePath` type from `base` instead of
+  `system-filepath`
+  * This is a breaking change for a couple of reasons:
+    * The `FilePath` type has changed, so the API is not backwards-compatible
+      * The thing most likely to break is if you directly imported utilities
+        from the `system-filepath` or `system-fileio` packages to operate on
+        `turtle`'s `FilePath`s
+        * If that happens, you should first check if the `Turtle` module
+          exports a utility of the same name.  If so, then switch to that
+        * If there is no equivalent substitute from the `Turtle` module then
+          you will have to change your code to use the closest equivalent
+          utility from the `filepath` or `directory` package
+        * If you were previously using any of the `system-filepath` or
+          `system-fileio` utilities re-exported from the `Turtle` module then
+          those utilities will not break as they have been replaced with
+          versions compatible with the `FilePath` type from `base`
+      * The second thing most likely to break is any code that relies on
+        typeclasses since because if you defined any instances for the
+        `FilePath` type exported by `turtle` then those instances will now
+        overlap with any instances defined for the `String` type
+      * The conversion utilities (e.g. `toText`, `encodeString`) will still
+        work, so code that used those conversion utilities should be less
+        affected by this change
+    * The behavior of the `collapse` utility is subtly different
+      * `collapse` no longer interprets `..` in paths
+      * This new behavior is more correct in the presence of symlinks, so the
+        change is (hopefully) an improvement to downstream code
+  * The new API strives to match the old behavior as closely as possible
+    * … so this should (hopefully) not break too much code in practice
+    * With the exception of the `collapse` function the new API should be
+      bug-for-bug compatible with the old API
+      * Most of the surprising behavior inherited from the old API is around
+        how `.` and `..` are handled in paths
+        * `parent ".." == "."` is an example of such surprising behavior
+    * At some point in the future we may fix bugs in these utilities inherited
+      from `system-filepath` / `system-fileio`, but no decision either way has
+      been made, yet
+  * Some old utilities are marked `DEPRECATED` if their behavior exactly matches
+    the behavior of an existing utility from the `filepath` or `directory`
+    package
+    * These may be eventually removed at some point in the future or they
+      remain in a deprecated state indefinitely.  No decision either way has
+      been made
+    * The `Turtle` module also re-exports any utility suggested by a
+      `DEPRECATED` pragma as a convenience
+  * Other utilities are not deprecated if the old behavior significantly departs
+    from any existing utility from the `filepath` or `directory` package
+    * For example, the behavior of the `filename` utility differs from the
+      behavior of `System.FilePath.takeFileName` for filenames that begin with a
+      `.`, so we have to preserve the old behavior to avoid breaking downstream
+      code
+    * At some point in the future utilities like these may be deprecated in
+      favor of their closest analogs in the `filepath` / `directory` packages or
+      they may be supported indefinitely.  No decision either way has been made
+  * If you want to try to author code that is compatible with both the
+    pre-1.6 and post-1.6 API:
+    * If you add any instances to the `FilePath` type, import it qualified
+      directly from the `system-filepath` package and use it only for instances
+    * Otherwise, don't import anything else from the `system-filepath` /
+      `system-fileio` packages if you can help it.  Instead, restrict yourself
+      entirely to the utilities and `FilePath` type exported by the `Turtle`
+      module
+    * Use the conversion utilities (e.g. `encodeStrings`, even if they are not
+      necessary post-1.6)
+    * If that's still not enough, use `CPP` and good luck!
+
 1.5.25
 
 * Build against latest version of `Win32` package
