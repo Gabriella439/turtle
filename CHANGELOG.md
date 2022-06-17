@@ -1,3 +1,11 @@
+1.6.1.
+
+* BUG FIX: Fix `turtle` to build on Windows
+* BUG FIX: `stripPrefix` and `commonPrefix` now correctly handle files with
+  extensions
+  * For example, before this fix `stripPrefix "./" "./foo.bar"` would
+    return `Just "foo/.bar"`
+
 1.6.0
 
 * BREAKING CHANGE: Switch to the `FilePath` type from `base` instead of
