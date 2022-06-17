@@ -54,7 +54,7 @@ commonPrefix (path : paths) = foldr longestPathPrefix path paths
     longestPathPrefix left right
         | leftComponents == rightComponents =
                FilePath.joinPath leftComponents
-            <> mconcat (longestPrefix leftExtensions rightExtensions)
+            ++ mconcat (longestPrefix leftExtensions rightExtensions)
         | otherwise =
            FilePath.joinPath (longestPrefix leftComponents rightComponents)
       where
@@ -78,7 +78,7 @@ stripPrefix prefix path = do
 
             return (mconcat prefixSuffix)
         else do
-            return (FilePath.joinPath componentSuffix <> mconcat pathExtensions)
+            return (FilePath.joinPath componentSuffix ++ mconcat pathExtensions)
   where
     (prefixComponents, prefixExtensions) = splitExt (splitDirectories prefix)
 
