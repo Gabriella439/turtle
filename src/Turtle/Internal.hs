@@ -51,12 +51,16 @@ commonPrefix :: [FilePath] -> FilePath
 commonPrefix [ ] = mempty
 commonPrefix (path : paths) = foldr longestPathPrefix path paths
   where
-    longestPathPrefix left right =
-        FilePath.joinPath (longestPrefix leftComponents rightComponents)
+    longestPathPrefix left right
+        | leftComponents == rightComponents =
+               FilePath.joinPath leftComponents
+            ++ mconcat (longestPrefix leftExtensions rightExtensions)
+        | otherwise =
+           FilePath.joinPath (longestPrefix leftComponents rightComponents)
       where
-        leftComponents = splitExt (splitDirectories left)
+        (leftComponents, leftExtensions)  = splitExt (splitDirectories left)
 
-        rightComponents = splitExt (splitDirectories right)
+        (rightComponents, rightExtensions) = splitExt (splitDirectories right)
 
 longestPrefix :: Eq a => [a] -> [a] -> [a]
 longestPrefix (l : ls) (r : rs)
@@ -66,23 +70,30 @@ longestPrefix _ _ = [ ]
 -- | Remove a prefix from a path
 stripPrefix :: FilePath -> FilePath -> Maybe FilePath
 stripPrefix prefix path = do
-    suffix <- List.stripPrefix prefixComponents pathComponents
+    componentSuffix <- List.stripPrefix prefixComponents pathComponents
 
-    return (FilePath.joinPath suffix)
+    if null componentSuffix
+        then do
+            prefixSuffix <- List.stripPrefix prefixExtensions pathExtensions
+
+            return (mconcat prefixSuffix)
+        else do
+            return (FilePath.joinPath componentSuffix ++ mconcat pathExtensions)
   where
-    prefixComponents = splitExt (splitDirectories prefix)
+    (prefixComponents, prefixExtensions) = splitExt (splitDirectories prefix)
 
-    pathComponents = splitExt (splitDirectories path)
+    (pathComponents, pathExtensions) = splitExt (splitDirectories path)
 
 -- Internal helper function for `stripPrefix` and `commonPrefix`
-splitExt :: [FilePath] -> [FilePath]
-splitExt [ component ] = base : map ("." ++) exts
+splitExt :: [FilePath] -> ([FilePath], [String])
+splitExt [ component ] = ([ base ], map ("." ++) exts)
   where
     (base, exts) = splitExtensions component
 splitExt [ ] =
-    [ ]
-splitExt (component : components) =
-    component : splitExt components
+    ([ ], [ ])
+splitExt (component : components) = (component : base, exts)
+  where
+    (base, exts) = splitExt components
 
 -- | Normalise a path
 collapse :: FilePath -> FilePath

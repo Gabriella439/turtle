@@ -152,6 +152,7 @@ test_CommonPrefix = testCase "commonPrefix" $ do
     "./" @=? commonPrefix [".", "."]
     "" @=? commonPrefix [".", ".."]
     "foo/" @=? commonPrefix ["foo/bar", "foo/baz"]
+    "foo/a.b" @=? commonPrefix ["foo/a.b.c", "foo/a.b.d"]
     "" @=? commonPrefix ["foo/", "bar/"]
 
 test_StripPrefix :: TestTree
@@ -160,6 +161,8 @@ test_StripPrefix = testCase "stripPrefix" $ do
     Just "/" @=? stripPrefix "" "/"
     Just "" @=? stripPrefix "/" "/"
     Just "foo" @=? stripPrefix "/" "/foo"
+    Just "foo" @=? stripPrefix "./" "./foo"
+    Just "foo.ext" @=? stripPrefix "./" "./foo.ext"
     Just "foo/bar" @=? stripPrefix "/" "/foo/bar"
     Just "bar" @=? stripPrefix "/foo/" "/foo/bar"
     Just "bar/baz" @=? stripPrefix "/foo/" "/foo/bar/baz"
