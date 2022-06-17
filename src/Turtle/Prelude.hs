@@ -982,13 +982,12 @@ ls path = Shell (\(FoldShell step begin done) -> do
     reparse <- fmap reparsePoint (Win32.getFileAttributes path')
     if (canRead && not reparse)
         then bracket
-            (Win32.findFirstFile (Filesystem.encodeString (path </> "*")))
+            (Win32.findFirstFile (path </> "*"))
             (\(h, _) -> Win32.findClose h)
             (\(h, fdat) -> do
                 let loop x = do
-                        file' <- Win32.getFindDataFileName fdat
-                        let file = Filesystem.decodeString file'
-                        x' <- if (file' /= "." && file' /= "..")
+                        file <- Win32.getFindDataFileName fdat
+                        x' <- if (file /= "." && file /= "..")
                             then step x (path </> file)
                             else return x
                         more <- Win32.findNextFile h fdat
@@ -1131,7 +1130,7 @@ cptree oldTree newTree = sh (do
     -- a directory and fails to strip it as a prefix from `/tmp/foo`.  Adding
     -- `(</> "")` to the end of the path makes clear that the path is a
     -- directory
-    Just suffix <- return (Internal.stripPrefix (oldTree ++ "/") oldPath)
+    Just suffix <- return (Internal.stripPrefix (oldTree <> [ FilePath.pathSeparator ]) oldPath)
 
     let newPath = newTree </> suffix
 
@@ -1221,7 +1220,7 @@ touch file = do
 #ifdef mingw32_HOST_OS
         then do
             handle <- Win32.createFile
-                (Filesystem.encodeString file)
+                file
                 Win32.gENERIC_WRITE
                 Win32.fILE_SHARE_NONE
                 Nothing

@@ -27,9 +27,14 @@ main = defaultMain $ testGroup "system-filepath tests"
 test_Root :: TestTree
 test_Root = testCase "root" $ do
     "" @=? root ""
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+    "c:\\" @=? root "c:\\"
+    "c:\\" @=? root "c:\\foo"
+#else
     "/" @=? root "/"
-    "" @=? root "foo"
     "/" @=? root "/foo"
+#endif
+    "" @=? root "foo"
 
 test_Directory :: TestTree
 test_Directory = testCase "directory" $ do
@@ -59,7 +64,11 @@ test_Parent = testCase "parent" $ do
     "../" @=? parent "../.."
     "../" @=? parent "../."
 
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+    "c:\\" @=? parent "c:\\"
+#else
     "/" @=? parent "/"
+#endif
     "./" @=? parent "foo"
     "./" @=? parent "./foo"
     "./foo/" @=? parent "foo/bar"
@@ -138,7 +147,6 @@ test_Relative = testCase "relative" $ do
     myAssert' "c:\\foo\\bar"
     myAssert ""
     myAssert "foo\\bar"
-    myAssert' "\\foo\\bar"
 #else
     myAssert' "/"
     myAssert' "/foo/bar"
@@ -179,10 +187,15 @@ test_Collapse :: TestTree
 test_Collapse = testCase "collapse" $ do
     -- This behavior differs from the old `system-filepath` package, but this
     -- behavior is more correct in the presence of symlinks
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+    "foo\\..\\bar" @=? collapse "foo/../bar"
+    "foo\\bar" @=? collapse "foo/bar"
+    "foo\\bar" @=? collapse "foo/./bar"
+#else
     "foo/../bar" @=? collapse "foo/../bar"
-
     "foo/bar" @=? collapse "foo/bar"
     "foo/bar" @=? collapse "foo/./bar"
+#endif
 
 test_SplitDirectories :: TestTree
 test_SplitDirectories = testCase "splitDirectories" $ do
