@@ -882,9 +882,9 @@ import Turtle
 -- > FilePath "/tmp/.X0-lock"
 -- > FilePath "/tmp/pulse-PKdhtXMmr18n"
 -- > FilePath "/tmp/pulse-xHYcZ3zmN3Fv"
--- > FilePath "/tmp/tracker-gabriel"
+-- > FilePath "/tmp/tracker-gabriella"
 -- > FilePath "/tmp/pulse-PYi1hSlWgNj2"
--- > FilePath "/tmp/orbit-gabriel"
+-- > FilePath "/tmp/orbit-gabriella"
 -- > FilePath "/tmp/ssh-vREYGbWGpiCa"
 -- > FilePath "/tmp/.ICE-unix
 --
@@ -991,9 +991,9 @@ import Turtle
 -- > FilePath "/tmp/.X0-lock"
 -- > FilePath "/tmp/pulse-PKdhtXMmr18n"
 -- > FilePath "/tmp/pulse-xHYcZ3zmN3Fv"
--- > FilePath "/tmp/tracker-gabriel"
+-- > FilePath "/tmp/tracker-gabriella"
 -- > FilePath "/tmp/pulse-PYi1hSlWgNj2"
--- > FilePath "/tmp/orbit-gabriel"
+-- > FilePath "/tmp/orbit-gabriella"
 -- > FilePath "/tmp/ssh-vREYGbWGpiCa"
 -- > FilePath "/tmp/.ICE-unix"
 -- > FilePath "/usr/lib"
@@ -1109,9 +1109,9 @@ import Turtle
 -- > FilePath "/tmp/.X0-lock"
 -- > FilePath "/tmp/pulse-PKdhtXMmr18n"
 -- > FilePath "/tmp/pulse-xHYcZ3zmN3Fv"
--- > FilePath "/tmp/tracker-gabriel"
+-- > FilePath "/tmp/tracker-gabriella"
 -- > FilePath "/tmp/pulse-PYi1hSlWgNj2"
--- > FilePath "/tmp/orbit-gabriel"
+-- > FilePath "/tmp/orbit-gabriella"
 -- > FilePath "/tmp/ssh-vREYGbWGpiCa"
 -- > FilePath "/tmp/.ICE-unix"
 --
@@ -1164,8 +1164,8 @@ import Turtle
 -- @
 -- Prelude Turtle Fold> `fold` (ls \"\/tmp\") Fold.list
 -- [FilePath \"\/tmp\/.X11-unix\",FilePath \"\/tmp\/.X0-lock\",FilePath \"\/tmp\/pulse-PKd
--- htXMmr18n\",FilePath \"\/tmp\/pulse-xHYcZ3zmN3Fv\",FilePath \"\/tmp\/tracker-gabriel
--- \",FilePath \"\/tmp\/pulse-PYi1hSlWgNj2\",FilePath \"\/tmp\/orbit-gabriel\",FilePath 
+-- htXMmr18n\",FilePath \"\/tmp\/pulse-xHYcZ3zmN3Fv\",FilePath \"\/tmp\/tracker-gabriella
+-- \",FilePath \"\/tmp\/pulse-PYi1hSlWgNj2\",FilePath \"\/tmp\/orbit-gabriella\",FilePath 
 -- \"\/tmp\/ssh-vREYGbWGpiCa\",FilePath \"\/tmp\/.ICE-unix\"]
 -- @
 --
@@ -1254,9 +1254,9 @@ import Turtle
 -- > .X0-lock
 -- > pulse-PKdhtXMmr18n
 -- > pulse-xHYcZ3zmN3Fv
--- > tracker-gabriel
+-- > tracker-gabriella
 -- > pulse-PYi1hSlWgNj2
--- > orbit-gabriel
+-- > orbit-gabriella
 -- > ssh-vREYGbWGpiCa
 -- > .ICE-unix
 --
@@ -1793,7 +1793,7 @@ import Turtle
 -- If you have more questions or need help learning the library, ask a question
 -- on Stack Overflow under the @haskell-turtle@ tag.  For bugs or feature
 -- requests, create an issue on Github at
--- <https://github.com/Gabriel439/Haskell-Turtle-Library/issues>
+-- <https://github.com/Gabriella439/Haskell-Turtle-Library/issues>
 --
 -- This library provides an extended suite of Unix-like utilities, but would
 -- still benefit from adding more utilities for better parity with the Unix
