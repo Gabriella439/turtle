@@ -83,7 +83,7 @@ state changes are made to the process's global state.
 
 ## Development Status
 
-[![Build Status](https://travis-ci.org/Gabriel439/Haskell-Turtle-Library.png)](https://travis-ci.org/Gabriel439/Haskell-Turtle-Library)
+[![Build Status](https://travis-ci.org/Gabriella439/Haskell-Turtle-Library.png)](https://travis-ci.org/Gabriella439/Haskell-Turtle-Library)
 
 `turtle`'s types and idioms are reasonably complete and I don't expect there
 to be significant changes to the library's core API.  The only major
@@ -108,7 +108,7 @@ available tools to minimally match `coreutils`.
 
 ## License (BSD 3-clause)
 
-Copyright (c) 2017 Gabriel Gonzalez
+Copyright (c) 2017 Gabriella Gonzalez
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -118,7 +118,7 @@ are permitted provided that the following conditions are met:
     * Redistributions in binary form must reproduce the above copyright notice,
       this list of conditions and the following disclaimer in the documentation
       and/or other materials provided with the distribution.
-    * Neither the name of Gabriel Gonzalez nor the names of other contributors
+    * Neither the name of Gabriella Gonzalez nor the names of other contributors
       may be used to endorse or promote products derived from this software
       without specific prior written permission.
 
