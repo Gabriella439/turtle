@@ -1,5 +1,5 @@
 % Haskell for Shell Scripting
-% Gabriel Gonzalez
+% Gabriella Gonzalez
 % December 14, 2015
 
 # Before class
