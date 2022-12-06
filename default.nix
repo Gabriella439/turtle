@@ -1,45 +1,48 @@
-{ compiler ? "ghc8107" }:
+{ interval ? 24 * 60 * 60 }:
 
 let
   nixpkgs = builtins.fetchTarball {
-    url    = "https://github.com/NixOS/nixpkgs/archive/391f93a83c3a486475d60eb4a569bb6afbf306ad.tar.gz";
-    sha256 = "0s5f7j2akh3g0013880jfbigdaac1z76r9dv46yw6k254ba2r6nq";
+    url    = "https://github.com/MercuryTechnologies/nixpkgs/archive/696e0820b03e8ea7ad6a9ba21a00a79c91efc580.tar.gz";
+    sha256 = "1k3swii3absl154154lmk6zjw11vzzqx8skaiw1250armgfyv9v8";
   };
 
-  config = {};
+  # We need GHC 9.4 or newer for this feature to work
+  compiler ="ghc94";
 
-  overlay = pkgsNew: pkgsOld: {
-    haskell = pkgsOld.haskell // {
-      packages = pkgsOld.haskell.packages // {
-        "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
-          overrides =
-            let
-              packageSources = pkgsNew.haskell.lib.packageSourceOverrides {
-                "turtle" = ./.;
-              };
+  overlay = self: super: {
+    haskell = super.haskell // {
+      packages = super.haskell.packages // {
+        "${compiler}" =
+          super.haskell.packages."${compiler}".override (old: {
+            overrides =
+              self.lib.fold
+                self.lib.composeExtensions
+                (old.overrides or (_: _: { }))
+                [ (self.haskell.lib.packageSourceOverrides {
+                    turtle = ./.;
+                  })
 
-              manualOverrides = haskellPackagesNew: haskellPackagesOld: {
-              };
+                  (hself: hsuper: {
+                    turtle-incremental =
+                      self.haskell.lib.compose.incremental
+                        { inherit interval;
 
-              default = old.overrides or (_: _: {});
-
-            in
-              pkgsNew.lib.fold pkgsNew.lib.composeExtensions default [
-                packageSources
-                manualOverrides
-              ];
-        });
+                          makePreviousBuild =
+                            truncate: (import (truncate ./.) { }).turtle;
+                        }
+                        hsuper.turtle;
+                  })
+                ];
+          });
       };
     };
   };
 
-  pkgs =
-    import nixpkgs { inherit config; overlays = [ overlay ]; };
+  pkgs = import nixpkgs { config = { }; overlays = [ overlay ]; };
 
 in
-  { inherit (pkgs.haskell.packages."${compiler}") turtle;
-
-    shell = (pkgs.haskell.packages."${compiler}".turtle).env;
-
-    inherit (pkgs.releaseTools) aggregate;
+  { inherit (pkgs.haskell.packages."${compiler}")
+      turtle
+      turtle-incremental
+    ;
   }
