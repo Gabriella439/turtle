@@ -83,7 +83,7 @@ state changes are made to the process's global state.
 
 ## Development Status
 
-[![Build Status](https://travis-ci.org/Gabriella439/Haskell-Turtle-Library.png)](https://travis-ci.org/Gabriella439/Haskell-Turtle-Library)
+[![Build Status](https://github.com/Gabriella439/turtle/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/Gabriella439/turtle/actions/workflows/haskell-ci.yml)
 
 `turtle`'s types and idioms are reasonably complete and I don't expect there
 to be significant changes to the library's core API.  The only major

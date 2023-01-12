@@ -7,7 +7,7 @@ License-File: LICENSE
 Copyright: 2015 Gabriella Gonzalez
 Author: Gabriella Gonzalez
 Maintainer: GenuineGabriella@gmail.com
-Bug-Reports: https://github.com/Gabriella439/Haskell-Turtle-Library/issues
+Bug-Reports: https://github.com/Gabriella439/turtle/issues
 Synopsis: Shell programming, Haskell-style
 Description: @turtle@ is a reimplementation of the Unix command line environment
     in Haskell so that you can use Haskell as both a shell and a scripting
@@ -55,7 +55,7 @@ Extra-Source-Files:
 
 Source-Repository head
     Type: git
-    Location: https://github.com/Gabriella439/Haskell-Turtle-Library
+    Location: https://github.com/Gabriella439/turtle
 
 Library
     HS-Source-Dirs: src
