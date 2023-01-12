@@ -1793,7 +1793,7 @@ import Turtle
 -- If you have more questions or need help learning the library, ask a question
 -- on Stack Overflow under the @haskell-turtle@ tag.  For bugs or feature
 -- requests, create an issue on Github at
--- <https://github.com/Gabriella439/Haskell-Turtle-Library/issues>
+-- <https://github.com/Gabriella439/turtle/issues>
 --
 -- This library provides an extended suite of Unix-like utilities, but would
 -- still benefit from adding more utilities for better parity with the Unix
