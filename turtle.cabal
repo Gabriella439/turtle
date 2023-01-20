@@ -82,11 +82,11 @@ Library
         transformers         >= 0.2.0.0 && < 0.7 ,
         optparse-applicative >= 0.16    && < 0.18,
         optional-args        >= 1.0     && < 2.0 ,
-        unix-compat          >= 0.4     && < 0.7
+        unix-compat          >= 0.4     && < 0.8
     if os(windows)
         Build-Depends: Win32 >= 2.12
     else
-        Build-Depends: unix  >= 2.5.1.0 && < 2.8
+        Build-Depends: unix  >= 2.5.1.0 && < 2.9
 
     Exposed-Modules:
         Turtle,
