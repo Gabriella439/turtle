@@ -1,2 +1,5 @@
+branches: main ci-*
 installed: -all
 tests: >= 8.4
+-- Can't build benchmark with GHC >= 9.4 as long as it has text < 1.3
+benchmarks: < 9.4
