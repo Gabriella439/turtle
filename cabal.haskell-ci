@@ -1,2 +1,3 @@
+branches: main ci-*
 installed: -all
 tests: >= 8.4
