@@ -82,7 +82,7 @@ Library
         text                 >= 1.0.0   && < 2.1 ,
         time                               < 1.13,
         transformers         >= 0.2.0.0 && < 0.7 ,
-        optparse-applicative >= 0.16    && < 0.18,
+        optparse-applicative >= 0.16    && < 0.19,
         optional-args        >= 1.0     && < 2.0 ,
         unix-compat          >= 0.4     && < 0.8
     if os(windows)
