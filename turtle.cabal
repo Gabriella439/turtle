@@ -64,7 +64,7 @@ Library
     Build-Depends:
         -- 2021-09-07: Turtle.Prelude uses GHC-8.0 features, so base >= 4.9
         base                 >= 4.9     && < 5   ,
-        ansi-wl-pprint       >= 0.6     && < 0.7 ,
+        ansi-wl-pprint       >= 0.6     && < 1.1 ,
         async                >= 2.0.0.0 && < 2.3 ,
         bytestring           >= 0.9.1.8 && < 0.12,
         clock                >= 0.4.1.2 && < 0.9 ,
