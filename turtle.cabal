@@ -59,12 +59,16 @@ Source-Repository head
     Type: git
     Location: https://github.com/Gabriella439/turtle
 
+Flag new-deps
+    Description: Use new versions of ansi-wl-pprint and optparse-applicative
+    Manual: False
+    Default: True
+
 Library
     HS-Source-Dirs: src
     Build-Depends:
         -- 2021-09-07: Turtle.Prelude uses GHC-8.0 features, so base >= 4.9
         base                 >= 4.9     && < 5   ,
-        ansi-wl-pprint       >= 0.6     && < 1.1 ,
         async                >= 2.0.0.0 && < 2.3 ,
         bytestring           >= 0.9.1.8 && < 0.12,
         clock                >= 0.4.1.2 && < 0.9 ,
@@ -82,13 +86,22 @@ Library
         text                 >= 1.0.0   && < 2.1 ,
         time                               < 1.13,
         transformers         >= 0.2.0.0 && < 0.7 ,
-        optparse-applicative >= 0.16    && < 0.19,
         optional-args        >= 1.0     && < 2.0 ,
         unix-compat          >= 0.4     && < 0.8
     if os(windows)
         Build-Depends: Win32 >= 2.12
     else
         Build-Depends: unix  >= 2.5.1.0 && < 2.9
+
+    -- A possible Cabal issue makes it try an old version of ansi-wl-pprint
+    -- even though a newer would work.
+    -- See discussion in https://github.com/Gabriella439/turtle/pull/446
+    if flag(new-deps)
+        Build-Depends: ansi-wl-pprint       >= 1.0     && < 1.1 ,
+                       optparse-applicative >= 0.18    && < 0.19
+    else
+        Build-Depends: ansi-wl-pprint       >= 0.6     && < 1.0 ,
+                       optparse-applicative >= 0.16    && < 0.18
 
     Exposed-Modules:
         Turtle,
