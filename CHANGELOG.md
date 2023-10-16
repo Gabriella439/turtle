@@ -1,4 +1,8 @@
-1.6.1.
+1.6.2
+
+* Build against latest `ansi-wl-pprint` and `optparse-applicative` [[#445]](https://github.com/Gabriella439/turtle/pull/445) / [[#446]](https://github.com/Gabriella439/turtle/pull/446) / [[#447]](https://github.com/Gabriella439/turtle/pull/447)
+
+1.6.1
 
 * BUG FIX: Fix `turtle` to build on Windows
 * BUG FIX: `stripPrefix` and `commonPrefix` now correctly handle files with
