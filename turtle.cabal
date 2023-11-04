@@ -169,7 +169,7 @@ test-suite system-filepath-tests
     Build-Depends:
         base,
         filepath,
-        tasty >=1.4 && <1.5,
+        tasty >=1.4 && <1.6,
         tasty-hunit >=0.10 && <0.11,
         turtle
 
