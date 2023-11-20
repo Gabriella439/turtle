@@ -70,9 +70,9 @@ Library
         -- 2021-09-07: Turtle.Prelude uses GHC-8.0 features, so base >= 4.9
         base                 >= 4.9     && < 5   ,
         async                >= 2.0.0.0 && < 2.3 ,
-        bytestring           >= 0.9.1.8 && < 0.12,
+        bytestring           >= 0.9.1.8 && < 0.13,
         clock                >= 0.4.1.2 && < 0.9 ,
-        containers           >= 0.5.0.0 && < 0.7 ,
+        containers           >= 0.5.0.0 && < 0.8 ,
         directory            >= 1.3.1.0 && < 1.4 ,
         exceptions           >= 0.4     && < 0.11,
         filepath             >= 1.4.1.2 && < 1.5 ,
@@ -83,7 +83,7 @@ Library
         stm                                < 2.6 ,
         streaming-commons                  < 0.3 ,
         temporary                          < 1.4 ,
-        text                 >= 1.0.0   && < 2.1 ,
+        text                 >= 1.0.0   && < 2.2 ,
         time                               < 1.13,
         transformers         >= 0.2.0.0 && < 0.7 ,
         optional-args        >= 1.0     && < 2.0 ,
@@ -182,5 +182,5 @@ benchmark bench
     Build-Depends:
         base        >= 4     && < 5  ,
         tasty-bench >= 0.3.1         ,
-        text                    < 1.3,
+        text                    < 2.1,
         turtle
