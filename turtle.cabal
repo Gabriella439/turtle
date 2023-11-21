@@ -106,6 +106,7 @@ Library
     Exposed-Modules:
         Turtle,
         Turtle.Bytes,
+        Turtle.Bytes.Lazy,
         Turtle.Format,
         Turtle.Pattern,
         Turtle.Shell,
