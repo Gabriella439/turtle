@@ -120,6 +120,10 @@ module Turtle.Prelude (
 #endif
     , need
     , env
+    , isSet
+    , isUnset
+    , isPresent
+    , isMissing
     , cd
     , pwd
     , home
@@ -316,6 +320,7 @@ import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Maybe as Maybe
 import Data.Monoid ((<>))
 import Data.Ord (comparing)
 import qualified Data.Set as Set
@@ -915,6 +920,70 @@ need key = liftIO (fmap (fmap pack) (lookupEnv (unpack key)))
 #else
 need key = liftM (lookup key) env
 #endif
+
+{-| Check if an environment variable is set.  This will return `True` if the
+    environment variable is set to the empty string.
+
+>>> export "FOO" "1"
+>>> isSet "FOO"
+True
+>>> export "FOO" ""
+>>> isSet "FOO"
+True
+>>> unset "FOO"
+>>> isSet "FOO"
+False
+-}
+isSet :: MonadIO io => Text -> io Bool
+isSet key = fmap Maybe.isJust (need key)
+
+{-| Check if an environment variable is unset.  This will return `False` if the
+    environment variable is set to the empty string.
+
+>>> export "FOO" "1"
+>>> isUnset "FOO"
+False
+>>> export "FOO" ""
+>>> isUnset "FOO"
+False
+>>> unset "FOO"
+>>> isUnset "FOO"
+True
+-}
+isUnset :: MonadIO io => Text -> io Bool
+isUnset key = fmap not (isSet key)
+
+{-| Check if an environment variable is set to a non-empty string
+
+>>> export "FOO" "1"
+>>> isPresent "FOO"
+True
+>>> export "FOO" ""
+>>> isPresent "FOO"
+False
+>>> unset "FOO"
+>>> isPresent "FOO"
+False
+-}
+isPresent :: MonadIO io => Text -> io Bool
+isPresent key = fmap adapt (need key)
+  where
+    adapt value = Maybe.isJust value && not (null value)
+
+{-| Check if an environment variable is unset or set to an empty string
+
+>>> export "FOO" "1"
+>>> isMissing "FOO"
+False
+>>> export "FOO" ""
+>>> isMissing "FOO"
+True
+>>> unset "FOO"
+>>> isMissing "FOO"
+True
+-}
+isMissing :: MonadIO io => Text -> io Bool
+isMissing key = fmap not (isPresent key)
 
 -- | Retrieve all environment variables
 env :: MonadIO io => io [(Text, Text)]
