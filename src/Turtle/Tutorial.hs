@@ -888,6 +888,53 @@ import Turtle
 -- > FilePath "/tmp/ssh-vREYGbWGpiCa"
 -- > FilePath "/tmp/.ICE-unix
 --
+-- To process a stream, you pass the stream as output of one function to 
+-- another in the usual way. For example:
+--
+-- @
+-- ghci> view $ input "foo.txt"
+-- Line "license.txt"
+-- Line "README.md"
+-- Line "README.md"
+-- Line "index.html"
+-- ghci> view $ uniq $ input "foo.txt"
+-- Line "license.txt"
+-- Line "README.md"
+-- Line "index.html"
+-- @ 
+-- 
+-- If you prefer your 'pipes' to flow from left to right, you can use the `&` 
+-- operator. 
+-- 
+-- @
+-- ghci> input "foo.txt" & uniq & view
+-- Line "license.txt"
+-- Line "README.md"
+-- Line "index.html"
+-- @
+--
+-- Alternatively, the Flow library will achieve the same result using a syntax
+-- more familiar to shell users:
+--
+-- @
+-- ghci> import Flow
+-- ghci> input "foo.txt" |> uniq |> view
+-- Line "license.txt"
+-- Line "README.md"
+-- Line "index.html"
+-- @
+--
+-- These streams are plain Haskell monads, meaning that they support the 
+-- standard operations that you can do with monads:
+--
+-- @
+-- ghci> view $ input "foo.txt" >>= pure . fromText . lineToText
+-- FilePath "license.txt"
+-- FilePath "README.md"
+-- FilePath "README.md"
+-- FilePath "index.html"
+-- @
+--
 -- You can build your own `Shell` streams using a few primitive operations,
 --
 -- The first primitive is `empty`, which represents an empty stream of values:
