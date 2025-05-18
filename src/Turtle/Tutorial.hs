@@ -1739,7 +1739,7 @@ import Turtle
 -- >         IncreaseVolume n -> printf ("Increasing the volume by "%d%"\n") n
 -- >         DecreaseVolume n -> printf ("Decreasing the volume by "%d%"\n") n
 --
--- This will provide `--help` output at both the top level and for each
+-- This will provide @--help@ output at both the top level and for each
 -- subcommand:
 --
 -- > $ ./options --help
