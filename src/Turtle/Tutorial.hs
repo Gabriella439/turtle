@@ -1863,7 +1863,6 @@ import Turtle
 --
 -- /Question:/ What's the easiest way to fail with a descriptive error message
 -- if a subprocess command like `proc`/`shell` returns a non-zero exit code?
--- code?
 --
 -- /Answer:/ Use @(`procs` cmd args input)@ or
 -- @(`proc` cmd args input `.||.` `die` "Descriptive error message")@ (or
