@@ -148,6 +148,16 @@ test-suite regression-masking-exception
         base   >= 4 && < 5,
         turtle
 
+test-suite regression-mv-dir
+    Type: exitcode-stdio-1.0
+    HS-Source-Dirs: test
+    Main-Is: RegressionMvDir.hs
+    GHC-Options: -Wall -threaded
+    Default-Language: Haskell2010
+    Build-Depends:
+        base   >= 4 && < 5,
+        turtle
+
 test-suite cptree
     Type: exitcode-stdio-1.0
     HS-Source-Dirs: test

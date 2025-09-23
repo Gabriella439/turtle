@@ -1078,7 +1078,7 @@ lsif predicate path = do
     but the operation will not be atomic
 -}
 mv :: MonadIO io => FilePath -> FilePath -> io ()
-mv oldPath newPath = liftIO $ catchIOError (Directory.renameFile oldPath newPath)
+mv oldPath newPath = liftIO $ catchIOError (Directory.renamePath oldPath newPath)
    (\ioe -> if ioeGetErrorType ioe == UnsupportedOperation -- certainly EXDEV
                 then do
                     Directory.copyFile oldPath newPath
