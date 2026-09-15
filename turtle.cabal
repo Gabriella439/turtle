@@ -97,8 +97,8 @@ Library
     -- even though a newer would work.
     -- See discussion in https://github.com/Gabriella439/turtle/pull/446
     if flag(new-deps)
-        Build-Depends: ansi-wl-pprint       >= 1.0     && < 1.1 ,
-                       optparse-applicative >= 0.18    && < 0.19
+        Build-Depends: ansi-wl-pprint       >= 1.0     && < 1.2 ,
+                       optparse-applicative >= 0.18    && < 0.20
     else
         Build-Depends: ansi-wl-pprint       >= 0.6     && < 1.0 ,
                        optparse-applicative >= 0.16    && < 0.18
